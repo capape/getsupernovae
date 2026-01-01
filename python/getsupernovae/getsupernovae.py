@@ -27,6 +27,9 @@ from reportlab.lib.colors import Color, black, blue, red
 from collections import OrderedDict
 import os
 import json
+# local modules extracted for clarity
+from snmodels import Supernova, AxCordInTime, Visibility
+from snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
 
 
 def load_old_supernovae(path=None):
@@ -208,39 +211,8 @@ class SupernovaCallBackData:
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
 
 
-class Supernova:
-    def __init__(
-        self,
-        date,
-        mag,
-        host,
-        name,
-        ra,
-        decl,
-        link,
-        constellation,
-        coordinates,
-        firstObserved,
-        maxMagnitude,
-        maxMagnitudeDate,
-        type,
-        visibility,
-    ):
-        self.name = name
-        self.date = date
-        self.mag = mag
-        self.host = host
-        self.name = name
-        self.ra = ra
-        self.decl = decl
-        self.link = link
-        self.constellation = constellation
-        self.coordinates = coordinates
-        self.type = type
-        self.firstObserved = firstObserved
-        self.maxMagnitude = maxMagnitude
-        self.maxMagnitudeDate = maxMagnitudeDate
-        self.visibility = visibility
+# `Supernova`, `AxCordInTime`, and `Visibility` moved to `snmodels.py`.
+# See `snmodels.py` for the dataclass definitions used by the app.
 
 
 class RochesterSupernova:
@@ -603,82 +575,8 @@ def createTextAsString(
         
     return fulltext
 
-def parse_magnitude(text: str):
-    """
-    Parse magnitude-like strings.
-    Returns (value, limit) where:
-      - value is a float parsed from the string or None if not parseable
-      - limit is '>' or '<' if the string had a limit prefix, otherwise None
-    """
-    if text is None:
-        return None, None
-    text = text.strip()
-    if text == "":
-        return None, None
-
-    m = re.search(r"^\s*([<>]?)\s*([+-]?\d+(?:\.\d+)?)", text)
-    if not m:
-        return None, None
-
-    limit = m.group(1) or None
-    try:
-        val = float(m.group(2))
-    except Exception:
-        return None, limit
-    return val, limit
-
-
-def parse_date(text: str):
-    """
-    Parse date strings like 'YYYY/MM/DD' or 'YYYY-MM-DD' into a date object and
-    return (date_obj, normalized_string) where normalized_string is 'YYYY-MM-DD'.
-    Returns (None, None) if parsing fails.
-    """
-    if text is None:
-        return None, None
-
-    s = text.strip()
-    if s == "":
-        return None, None
-
-    # try common formats
-    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d"):
-        try:
-            dt = datetime.strptime(s, fmt).date()
-            return dt, dt.strftime("%Y-%m-%d")
-        except Exception:
-            continue
-
-    # try parsing with varying separators by replacing separators with '-'
-    s2 = s.replace('/', '-').replace('.', '-')
-    try:
-        dt = datetime.strptime(s2, "%Y-%m-%d").date()
-        return dt, dt.strftime("%Y-%m-%d")
-    except Exception:
-        return None, None
-
-
-def format_iso_datetime(obj):
-    """Return ISO-like datetime string 'YYYY-MM-DD HH:MM' for various input types."""
-    if obj is None:
-        return ""
-    try:
-        # astropy Time
-        if hasattr(obj, "to_datetime"):
-            dt = obj.to_datetime()
-            return dt.strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        pass
-
-    if isinstance(obj, datetime):
-        return obj.strftime("%Y-%m-%d %H:%M")
-    if isinstance(obj, date):
-        return obj.strftime("%Y-%m-%d")
-    # fallback: return string as-is
-    try:
-        return str(obj)
-    except Exception:
-        return ""
+# parsing helpers extracted to `snparser.py` (parse_magnitude, parse_date,
+# format_iso_datetime, _parse_row_safe)
 
 def createPdf(
     supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude
@@ -1336,76 +1234,7 @@ def main():
 
 
 
-def _parse_row_safe(row: Tag):
-    cols = row.find_all("td")
-    # expected at least 12 columns (adjust based on actual page)
-    if len(cols) < 12:
-        return None
-
-    try:
-        name_tag = cols[0].find("a")
-        name = name_tag.get_text(strip=True) if name_tag else cols[0].get_text(strip=True)
-        href = name_tag.get("href") if name_tag else None
-        link = None
-        if href:
-            # Example: keep original behavior but be defensive about slicing
-            if href.startswith("../"):
-                link = "https://www.rochesterastronomy.org/" + href[3:]
-            else:
-                link = urllib.parse.urljoin("https://www.rochesterastronomy.org/", href)
-
-        host = cols[1].get_text(strip=True)
-        ra_text = cols[2].get_text(strip=True)
-        dec_text = cols[3].get_text(strip=True)
-
-        # magnitude: parse to float safely (handle limits like '>19')
-        mag_text = cols[5].get_text(strip=True)
-        mag_val, mag_limit = parse_magnitude(mag_text)
-
-
-        raw_date_text = cols[6].get_text(strip=True)
-        date_obj, date_text = parse_date(raw_date_text)
-
-        type_text = cols[7].get_text(strip=True)
-        max_mag_text = cols[9].get_text(strip=True)
-        max_mag = max_mag_text  # keep string; parse later if needed
-
-        # parse max magnitude date and first observed date
-        raw_max_mag_date = cols[10].get_text(strip=True)
-        max_mag_date_obj, max_mag_date = parse_date(raw_max_mag_date)
-
-        raw_first_observed = cols[11].get_text(strip=True)
-        first_observed_obj, first_observed = parse_date(raw_first_observed)
-
-        # Build SkyCoord, handle parsing errors
-        try:
-            coord = SkyCoord(ra_text, dec_text, frame="icrs", unit=(u.hourangle, u.deg))
-        except Exception as ex:
-            # skip this row if coordinates invalid
-            return None
-
-        return {
-            "name": name,
-            "link": link,
-            "host": host,
-            "ra": ra_text,
-            "decl": dec_text,
-            "mag": mag_val,
-            "mag_limit": mag_limit,
-            "date": date_text,
-            "date_obj": date_obj,
-            "type": type_text,
-            "maxMagnitude": max_mag,
-            "maxMagnitudeDate": max_mag_date,
-            "maxMagnitudeDate_obj": max_mag_date_obj,
-            "firstObserved": first_observed,
-            "firstObserved_obj": first_observed_obj,
-            "coord": coord,
-        }
-
-    except Exception:
-        # be conservative: skip the row on unexpected errors
-        return None
+# `_parse_row_safe` is provided by `snparser.py` and imported at the top of this file.
 
 
 if __name__ == "__main__":
