@@ -27,6 +27,8 @@ from reportlab.lib.colors import Color, black, blue, red
 from collections import OrderedDict
 import os
 import json
+# Ensure the module directory is on sys.path so local modules can be imported
+sys.path.insert(0, os.path.dirname(__file__))
 # local modules extracted for clarity
 from snmodels import Supernova, AxCordInTime, Visibility
 from snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
@@ -1010,6 +1012,411 @@ class SupernovasApp(tk.Tk):
         editor.grid_rowconfigure(0, weight=1)
         editor.grid_columnconfigure(0, weight=1)
 
+    def callbackAddSite(self):
+        """Open a dialog to add a new observing site and persist it to sites.json.
+
+        Writes the site to the user config directory returned by
+        `get_user_config_dir()` and reloads the in-memory `sites` mapping and
+        the site combobox values.
+        """
+        try:
+            cfgdir = get_user_config_dir()
+            os.makedirs(cfgdir, exist_ok=True)
+            path = os.path.join(cfgdir, "sites.json")
+        except Exception:
+            path = os.path.join(os.path.dirname(__file__), "sites.json")
+
+        # Load existing sites (preserve unknown files by falling back to current `sites`)
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                current = json.load(fh)
+                if not isinstance(current, dict):
+                    current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in sites.items()}
+        except Exception:
+            current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in sites.items()}
+
+        editor = tk.Toplevel(self)
+        editor.title("Add observing site")
+        # Make dialog larger so the preview table and controls are visible
+        editor.geometry("1024x480")
+        editor.minsize(700, 420)
+        editor.resizable(True, True)
+
+        # Make dialog resizable and allow widgets to expand; give more space to the left tree
+        editor.grid_rowconfigure(0, weight=1)
+        editor.grid_columnconfigure(0, weight=3)
+        editor.grid_columnconfigure(1, weight=1)
+
+        # Normalize site data into simple dicts with numeric lat/lon/height
+        def _normalize_site_info(v):
+            # v can be a dict-like with numeric values, or an EarthLocation
+            try:
+                if isinstance(v, dict):
+                    lat = float(v.get("lat"))
+                    lon = float(v.get("lon"))
+                    h = float(v.get("height", 0.0))
+                    return {"lat": lat, "lon": lon, "height": h}
+            except Exception:
+                pass
+            try:
+                # try EarthLocation-like object
+                lat = float(v.lat.value)
+                lon = float(v.lon.value)
+                h = float(v.height.value)
+                return {"lat": lat, "lon": lon, "height": h}
+            except Exception:
+                return {"lat": 0.0, "lon": 0.0, "height": 0.0}
+
+        # start with file-backed current if present, otherwise build from `sites`
+        try:
+            # `current` was loaded above from file; convert entries
+            current = {k: _normalize_site_info(v) for k, v in current.items()}
+        except Exception:
+            current = {}
+        # merge any missing entries from the running `sites` mapping
+        try:
+            for k, v in sites.items():
+                if k not in current:
+                    current[k] = _normalize_site_info(v)
+        except Exception:
+            pass
+
+        # Left: preview table of current sites
+        frame_left = ttk.Frame(editor)
+        frame_left.grid(column=0, row=0, sticky="nsew", padx=8, pady=8)
+        frame_left.grid_rowconfigure(0, weight=1)
+        frame_left.grid_columnconfigure(0, weight=1)
+
+        columns = ("name", "lat", "lon", "height")
+        # increase row height for readability
+        try:
+            style = ttk.Style()
+            style.configure("SiteTreeview.Treeview", rowheight=28)
+            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", style="SiteTreeview.Treeview", height=12)
+        except Exception:
+            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", height=12)
+        for col in columns:
+            tree.heading(col, text=col.capitalize())
+            if col == "name":
+                tree.column(col, width=420, anchor=tk.W)
+            else:
+                tree.column(col, width=110, anchor=tk.CENTER)
+
+        # autosize columns to fit content and ensure visibility
+        def autosize_columns():
+            try:
+                from tkinter import font as tkfont
+                font = tkfont.Font(font=tree.cget("font"))
+            except Exception:
+                try:
+                    font = None
+                except Exception:
+                    font = None
+
+            max_widths = {col: 0 for col in columns}
+            # header widths
+            for col in columns:
+                hdr = tree.heading(col).get("text", col)
+                if font:
+                    w = font.measure(hdr) + 18
+                else:
+                    w = max(80, len(str(hdr)) * 7)
+                max_widths[col] = int(w)
+
+            # content widths
+            for iid in tree.get_children():
+                vals = tree.item(iid, "values")
+                for i, col in enumerate(columns):
+                    txt = str(vals[i]) if i < len(vals) else ""
+                    if font:
+                        w = font.measure(txt) + 18
+                    else:
+                        w = max(50, len(txt) * 7)
+                    if w > max_widths[col]:
+                        max_widths[col] = int(w)
+
+            for col in columns:
+                try:
+                    tree.column(col, width=max_widths[col])
+                except Exception:
+                    pass
+
+            # ensure dialog is wide enough to show all columns; expand more aggressively
+            try:
+                editor.update_idletasks()
+                total = sum(max_widths.values()) + 60  # include scrollbar/margins
+                cur_w = editor.winfo_width()
+                screen_w = self.winfo_screenwidth()
+                if total > cur_w:
+                    new_w = min(total + 200, screen_w - 80)
+                    # compute desired height to fit rows without vertical scrollbar
+                    nrows = max(1, len(tree.get_children()))
+                    # row height fallback
+                    try:
+                        row_h = int(style.configure("SiteTreeview.Treeview").get("rowheight", 28))
+                    except Exception:
+                        row_h = 28
+                    # header + some padding and form area
+                    header_h = 30
+                    form_h = 220
+                    desired_h = header_h + (row_h * nrows) + form_h
+                    max_h = self.winfo_screenheight() - 120
+                    new_h = int(min(desired_h, max_h))
+                    editor.geometry(f"{int(new_w)}x{int(new_h)}")
+                    # also set tree height (rows) to nrows so no internal scrolling
+                    try:
+                        tree.config(height=nrows)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        # populate tree with current sites
+        def populate_tree():
+            tree.delete(*tree.get_children())
+            for nm, info in sorted(current.items(), key=lambda kv: kv[0].lower()):
+                try:
+                    lat = float(info.get("lat", 0.0))
+                    lon = float(info.get("lon", 0.0))
+                    height = float(info.get("height", 0.0))
+                    # round for display
+                    lat_s = f"{lat:.2f}"
+                    lon_s = f"{lon:.2f}"
+                    height_s = f"{height:.2f}"
+                except Exception:
+                    lat_s = lon_s = height_s = ""
+                tree.insert("", "end", values=(nm, lat_s, lon_s, height_s))
+
+            # after inserting, autosize
+            autosize_columns()
+
+        vsb = ttk.Scrollbar(frame_left, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        tree.grid(column=0, row=0, sticky="nsew")
+        vsb.grid(column=1, row=0, sticky="ns")
+
+        # Right: input form
+        frame_right = ttk.Frame(editor)
+        frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
+
+        ttk.Label(frame_right, text="Site name:").grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        name_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Latitude (deg):").grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        lat_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=lat_var, width=20).grid(column=1, row=1, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Longitude (deg):").grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        lon_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=lon_var, width=20).grid(column=1, row=2, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Height (m):").grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        height_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=height_var, width=20).grid(column=1, row=3, padx=5, pady=5)
+
+        # Buttons frame at bottom spanning both columns
+        btn_frame = ttk.Frame(editor)
+        btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
+        btn_frame.grid_columnconfigure(0, weight=1)
+
+        # track selected item name when user clicks in the preview
+        selected_name = {"value": None}
+
+        def on_select(ev=None):
+            sel = tree.selection()
+            if not sel:
+                selected_name["value"] = None
+                return
+            vals = tree.item(sel[0], "values")
+            if not vals:
+                selected_name["value"] = None
+                return
+            nm, lat, lon, height = vals
+            selected_name["value"] = nm
+            name_var.set(nm)
+            lat_var.set(str(lat))
+            lon_var.set(str(lon))
+            height_var.set(str(height))
+
+        def validate_coords(lat: float, lon: float, height: float):
+            if not (-90.0 <= lat <= 90.0):
+                raise ValueError("Latitude must be between -90 and 90 degrees")
+            if not (-180.0 <= lon <= 180.0):
+                raise ValueError("Longitude must be between -180 and 180 degrees")
+            # height can be negative for below-sea-level sites; no restriction
+
+        def persist_current():
+            # write a normalized mapping (numbers only) to the user config `sites.json`.
+            normalized = {k: {"lat": float(v.get("lat", 0.0)), "lon": float(v.get("lon", 0.0)), "height": float(v.get("height", 0.0))} for k, v in current.items()}
+            try:
+                cfg_dir = get_user_config_dir()
+                os.makedirs(cfg_dir, exist_ok=True)
+                user_path = os.path.join(cfg_dir, "sites.json")
+                with open(user_path, "w", encoding="utf-8") as fh:
+                    json.dump(normalized, fh, indent=2)
+            except Exception:
+                # fallback to writing to the current `path` variable (package-local)
+                with open(path, "w", encoding="utf-8") as fh:
+                    json.dump(normalized, fh, indent=2)
+
+        def on_save():
+            nm = name_var.get().strip()
+            if not nm:
+                messagebox.showerror("Error", "Site name is required", parent=editor)
+                return
+            try:
+                lat = float(lat_var.get())
+                lon = float(lon_var.get())
+                height = float(height_var.get()) if height_var.get().strip() != "" else 0.0
+                validate_coords(lat, lon, height)
+            except ValueError as e:
+                messagebox.showerror("Error", f"Invalid input: {e}", parent=editor)
+                return
+
+            old = selected_name["value"]
+            # if renaming to an existing site (different from old), ask confirmation
+            if nm in current and old is not None and nm != old:
+                if not messagebox.askyesno("Overwrite", f"Site '{nm}' already exists. Overwrite?", parent=editor):
+                    return
+
+            # if renaming, remove old key
+            if old and old != nm and old in current:
+                try:
+                    del current[old]
+                except Exception:
+                    pass
+
+            current[nm] = {"lat": lat, "lon": lon, "height": height}
+            try:
+                persist_current()
+                # reload global `sites` mapping from the same path so app uses updated locations
+                try:
+                    global sites
+                    sites = load_sites()
+                except Exception:
+                    # fallback: if load_sites fails, keep current keys in combobox
+                    pass
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save site: {e}", parent=editor)
+                return
+
+            # refresh UI widgets and select the saved site
+            populate_tree()
+            try:
+                self.cbSite["values"] = sorted(list(sites.keys() if isinstance(sites, dict) else current.keys()))
+                self.site.set(nm)
+            except Exception:
+                pass
+
+        def on_add():
+            # Add a new site. Require all fields filled and name uniqueness (case-insensitive).
+            nm = name_var.get().strip()
+            lat_s = lat_var.get().strip()
+            lon_s = lon_var.get().strip()
+            height_s = height_var.get().strip()
+
+            if not nm or not lat_s or not lon_s or not height_s:
+                messagebox.showerror("Invalid input", "All fields (name, latitude, longitude, height) are required to add a site.", parent=editor)
+                return
+
+            try:
+                lat = float(lat_s)
+                lon = float(lon_s)
+                height = float(height_s)
+            except ValueError:
+                messagebox.showerror("Invalid values", "Latitude, longitude and height must be numeric", parent=editor)
+                return
+
+            # case-insensitive duplicate check
+            for existing in current.keys():
+                if existing.lower() == nm.lower():
+                    messagebox.showerror("Duplicate site", f"A site named '{existing}' already exists (case-insensitive).", parent=editor)
+                    return
+
+            # all good: add and persist
+            current[nm] = {"lat": lat, "lon": lon, "height": height}
+            try:
+                persist_current()
+                try:
+                    global sites
+                    sites = load_sites()
+                except Exception:
+                    pass
+            except Exception as ex:
+                messagebox.showerror("Save error", f"Failed to save site: {ex}", parent=editor)
+                return
+
+            populate_tree()
+            try:
+                self.cbSite["values"] = sorted(list(sites.keys() if isinstance(sites, dict) else current.keys()))
+                self.site.set(nm)
+            except Exception:
+                pass
+            selected_name["value"] = nm
+
+        def on_delete():
+            nm = selected_name["value"]
+            if not nm:
+                messagebox.showerror("Error", "Select a site to delete", parent=editor)
+                return
+            if not messagebox.askyesno("Confirm Delete", f"Delete site '{nm}'?", parent=editor):
+                return
+            try:
+                del current[nm]
+            except Exception:
+                messagebox.showerror("Error", f"Failed to delete site '{nm}'", parent=editor)
+                return
+            try:
+                persist_current()
+                try:
+                    global sites
+                    sites = load_sites()
+                except Exception:
+                    pass
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save sites after delete: {e}", parent=editor)
+                return
+            populate_tree()
+            try:
+                # prefer the authoritative `sites` mapping when updating the combobox
+                vals = sorted(list(sites.keys())) if isinstance(sites, dict) else sorted(list(current.keys()))
+                self.cbSite["values"] = vals
+                # if current selection was deleted, clear or pick first
+                if vals:
+                    self.site.set(vals[0])
+                else:
+                    self.site.set("")
+            except Exception:
+                pass
+            # clear form
+            name_var.set("")
+            lat_var.set("")
+            lon_var.set("")
+            height_var.set("")
+            selected_name["value"] = None
+
+        def on_close():
+            editor.destroy()
+
+        # wire selection
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        save_btn = ttk.Button(btn_frame, text="Save", command=on_save)
+        save_btn.grid(column=0, row=0, sticky="w", padx=6)
+        add_btn = ttk.Button(btn_frame, text="Add", command=on_add)
+        add_btn.grid(column=1, row=0, padx=6)
+        delete_btn = ttk.Button(btn_frame, text="Delete", command=on_delete)
+        delete_btn.grid(column=2, row=0, padx=6)
+        close_btn = ttk.Button(btn_frame, text="Close", command=on_close)
+        close_btn.grid(column=3, row=0, sticky="e", padx=6)
+
+        # initial population of preview
+        populate_tree()
+
+        # Note: legacy separate Save button removed — use the Save button in the
+        # dialog button bar which updates `sites` and reloads the mapping.
+
     def __init__(self, filters):
 
         super().__init__()
@@ -1101,9 +1508,13 @@ class SupernovasApp(tk.Tk):
         self.labelSite = ttk.Label(self, text="Site: ")
         self.labelSite.grid(column=0, row=6, padx=5, pady=5, sticky=tk.E)
 
-        siteValues = list(sites.keys())
+        siteValues = sorted(list(sites.keys()))
         self.cbSite = ttk.Combobox(self, values=siteValues, textvariable=self.site)
         self.cbSite.grid(column=1, row=6, padx=5, pady=5)
+
+        # Add Site button next to combobox (pencil icon)
+        self.addSiteButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddSite())
+        self.addSiteButton.grid(column=2, row=6, padx=(2, 10), pady=5)
 
         self.labelResults = ttk.Label(self, text="Results: ")
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
@@ -1136,6 +1547,8 @@ class SupernovasApp(tk.Tk):
             toolbar, text="Edit Ignored SN", command=lambda: self.callbackEditOldSupernovae()
         )
         self.editOldButton.grid(column=1, row=0, sticky=tk.E)
+        
+        # (Add Site button moved next to the site combobox.)
         
         callbackData = SupernovaCallBackData(
             self.magnitude.get(),
