@@ -3,7 +3,10 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-from getsupernovae import getVisibility, sites
+# Import VisibilityWindow directly from snvisibility; keep `sites` from the
+# application module for site definitions.
+from snvisibility import VisibilityWindow
+from getsupernovae import sites
 
 
 def test_getVisibility_timestamps():
@@ -14,7 +17,8 @@ def test_getVisibility_timestamps():
     t1 = Time("2025-12-03T00:00:00")
     t2 = t1 + timedelta(hours=2)
 
-    vis = getVisibility(site, coord, t1, t2, minAlt=0)
+    vw = VisibilityWindow(minAlt=0)
+    vis = vw.getVisibility(site, coord, t1, t2)
     assert vis is not None
     assert vis.visible
     assert len(vis.azCords) > 0

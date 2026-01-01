@@ -30,6 +30,7 @@ import json
 # local modules extracted for clarity
 from snmodels import Supernova, AxCordInTime, Visibility
 from snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
+from snvisibility import VisibilityWindow
 
 
 def load_old_supernovae(path=None):
@@ -286,7 +287,8 @@ class RochesterSupernova:
             if from_date_obj is not None and parsed["date_obj"] <= from_date_obj:
                 continue
 
-            visibility = getVisibility(site, parsed["coord"], time1, time2, minAlt, maxAlt, minAz, maxAz)
+            visibility = VisibilityWindow(minAlt, maxAlt, minAz, maxAz).getVisibility(
+                site, parsed["coord"], time1, time2)
 
             if visibility.visible and parsed["name"] not in old:
                 data = Supernova(
@@ -505,29 +507,6 @@ def printSupernovaShort(data):
         data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
     )
     print("")
-
-
-def getVisibility(site, coord, time1, time2, minAlt=0, maxAlt=90, minAz=0, maxAz=360):
-
-    visible = False
-    loopTime = time1
-    azVisibles = []
-    while loopTime < time2:
-        altaz = coord.transform_to(AltAz(obstime=loopTime, location=site))
-        # record sample at the current loopTime, then advance the clock
-        if (
-            altaz.alt.dms.d >= minAlt
-            and altaz.alt.dms.d <= maxAlt
-            and altaz.az.dms.d >= minAz
-            and altaz.az.dms.d <= maxAz
-        ):
-            visible = True
-            azVisibles.append(AxCordInTime(loopTime, altaz))
-        loopTime = loopTime + timedelta(hours=0.5)
-
-    azVisibles.sort(key=lambda x: x.time)
-
-    return Visibility(visible, azVisibles)
 
 
 def createText(
