@@ -294,10 +294,10 @@ class RochesterSupernova:
 
             if visibility.visible and parsed["name"] not in old:
                 data = Supernova(
+                    parsed["name"],
                     parsed["date"],
                     str(parsed["mag"]),
                     parsed["host"],
-                    parsed["name"],
                     parsed["ra"],
                     parsed["decl"],
                     parsed["link"] or "",
