@@ -24,9 +24,12 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.colors import Color, black, blue, red
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from collections import OrderedDict
 import os
 import json
+import shutil
 # Ensure the module directory is on sys.path so local modules can be imported
 sys.path.insert(0, os.path.dirname(__file__))
 # local modules extracted for clarity
@@ -254,6 +257,29 @@ def bootstrap_config():
         if not os.path.exists(vis_path):
             with open(vis_path, "w", encoding="utf-8") as fh:
                 json.dump(default_visibility, fh, indent=2)
+    except Exception:
+        pass
+
+    # Ensure a bundled font exists in package fonts/ for deterministic embedding on export
+    try:
+        package_fonts = os.path.join(os.path.dirname(__file__), "fonts")
+        os.makedirs(package_fonts, exist_ok=True)
+        bundled = os.path.join(package_fonts, "DejaVuSans.ttf")
+        if not os.path.exists(bundled):
+            sys_candidates = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                "/Library/Fonts/Arial Unicode.ttf",
+                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            ]
+            for sc in sys_candidates:
+                try:
+                    if sc and os.path.exists(sc):
+                        shutil.copyfile(sc, bundled)
+                        break
+                except Exception:
+                    continue
     except Exception:
         pass
 
@@ -671,6 +697,34 @@ def createPdf(
 
     pdfName = observationDate + ".pdf"
 
+    # choose a font to embed for better mobile compatibility (Unicode, degree sign)
+    used_font = "Courier"
+    # prefer bundled font in package/fonts if available
+    bundled_font = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
+    font_candidates = [
+        bundled_font,
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "/Library/Fonts/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+    ]
+    for fp in font_candidates:
+        try:
+            if not fp:
+                continue
+            if os.path.exists(fp):
+                # register font under a consistent name
+                try:
+                    pdfmetrics.registerFont(TTFont("DejaVuSans", fp))
+                    used_font = "DejaVuSans"
+                    break
+                except Exception:
+                    # fallback to next candidate
+                    continue
+        except Exception:
+            continue
+
     fontsize = 10
     marginx = 1.0 * cm
     margintop = 1.0 * cm
@@ -679,18 +733,14 @@ def createPdf(
     topy = 29.7 * cm - margintop
 
     canvas = Canvas(pdfName, pagesize=A4)
-    canvas.setFont("Courier", fontsize)
+    canvas.setFont(used_font, fontsize)
     canvas.setFillColor(black)
 
     textObject = canvas.beginText()
     textObject.setTextOrigin(marginx, topy)
-    textObject.setFont("Courier", fontsize)
+    textObject.setFont(used_font, fontsize)
 
-    supernovasAdded = 0
-    totalSize = 0
-    createPage = True
-    estimatedSupernovasSize = 0
-    # print(f"previousPosy: {previousPosy}, posy: {posy}, totalsize: {totalSize}, estimated:{estimatedSupernovasSize}, supernovasAdded:{supernovasAdded}")
+    # We'll add lines one-by-one and start a new page when we run out of vertical space.
     textObject.textLine(
         f"Supernovae from: {fromDate} to {observationDate}. Magnitud <= { magnitude}"
     )
@@ -698,30 +748,43 @@ def createPdf(
         f"Site: lon: {site.lon.value:.2f} lat: {site.lat.value:.2f} height: {site.height.value:.2f}m . Min alt {minLatitude}º"
     )
     textObject.textLine("")
-    posy = textObject.getY()
-    previousPosy = posy
+
+    def supernova_lines(data):
+        lines = [
+            "-------------------------------------------------",
+            "Date:" + data.date + ", Mag:" + data.mag + ", T: " + data.type + " Name:" + data.name,
+            "  Const:" + data.constellation + ", Host:" + data.host,
+            "  RA:" + data.ra + ", DECL." + data.decl,
+            "",
+            "  Visible from :" + format_iso_datetime(data.visibility.azCords[0].time) + " to: " + format_iso_datetime(data.visibility.azCords[-1].time),
+            "  AzCoords az:" + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+            "  Last azCoords az:" + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+            "",
+            "  Discovered:" + data.firstObserved + " MAX Mag:" + data.maxMagnitude + " on: " + data.maxMagnitudeDate,
+            " " + data.link,
+            "",
+        ]
+        return lines
+
+    # bottom margin threshold: we consider a small padding equal to fontsize
+    bottom_threshold = marginbotton + fontsize
 
     for data in supernovas:
-        addSupernovaToPdf(textObject, data)
-        canvas.drawText(textObject)
+        for line in supernova_lines(data):
+            # if there's not enough space for another line, flush and start a new page
+            if textObject.getY() - fontsize < bottom_threshold:
+                canvas.drawText(textObject)
+                canvas.showPage()
+                textObject = canvas.beginText()
+                textObject.setTextOrigin(marginx, topy)
+                textObject.setFont(used_font, fontsize)
+                canvas.setFont(used_font, fontsize)
+                canvas.setFillColor(black)
 
-        previousPosy = posy
-        posy = textObject.getY()
-        supernovasAdded = supernovasAdded + 1
-        totalSize = totalSize + (previousPosy - posy)
-        estimatedSupernovasSize = totalSize / supernovasAdded
-        createPage = posy < (estimatedSupernovasSize + margintop)
-        # print(f"previousPosy: {previousPosy}, posy: {posy}, totalsize: {totalSize}, estimated:{estimatedSupernovasSize}, supernovasAdded:{supernovasAdded}")
+            textObject.textLine(line)
 
-        if createPage:
-            canvas.showPage()
-            textObject = canvas.beginText()
-            textObject.setTextOrigin(marginx, topy)
-            posy = textObject.getY()
-            textObject.setFont("Courier", fontsize)
-            canvas.setFont("Courier", fontsize)
-            canvas.setFillColor(black)
-
+    # draw remaining text
+    canvas.drawText(textObject)
     canvas.save()
 
 
