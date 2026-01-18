@@ -2,4 +2,5 @@ beautifulsoup4
 astropy
 reportlab
 lxml
+astroquery
 # Optional (usually pulled as dependencies): numpy

@@ -868,19 +868,44 @@ def createPdf(
                     pass
         except Exception:
             pass
-        # draw image if available
-        if img:
+        # draw images if available (visibility plot and optional sky chart)
+        try:
+            sky_img = plotter.make_sky_chart(data, fmt="png")
+        except Exception:
+            sky_img = None
+
+        if img or sky_img:
             try:
-                img_w = 8.0 * cm
+                usable_width = (21.0 * cm) - (2 * marginx)
+                gap = 0.5 * cm
+                # If both images present, allocate ~66% to visibility and rest to sky
+                if img and sky_img:
+                    img_w = usable_width * 0.66
+                    sky_w = usable_width - img_w - gap
+                else:
+                    # single image uses a comfortable width
+                    img_w = min(12.0 * cm, usable_width)
+                    sky_w = 0
+
                 img_h = img_height_pts
                 img_x = marginx
                 img_y = y_after_text - img_h - (0.2 * cm)
+
                 if img_y < marginbotton:
-                    # Not enough space; start new page and place image near top
+                    # Not enough space; start new page and place images near top
                     canvas.showPage()
                     img_y = topy - img_h - (0.2 * cm)
 
-                canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
+                if img:
+                    canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
+
+                if sky_img:
+                    sky_x = img_x + img_w + gap
+                    # ensure sky image fits in usable width
+                    if sky_x + sky_w > marginx + usable_width:
+                        # scale down sky_w to fit
+                        sky_w = marginx + usable_width - sky_x
+                    canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
             except Exception:
                 pass
 
