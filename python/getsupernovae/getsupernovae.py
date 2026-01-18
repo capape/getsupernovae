@@ -129,6 +129,67 @@ def load_sites(path=None):
     return result
 
 
+def load_visibility_windows(path=None):
+    """Load named visibility window configs from JSON.
+
+    Returns an OrderedDict of name -> dict with keys: minAlt, maxAlt, minAz, maxAz
+    Falls back to a built-in default if file missing or invalid.
+    """
+    defaults = OrderedDict(
+        [
+            (
+                "Default",
+                {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0},
+            ),
+        ]
+    )
+
+    candidates = []
+    if path:
+        candidates.append(path)
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        candidates.append(os.path.join(xdg, "getsupernovae", "visibility_windows.json"))
+    else:
+        candidates.append(os.path.expanduser("~/.config/getsupernovae/visibility_windows.json"))
+    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/visibility_windows.json"))
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        candidates.append(os.path.join(appdata, "getsupernovae", "visibility_windows.json"))
+    candidates.append(os.path.join(os.path.dirname(__file__), "visibility_windows.json"))
+
+    vis_conf = None
+    for p in candidates:
+        try:
+            if not p:
+                continue
+            with open(p, "r", encoding="utf-8") as fh:
+                vis_conf = json.load(fh)
+            break
+        except Exception:
+            vis_conf = None
+            continue
+
+    source = vis_conf if isinstance(vis_conf, dict) else defaults
+
+    result = OrderedDict()
+    for name, info in source.items():
+        try:
+            minAlt = float(info.get("minAlt", 0.0))
+            maxAlt = float(info.get("maxAlt", 90.0))
+            minAz = float(info.get("minAz", 0.0))
+            maxAz = float(info.get("maxAz", 360.0))
+            result[name] = {"minAlt": minAlt, "maxAlt": maxAlt, "minAz": minAz, "maxAz": maxAz}
+        except Exception:
+            continue
+
+    # ensure Default exists
+    if "Default" not in result:
+        result["Default"] = {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+
+    return result
+
+
 def get_user_config_dir() -> str:
     """Return the user config directory for getsupernovae depending on platform.
 
@@ -184,11 +245,24 @@ def bootstrap_config():
     except Exception:
         pass
 
+    # default visibility windows
+    default_visibility = {
+        "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+    }
+    vis_path = os.path.join(cfg, "visibility_windows.json")
+    try:
+        if not os.path.exists(vis_path):
+            with open(vis_path, "w", encoding="utf-8") as fh:
+                json.dump(default_visibility, fh, indent=2)
+    except Exception:
+        pass
+
 
 # Ensure user config exists (bootstrap) then load configuration files
 bootstrap_config()
 old = load_old_supernovae()
 sites = load_sites()
+visibility_windows = load_visibility_windows()
 
 class SupernovaCallBackData:
     def __init__(
@@ -200,6 +274,7 @@ class SupernovaCallBackData:
         daysToSearch,
         site,
         minLatitude,
+        visibilityWindowName=None,
     ):
 
         self.magnitude = magnitude
@@ -212,6 +287,7 @@ class SupernovaCallBackData:
         self.observationStart = Time(observationDate + "T" + observationTime + "Z")
         self.fromDateTime = self.observationStart - timedelta(days=int(daysToSearch))
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
+        self.visibilityWindowName = visibilityWindowName
 
 
 # `Supernova`, `AxCordInTime`, and `Visibility` moved to `snmodels.py`.
@@ -224,6 +300,31 @@ class RochesterSupernova:
         self, e: SupernovaCallBackData, dataRows: ResultSet[Any]
     ):
 
+        # Determine visibility window values: prefer named window if provided
+        try:
+            if getattr(e, "visibilityWindowName", None):
+                cfg = visibility_windows.get(e.visibilityWindowName)
+                if cfg is not None:
+                    minAlt = float(cfg.get("minAlt", 0.0))
+                    maxAlt = float(cfg.get("maxAlt", 90.0))
+                    minAz = float(cfg.get("minAz", 0.0))
+                    maxAz = float(cfg.get("maxAz", 360.0))
+                else:
+                    minAlt = float(e.minLatitude)
+                    maxAlt = 90.0
+                    minAz = 0.0
+                    maxAz = 360.0
+            else:
+                minAlt = float(e.minLatitude)
+                maxAlt = 90.0
+                minAz = 0.0
+                maxAz = 360.0
+        except Exception:
+            minAlt = float(e.minLatitude)
+            maxAlt = 90.0
+            minAz = 0.0
+            maxAz = 360.0
+
         supernovas = self.selectSupernovas(
             dataRows,
             e.magnitude,
@@ -232,7 +333,10 @@ class RochesterSupernova:
             int(e.observationHours),
             e.fromDate,
             e.site,
-            float(e.minLatitude),
+            minAlt,
+            maxAlt,
+            minAz,
+            maxAz,
         )
 
         supernovas.sort(key=lambda x: x.visibility.azCords[-1].time)
@@ -430,6 +534,7 @@ class SearchFilters:
         observationHours: int,
         site: str,
         minLatitude: float,
+        visibilityWindowName: str = None,
     ):
         self.magnitude = magnitude
         self.daysToSearch = daysToSearch
@@ -438,6 +543,7 @@ class SearchFilters:
         self.observationHours = observationHours
         self.site = site
         self.minLatitude = minLatitude
+        self.visibilityWindowName = visibilityWindowName
 
 
 def addSupernovaToPdf(textObject, data):
@@ -634,6 +740,7 @@ class SupernovasApp(tk.Tk):
             self.daysToSearch.get(),
             sites[self.site.get()],
             self.minLatitud.get(),
+            getattr(self, "visibilityWindow", None) and self.visibilityWindow.get(),
         )
 
         return callbackData
@@ -793,7 +900,8 @@ class SupernovasApp(tk.Tk):
             self.end_progress_bar()
 
     def start_progress_bar(self):
-        self.progressBar.grid(column=0, row=9, columnspan=2)
+        # place progress bar below the Search button (row 10)
+        self.progressBar.grid(column=0, row=10, columnspan=2)
         self.progressBar.start()
 
     def end_progress_bar(self):
@@ -1309,6 +1417,251 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 pass
 
+    def callbackAddVisibilityWindow(self):
+        """Open a dialog to add/edit named visibility windows persisted to visibility_windows.json"""
+        try:
+            cfgdir = get_user_config_dir()
+            os.makedirs(cfgdir, exist_ok=True)
+            path = os.path.join(cfgdir, "visibility_windows.json")
+        except Exception:
+            path = os.path.join(os.path.dirname(__file__), "visibility_windows.json")
+
+        # Load existing visibility windows
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                current = json.load(fh)
+                if not isinstance(current, dict):
+                    current = {k: v for k, v in visibility_windows.items()}
+        except Exception:
+            current = {k: v for k, v in visibility_windows.items()}
+
+        editor = tk.Toplevel(self)
+        editor.title("Edit visibility windows")
+        editor.geometry("900x420")
+        editor.minsize(600, 360)
+
+        editor.grid_rowconfigure(0, weight=1)
+        editor.grid_columnconfigure(0, weight=3)
+        editor.grid_columnconfigure(1, weight=1)
+
+        # normalize helper
+        def _normalize(v):
+            try:
+                return {
+                    "minAlt": float(v.get("minAlt", 0.0)),
+                    "maxAlt": float(v.get("maxAlt", 90.0)),
+                    "minAz": float(v.get("minAz", 0.0)),
+                    "maxAz": float(v.get("maxAz", 360.0)),
+                }
+            except Exception:
+                return {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+
+        try:
+            current = {k: _normalize(v) for k, v in current.items()}
+        except Exception:
+            current = {}
+
+        # left: preview tree
+        frame_left = ttk.Frame(editor)
+        frame_left.grid(column=0, row=0, sticky="nsew", padx=8, pady=8)
+        frame_left.grid_rowconfigure(0, weight=1)
+        frame_left.grid_columnconfigure(0, weight=1)
+
+        columns = ("name", "minAlt", "maxAlt", "minAz", "maxAz")
+        try:
+            style = ttk.Style()
+            style.configure("VisTreeview.Treeview", rowheight=26)
+            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", style="VisTreeview.Treeview", height=12)
+        except Exception:
+            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", height=12)
+        for col in columns:
+            tree.heading(col, text=col.capitalize())
+            tree.column(col, width=100, anchor=tk.CENTER)
+
+        def populate_tree():
+            tree.delete(*tree.get_children())
+            for nm, info in sorted(current.items(), key=lambda kv: kv[0].lower()):
+                try:
+                    ma = float(info.get("minAlt", 0.0))
+                    xa = float(info.get("maxAlt", 90.0))
+                    mz = float(info.get("minAz", 0.0))
+                    xz = float(info.get("maxAz", 360.0))
+                    tree.insert("", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}"))
+                except Exception:
+                    tree.insert("", "end", values=(nm, "", "", "", ""))
+
+        vsb = ttk.Scrollbar(frame_left, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        tree.grid(column=0, row=0, sticky="nsew")
+        vsb.grid(column=1, row=0, sticky="ns")
+
+        # right: editor form
+        frame_right = ttk.Frame(editor)
+        frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
+
+        ttk.Label(frame_right, text="Name:").grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        name_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Min Alt (deg):").grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        minalt_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=minalt_var, width=20).grid(column=1, row=1, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Max Alt (deg):").grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        maxalt_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=maxalt_var, width=20).grid(column=1, row=2, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Min Az (deg):").grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        minaz_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=minaz_var, width=20).grid(column=1, row=3, padx=5, pady=5)
+
+        ttk.Label(frame_right, text="Max Az (deg):").grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+        maxaz_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=maxaz_var, width=20).grid(column=1, row=4, padx=5, pady=5)
+
+        btn_frame = ttk.Frame(editor)
+        btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
+
+        selected_name = {"value": None}
+
+        def on_select(ev=None):
+            sel = tree.selection()
+            if not sel:
+                selected_name["value"] = None
+                return
+            vals = tree.item(sel[0], "values")
+            if not vals:
+                selected_name["value"] = None
+                return
+            nm, mina, maxa, minz, maxz = vals
+            selected_name["value"] = nm
+            name_var.set(nm)
+            minalt_var.set(str(mina))
+            maxalt_var.set(str(maxa))
+            minaz_var.set(str(minz))
+            maxaz_var.set(str(maxz))
+
+        def persist_current():
+            normalized = {k: {"minAlt": float(v.get("minAlt", 0.0)), "maxAlt": float(v.get("maxAlt", 90.0)), "minAz": float(v.get("minAz", 0.0)), "maxAz": float(v.get("maxAz", 360.0))} for k, v in current.items()}
+            try:
+                cfg_dir = get_user_config_dir()
+                os.makedirs(cfg_dir, exist_ok=True)
+                user_path = os.path.join(cfg_dir, "visibility_windows.json")
+                with open(user_path, "w", encoding="utf-8") as fh:
+                    json.dump(normalized, fh, indent=2)
+            except Exception:
+                with open(path, "w", encoding="utf-8") as fh:
+                    json.dump(normalized, fh, indent=2)
+
+        def on_save():
+            nm = name_var.get().strip()
+            if not nm:
+                messagebox.showerror("Error", "Name is required", parent=editor)
+                return
+            try:
+                mina = float(minalt_var.get())
+                maxa = float(maxalt_var.get())
+                minz = float(minaz_var.get())
+                maxz = float(maxaz_var.get())
+            except Exception as e:
+                messagebox.showerror("Error", f"Invalid numeric input: {e}", parent=editor)
+                return
+
+            old = selected_name["value"]
+            if nm in current and old is not None and nm != old:
+                if not messagebox.askyesno("Overwrite", f"Window '{nm}' already exists. Overwrite?", parent=editor):
+                    return
+
+            if old and old != nm and old in current:
+                try:
+                    del current[old]
+                except Exception:
+                    pass
+
+            current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+            try:
+                persist_current()
+                global visibility_windows
+                visibility_windows = load_visibility_windows()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save visibility windows: {e}", parent=editor)
+                return
+
+            populate_tree()
+            try:
+                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+                self.visibilityWindow.set(nm)
+            except Exception:
+                pass
+
+        def on_add():
+            nm = name_var.get().strip()
+            if not nm:
+                messagebox.showerror("Invalid input", "Name is required.", parent=editor)
+                return
+            try:
+                mina = float(minalt_var.get())
+                maxa = float(maxalt_var.get())
+                minz = float(minaz_var.get())
+                maxz = float(maxaz_var.get())
+            except Exception:
+                messagebox.showerror("Invalid input", "Numeric fields must be valid numbers.", parent=editor)
+                return
+            if nm in current:
+                messagebox.showerror("Invalid input", "A window with that name already exists.", parent=editor)
+                return
+            current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+            try:
+                persist_current()
+                global visibility_windows
+                visibility_windows = load_visibility_windows()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to add window: {e}", parent=editor)
+                return
+            populate_tree()
+            try:
+                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+                self.visibilityWindow.set(nm)
+            except Exception:
+                pass
+
+        def on_delete():
+            nm = selected_name["value"]
+            if not nm:
+                return
+            if not messagebox.askyesno("Delete", f"Delete visibility window '{nm}'?", parent=editor):
+                return
+            try:
+                if nm in current:
+                    del current[nm]
+                persist_current()
+                global visibility_windows
+                visibility_windows = load_visibility_windows()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to delete window: {e}", parent=editor)
+                return
+            populate_tree()
+            try:
+                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+            except Exception:
+                pass
+
+        def on_close():
+            editor.destroy()
+
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        save_btn = ttk.Button(btn_frame, text="Save", command=on_save)
+        save_btn.grid(column=0, row=0, sticky="w", padx=6)
+        add_btn = ttk.Button(btn_frame, text="Add", command=on_add)
+        add_btn.grid(column=1, row=0, padx=6)
+        delete_btn = ttk.Button(btn_frame, text="Delete", command=on_delete)
+        delete_btn.grid(column=2, row=0, padx=6)
+        close_btn = ttk.Button(btn_frame, text="Close", command=on_close)
+        close_btn.grid(column=3, row=0, sticky="e", padx=6)
+
+        populate_tree()
+
         def on_add():
             # Add a new site. Require all fields filled and name uniqueness (case-insensitive).
             nm = name_var.get().strip()
@@ -1445,6 +1798,10 @@ class SupernovasApp(tk.Tk):
         self.site = tk.StringVar()
         self.site.trace_add(["write", "unset"], self.callbackClearResults)
 
+        # Selected named visibility window (optional)
+        self.visibilityWindow = tk.StringVar()
+        self.visibilityWindow.trace_add(["write", "unset"], self.callbackClearResults)
+
         self.results = tk.StringVar()
         self.results.trace_add(["write", "unset"], self.callbackClearResults)
         
@@ -1452,7 +1809,7 @@ class SupernovasApp(tk.Tk):
         self.title("Find latest supernovae")
 
         window_width = 1400
-        window_height = 600
+        window_height = 1200
 
         # get the screen dimension
         screen_width = self.winfo_screenwidth()
@@ -1464,6 +1821,11 @@ class SupernovasApp(tk.Tk):
 
         # set the position of the window to the center of the screen
         self.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
+        # enforce a minimum size so the dialog cannot be shrunk below layout assumptions
+        try:
+            self.minsize(window_width, window_height)
+        except Exception:
+            pass
 
         self.magnitude.set(filters.magnitude)
         self.daysToSearch.set(filters.daysToSearch)
@@ -1472,6 +1834,22 @@ class SupernovasApp(tk.Tk):
         self.observationDuration.set(filters.observationHours)
         self.minLatitud.set(filters.minLatitude)
         self.site.set(filters.site)
+        # set visibility window (use provided filter or fallback to Default)
+        try:
+            if getattr(filters, "visibilityWindowName", None):
+                self.visibilityWindow.set(filters.visibilityWindowName)
+            else:
+                # choose first available key or Default
+                keys = list(visibility_windows.keys())
+                if "Default" in visibility_windows:
+                    self.visibilityWindow.set("Default")
+                elif keys:
+                    self.visibilityWindow.set(keys[0])
+        except Exception:
+            try:
+                self.visibilityWindow.set("Default")
+            except Exception:
+                pass
         self.results.set("")
 
         # Labels and entries: create widgets first, then grid them.
@@ -1516,10 +1894,25 @@ class SupernovasApp(tk.Tk):
         self.addSiteButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddSite())
         self.addSiteButton.grid(column=2, row=6, padx=(2, 10), pady=5)
 
+        # Visibility window selector
+        self.labelVisibility = ttk.Label(self, text="Visibility window:")
+        # place directly below the Site selector (row 7)
+        self.labelVisibility.grid(column=0, row=7, padx=5, pady=5, sticky=tk.E)
+        visValues = sorted(list(visibility_windows.keys()))
+        try:
+            self.cbVisibility = ttk.Combobox(self, values=visValues, textvariable=self.visibilityWindow)
+        except Exception:
+            self.cbVisibility = ttk.Combobox(self, values=visValues)
+        self.cbVisibility.grid(column=1, row=7, padx=5, pady=5)
+
+        self.addVisibilityButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddVisibilityWindow())
+        self.addVisibilityButton.grid(column=2, row=7, padx=(2, 10), pady=5)
+
         self.labelResults = ttk.Label(self, text="Results: ")
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
-        self.textResults = tk.Text(self, width = 70, height = 10)
-        self.textResults.grid(column = 3, row=1, rowspan=7)        
+        # increase results textbox height to match larger main window
+        self.textResults = tk.Text(self, width = 70, height = 25)
+        self.textResults.grid(column = 3, row=1, rowspan=9)        
         self.textResults['state']='normal'
         # Make results column expandable so we can align buttons nicely
         try:
@@ -1529,7 +1922,7 @@ class SupernovasApp(tk.Tk):
 
         # Toolbar frame to hold action buttons for the Results pane
         toolbar = ttk.Frame(self)
-        toolbar.grid(column=3, row=8, columnspan=2, padx=5, pady=5, sticky="ew")
+        toolbar.grid(column=3, row=10, columnspan=2, padx=5, pady=5, sticky="ew")
         # allow the left cell to expand so the right button aligns to the window edge
         try:
             toolbar.grid_columnconfigure(0, weight=1)
@@ -1565,24 +1958,24 @@ class SupernovasApp(tk.Tk):
             text="PDF",
             command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
         )
-        self.pdfButton.grid(column=0, row=7, sticky=tk.E)
+        self.pdfButton.grid(column=0, row=8, sticky=tk.E)
 
         self.txtButton = ttk.Button(
             self,
             text="TXT",
             command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
         )
-        self.txtButton.grid(column=1, row=7, sticky=tk.W)
+        self.txtButton.grid(column=1, row=8, sticky=tk.W)
 
         self.searchButton = ttk.Button(
             self,
             text="Refresh Search",
             command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
         )
-        self.searchButton.grid(column=1, row=8, sticky=tk.W)
+        self.searchButton.grid(column=1, row=9, sticky=tk.W)
 
         self.exitButton = ttk.Button(self, text="Exit", command=lambda: self.quit())
-        self.exitButton.grid(column=1, row=11, padx=5, pady=5, sticky=tk.E)
+        self.exitButton.grid(column=1, row=12, padx=5, pady=5, sticky=tk.E)
 
         # legacy placement removed; button moved next to the Results controls
 
