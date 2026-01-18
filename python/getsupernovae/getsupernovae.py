@@ -29,13 +29,18 @@ from reportlab.pdfbase.ttfonts import TTFont
 from collections import OrderedDict
 import os
 import json
-import shutil
+import io
+from reportlab.lib.utils import ImageReader
+
 # Ensure the module directory is on sys.path so local modules can be imported
 sys.path.insert(0, os.path.dirname(__file__))
 # local modules extracted for clarity
 from snmodels import Supernova, AxCordInTime, Visibility
 from snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
 from snvisibility import VisibilityWindow
+
+# import the external plotter helper
+from plotutils import VisibilityPlotter
 
 
 def load_old_supernovae(path=None):
@@ -739,6 +744,7 @@ def createPdf(
     textObject = canvas.beginText()
     textObject.setTextOrigin(marginx, topy)
     textObject.setFont(used_font, fontsize)
+    textObject.setLeading(fontsize)
 
     # We'll add lines one-by-one and start a new page when we run out of vertical space.
     textObject.textLine(
@@ -761,27 +767,130 @@ def createPdf(
             "  Last azCoords az:" + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
             "",
             "  Discovered:" + data.firstObserved + " MAX Mag:" + data.maxMagnitude + " on: " + data.maxMagnitudeDate,
-            " " + data.link,
+            # reserve a blank line where the clickable link will be placed (overlayed),
+            # so vertical spacing remains unchanged but the URL text isn't duplicated
+            "",
             "",
         ]
         return lines
+
+    # use a plotter instance to render visibility images
+    plotter = VisibilityPlotter()
 
     # bottom margin threshold: we consider a small padding equal to fontsize
     bottom_threshold = marginbotton + fontsize
 
     for data in supernovas:
-        for line in supernova_lines(data):
-            # if there's not enough space for another line, flush and start a new page
+        lines = supernova_lines(data)
+        # prepare image and calculate required vertical space
+        img = plotter.make_image(data, "png", True, site)
+        img_height_pts = (6 * cm) if img else 0
+        # estimate lines height
+        lines_height = len(lines) * fontsize
+        required_space = lines_height + img_height_pts + fontsize  # small padding
+
+        # if there's not enough space for the block, start a new page first
+        if textObject.getY() - required_space < bottom_threshold:
+            canvas.drawText(textObject)
+            canvas.showPage()
+            textObject = canvas.beginText()
+            textObject.setTextOrigin(marginx, topy)
+            textObject.setFont(used_font, fontsize)
+            textObject.setLeading(fontsize)
+            canvas.setFont(used_font, fontsize)
+            canvas.setFillColor(black)
+
+        # record origin Y for this block so we can compute exact positions
+        origin_y = textObject.getY()
+
+        # write lines
+        for line in lines:
+            # ensure individual line fits
             if textObject.getY() - fontsize < bottom_threshold:
                 canvas.drawText(textObject)
                 canvas.showPage()
                 textObject = canvas.beginText()
                 textObject.setTextOrigin(marginx, topy)
                 textObject.setFont(used_font, fontsize)
+                textObject.setLeading(fontsize)
                 canvas.setFont(used_font, fontsize)
                 canvas.setFillColor(black)
 
             textObject.textLine(line)
+
+        # flush text and draw image just below the last text baseline
+        y_after_text = textObject.getY()
+        canvas.drawText(textObject)
+
+        # If the supernova has a link, draw it as blue clickable text overlay.
+        # We reserved a blank placeholder line in `lines` above to keep spacing.
+        try:
+            link = getattr(data, "link", None) or ""
+            if link:
+                # Find the discovered line and place the link immediately below it.
+                discovered_index = None
+                for idx, txt in enumerate(lines):
+                    if isinstance(txt, str) and txt.strip().startswith("Discovered:") or txt.strip().startswith("Discovered:"):
+                        discovered_index = idx
+                        break
+
+                if discovered_index is None:
+                    # fallback to placeholder position (second-to-last)
+                    discovered_index = len(lines) - 3
+
+                # link baseline: one line below discovered
+                link_y = origin_y - ((discovered_index + 1) * fontsize)
+                canvas.setFillColor(blue)
+                canvas.setFont(used_font, fontsize)
+                canvas.drawString(marginx, link_y, link)
+                w = pdfmetrics.stringWidth(link, used_font, fontsize)
+                canvas.linkURL(link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0)
+                canvas.setFillColor(black)
+        except Exception:
+            pass
+        # Add a second link to WIS-TNS (https://www.wis-tns.org/object/{name}) just below
+        try:
+            name = getattr(data, "name", None)
+            if name:
+                try:
+                    from urllib.parse import quote
+
+                    tnser = f"https://www.wis-tns.org/object/{quote(name)}"
+                    # place it one line below the first link baseline
+                    second_y = link_y - fontsize if 'link_y' in locals() else origin_y - ((len(lines) - 2) * fontsize)
+                    canvas.setFillColor(blue)
+                    canvas.setFont(used_font, fontsize)
+                    canvas.drawString(marginx, second_y, tnser)
+                    w2 = pdfmetrics.stringWidth(tnser, used_font, fontsize)
+                    canvas.linkURL(tnser, (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2), relative=0)
+                    canvas.setFillColor(black)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # draw image if available
+        if img:
+            try:
+                img_w = 8.0 * cm
+                img_h = img_height_pts
+                img_x = marginx
+                img_y = y_after_text - img_h - (0.2 * cm)
+                if img_y < marginbotton:
+                    # Not enough space; start new page and place image near top
+                    canvas.showPage()
+                    img_y = topy - img_h - (0.2 * cm)
+
+                canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
+            except Exception:
+                pass
+
+        # resume text object at current top for next supernova
+        textObject = canvas.beginText()
+        textObject.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
+        textObject.setFont(used_font, fontsize)
+        textObject.setLeading(fontsize)
+        canvas.setFont(used_font, fontsize)
+        canvas.setFillColor(black)
 
     # draw remaining text
     canvas.drawText(textObject)
