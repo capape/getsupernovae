@@ -649,13 +649,13 @@ def printSupernovaShort(data):
 
 
 def createText(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude
+    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
 ):
 
     header = f"""Supernovae from: {fromDate} to {observationDate}. Magnitud <= {magnitude}"""
-    siteInfo = textSite(site, minLatitude)
+    siteInfo = textSite(site, minLatitude, visibilityWindowName)
     print(header)
-    print(siteInfo)        
+    print(siteInfo)
 
     for data in supernovas:
         print(textSupernova(data))
@@ -665,7 +665,22 @@ def createText(
     #    printSupernovaShort(data)
 
 
-def textSite(site, minLatitude):
+def textSite(site, minLatitude, visibilityWindowName=None):
+    try:
+        if visibilityWindowName and visibilityWindowName in visibility_windows:
+            cfg = visibility_windows.get(visibilityWindowName, {})
+            return "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º".format(
+                lon=site.lon.value,
+                lat=site.lat.value,
+                height=site.height.value,
+                minAlt=float(cfg.get("minAlt", 0.0)),
+                maxAlt=float(cfg.get("maxAlt", 90.0)),
+                minAz=float(cfg.get("minAz", 0.0)),
+                maxAz=float(cfg.get("maxAz", 360.0)),
+            )
+    except Exception:
+        pass
+
     return "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Min alt {minAlt}º".format(
             lon=site.lon.value,
             lat=site.lat.value,
@@ -675,11 +690,11 @@ def textSite(site, minLatitude):
 
 
 def createTextAsString(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude
+    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
 ):
 
     header = f"""Supernovae from: {fromDate} to {observationDate}. Magnitud <= {magnitude}"""
-    siteInfo = textSite(site, minLatitude)
+    siteInfo = textSite(site, minLatitude, visibilityWindowName)
     
     fulltext = f"""{header}
 {siteInfo}
@@ -697,7 +712,7 @@ def createTextAsString(
 # format_iso_datetime, _parse_row_safe)
 
 def createPdf(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude
+    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
 ):
 
     pdfName = observationDate + ".pdf"
@@ -750,19 +765,29 @@ def createPdf(
     textObject.textLine(
         f"Supernovae from: {fromDate} to {observationDate}. Magnitud <= { magnitude}"
     )
-    textObject.textLine(
-        f"Site: lon: {site.lon.value:.2f} lat: {site.lat.value:.2f} height: {site.height.value:.2f}m . Min alt {minLatitude}º"
-    )
+    # use textSite which may include numeric visibility window values; place
+    # the site summary on one line and the window values on the following line
+    site_info = textSite(site, minLatitude, visibilityWindowName)
+    try:
+        if ". " in site_info:
+            part0, part1 = site_info.split(". ", 1)
+            textObject.textLine(part0.strip() + ".")
+            textObject.textLine(part1.strip())
+        else:
+            textObject.textLine(site_info)
+    except Exception:
+        # fallback: write whole string as a single line if splitting fails
+        textObject.textLine(site_info)
     textObject.textLine("")
 
     def supernova_lines(data):
         lines = [
-            "-------------------------------------------------",
+            "",
             "Date:" + data.date + ", Mag:" + data.mag + ", T: " + data.type + " Name:" + data.name,
             "  Const:" + data.constellation + ", Host:" + data.host,
             "  RA:" + data.ra + ", DECL." + data.decl,
             "",
-            "  Visible from :" + format_iso_datetime(data.visibility.azCords[0].time) + " to: " + format_iso_datetime(data.visibility.azCords[-1].time),
+            "  Visible from:" + format_iso_datetime(data.visibility.azCords[0].time) + " to: " + format_iso_datetime(data.visibility.azCords[-1].time),
             "  AzCoords az:" + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
             "  Last azCoords az:" + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
             "",
@@ -802,6 +827,24 @@ def createPdf(
 
         # record origin Y for this block so we can compute exact positions
         origin_y = textObject.getY()
+
+        # draw a light-gray background covering the first four lines across
+        # the usable page width (minus margins) so those lines appear
+        # highlighted. Do this before writing the text so the text draws
+        # on top of the rectangle.
+        try:
+            highlight_lines = 4
+            pad = max(2, fontsize * 0.25)
+            usable_width = (21.0 * cm) - (2 * marginx)
+            rect_top = origin_y + pad
+            rect_bottom = origin_y - (highlight_lines * fontsize) - pad
+            rect_height = rect_top - rect_bottom
+            canvas.saveState()
+            canvas.setFillColor(Color(0.95, 0.95, 0.95))
+            canvas.rect(marginx, rect_bottom, usable_width, rect_height, fill=1, stroke=0)
+            canvas.restoreState()
+        except Exception:
+            pass
 
         # write lines
         for line in lines:
@@ -927,6 +970,114 @@ class SupernovasApp(tk.Tk):
     #
     # Create object with filters to search
     #    
+    def apply_theme(self):
+        """Apply light/dark theme to ttk widgets and some native widgets."""
+        try:
+            style = ttk.Style()
+            try:
+                style.theme_use("clam")
+            except Exception:
+                pass
+        except Exception:
+            style = None
+
+        dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
+        if dark:
+            bg = "#2e2e2e"
+            fg = "#eaeaea"
+            entry_bg = "#3a3a3a"
+            btn_bg = "#444444"
+            tree_bg = "#2b2b2b"
+        else:
+            # Explicitly set light-mode colors so previously-applied dark
+            # styling is cleared when toggling off.
+            bg = "#9f9f9f"
+            fg = "#000000"
+            entry_bg = "#eeeeee"
+            btn_bg = "#9f9f9f"
+            tree_bg = "#9f9f9f"
+
+        try:
+            if style is not None:
+                style.configure("TLabel", background=bg, foreground=fg)
+                style.configure("TButton", background=btn_bg, foreground=fg)
+                style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
+                style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
+                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg)
+                style.configure("TFrame", background=bg)
+                style.configure("TCheckbutton", background=bg, foreground=fg)
+                # selection highlight for treeview — choose a subtle color per theme
+                try:
+                    sel_color = '#5a5a5a' if dark else '#cde'
+                    style.map('Treeview', background=[('selected', sel_color)])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        try:
+            if bg:
+                self.configure(bg=bg)
+        except Exception:
+            pass
+
+        # configure native Text widget colors
+        try:
+            self.textResults.config(bg=entry_bg, fg=fg, insertbackground=fg)
+        except Exception:
+            pass
+
+        # Update some known frames/widgets that are not styled by ttk
+        try:
+            for child in self.winfo_children():
+                try:
+                    child.configure(background=bg)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def _update_visibility_ui(self):
+        """Enable/disable minLatitude entry depending on visibility window selection
+
+        If a named visibility window is selected (present in `visibility_windows`),
+        disable the `minLatitude` entry and show its numeric values in
+        `visibilityValuesLabel`. If no valid window is selected, enable the
+        `minLatitude` entry and clear the label.
+        """
+        try:
+            sel = (getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or ""
+        except Exception:
+            sel = ""
+
+        try:
+            if sel and sel in visibility_windows:
+                cfg = visibility_windows.get(sel, {})
+                minAlt = cfg.get("minAlt", 0.0)
+                maxAlt = cfg.get("maxAlt", 90.0)
+                minAz = cfg.get("minAz", 0.0)
+                maxAz = cfg.get("maxAz", 360.0)
+                txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
+                try:
+                    self.visibilityValuesLabel.config(text=txt)
+                except Exception:
+                    pass
+                try:
+                    self.entryLatitud.config(state="disabled")
+                except Exception:
+                    pass
+            else:
+                try:
+                    self.visibilityValuesLabel.config(text="")
+                except Exception:
+                    pass
+                try:
+                    self.entryLatitud.config(state="normal")
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     def getDataToSearch(self):
         
         callbackData = SupernovaCallBackData(
@@ -963,9 +1114,9 @@ class SupernovasApp(tk.Tk):
                 e.observationDate,
                 e.magnitude,
                 e.site,
-                float(e.minLatitude))
+                float(e.minLatitude),
+                getattr(e, 'visibilityWindowName', None))
             self.set_results_text(datatxt)
-
             createPdf(
                 self.supernovasFound,
                 e.fromDate,
@@ -973,6 +1124,7 @@ class SupernovasApp(tk.Tk):
                 e.magnitude,
                 e.site,
                 float(e.minLatitude),
+                getattr(e, 'visibilityWindowName', None),
             )
 
     #    
@@ -987,7 +1139,8 @@ class SupernovasApp(tk.Tk):
                 e.observationDate,
                 e.magnitude,
                 e.site,
-                float(e.minLatitude))
+                float(e.minLatitude),
+                getattr(e, 'visibilityWindowName', None))
             self.set_results_text(datatxt)
             createText(
                 self.supernovasFound,
@@ -996,6 +1149,7 @@ class SupernovasApp(tk.Tk):
                 e.magnitude,
                 e.site,
                 float(e.minLatitude),
+                getattr(e, 'visibilityWindowName', None),
             )
     #    
     #  Refresh button callback
@@ -1786,7 +1940,7 @@ class SupernovasApp(tk.Tk):
 
             populate_tree()
             try:
-                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
                 self.visibilityWindow.set(nm)
             except Exception:
                 pass
@@ -1817,7 +1971,7 @@ class SupernovasApp(tk.Tk):
                 return
             populate_tree()
             try:
-                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
                 self.visibilityWindow.set(nm)
             except Exception:
                 pass
@@ -1839,7 +1993,7 @@ class SupernovasApp(tk.Tk):
                 return
             populate_tree()
             try:
-                self.cbVisibility["values"] = sorted(list(visibility_windows.keys()))
+                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
             except Exception:
                 pass
 
@@ -2001,6 +2155,9 @@ class SupernovasApp(tk.Tk):
 
         self.results = tk.StringVar()
         self.results.trace_add(["write", "unset"], self.callbackClearResults)
+        # Dark mode enabled by default
+        self.dark_mode = tk.BooleanVar(value=True)
+        self.dark_mode.trace_add(["write", "unset"], lambda *a: None)
         
 
         self.title("Find latest supernovae")
@@ -2075,35 +2232,49 @@ class SupernovasApp(tk.Tk):
         self.entryDuration = ttk.Entry(self, textvariable=self.observationDuration)
         self.entryDuration.grid(column=1, row=4, padx=5, pady=5)
 
-        self.labelLatitud = ttk.Label(self, text="Min latitude: ")
-        self.labelLatitud.grid(column=0, row=5, padx=5, pady=5, sticky=tk.E)
-        self.entryLatitud = ttk.Entry(self, textvariable=self.minLatitud)
-        self.entryLatitud.grid(column=1, row=5, padx=5, pady=5)
-
         self.labelSite = ttk.Label(self, text="Site: ")
-        self.labelSite.grid(column=0, row=6, padx=5, pady=5, sticky=tk.E)
+        self.labelSite.grid(column=0, row=5, padx=5, pady=5, sticky=tk.E)
 
         siteValues = sorted(list(sites.keys()))
         self.cbSite = ttk.Combobox(self, values=siteValues, textvariable=self.site)
-        self.cbSite.grid(column=1, row=6, padx=5, pady=5)
+        self.cbSite.grid(column=1, row=5, padx=5, pady=5)
 
         # Add Site button next to combobox (pencil icon)
         self.addSiteButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddSite())
-        self.addSiteButton.grid(column=2, row=6, padx=(2, 10), pady=5)
+        self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5)
 
         # Visibility window selector
         self.labelVisibility = ttk.Label(self, text="Visibility window:")
-        # place directly below the Site selector (row 7)
-        self.labelVisibility.grid(column=0, row=7, padx=5, pady=5, sticky=tk.E)
-        visValues = sorted(list(visibility_windows.keys()))
+        # place directly below the Site selector (row 6)
+        self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.E)
+        # include an empty selection so minLatitude can be used instead
+        visValues = [""] + sorted(list(visibility_windows.keys()))
         try:
             self.cbVisibility = ttk.Combobox(self, values=visValues, textvariable=self.visibilityWindow)
         except Exception:
             self.cbVisibility = ttk.Combobox(self, values=visValues)
-        self.cbVisibility.grid(column=1, row=7, padx=5, pady=5)
+        self.cbVisibility.grid(column=1, row=6, padx=5, pady=5)
 
         self.addVisibilityButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddVisibilityWindow())
-        self.addVisibilityButton.grid(column=2, row=7, padx=(2, 10), pady=5)
+        self.addVisibilityButton.grid(column=2, row=6, padx=(2, 10), pady=5)
+
+        # Label to display selected visibility window numeric values (shown below dropdown)
+        self.visibilityValuesLabel = ttk.Label(self, text="", justify=tk.LEFT)
+        self.visibilityValuesLabel.grid(column=0, row=7, padx=5,  columnspan=3, pady=(0, 6), sticky=tk.W)
+
+        # update UI when visibility selection changes
+        try:
+            self.cbVisibility.bind('<<ComboboxSelected>>', lambda ev: self._update_visibility_ui())
+        except Exception:
+            try:
+                self.visibilityWindow.trace_add('write', lambda *a: self._update_visibility_ui())
+            except Exception:
+                pass
+
+        self.labelLatitud = ttk.Label(self, text="Min latitude: ")
+        self.labelLatitud.grid(column=0, row=8, padx=5, pady=5, sticky=tk.E)
+        self.entryLatitud = ttk.Entry(self, textvariable=self.minLatitud)
+        self.entryLatitud.grid(column=1, row=8, padx=5, pady=5)
 
         self.labelResults = ttk.Label(self, text="Results: ")
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
@@ -2123,6 +2294,13 @@ class SupernovasApp(tk.Tk):
         # allow the left cell to expand so the right button aligns to the window edge
         try:
             toolbar.grid_columnconfigure(0, weight=1)
+        except Exception:
+            pass
+
+        # Dark mode toggle (default ON)
+        try:
+            self.darkToggle = ttk.Checkbutton(toolbar, text="Dark mode", variable=self.dark_mode, command=self.apply_theme)
+            self.darkToggle.grid(column=2, row=0, sticky=tk.E, padx=6)
         except Exception:
             pass
 
@@ -2155,29 +2333,38 @@ class SupernovasApp(tk.Tk):
             text="PDF",
             command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
         )
-        self.pdfButton.grid(column=0, row=8, sticky=tk.E)
+        self.pdfButton.grid(column=0, row=9, sticky=tk.E)
 
         self.txtButton = ttk.Button(
             self,
             text="TXT",
             command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
         )
-        self.txtButton.grid(column=1, row=8, sticky=tk.W)
+        self.txtButton.grid(column=1, row=9, sticky=tk.W)
 
         self.searchButton = ttk.Button(
             self,
             text="Refresh Search",
             command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
         )
-        self.searchButton.grid(column=1, row=9, sticky=tk.W)
+        self.searchButton.grid(column=1, row=10, sticky=tk.W)
 
         self.exitButton = ttk.Button(self, text="Exit", command=lambda: self.quit())
-        self.exitButton.grid(column=1, row=12, padx=5, pady=5, sticky=tk.E)
+        self.exitButton.grid(column=1, row=13, padx=5, pady=5, sticky=tk.E)
 
         # legacy placement removed; button moved next to the Results controls
 
         self.progressBar = ttk.Progressbar(self, mode='indeterminate', length = 400 );
-       
+        try:
+            # apply theme after widgets are created
+            self.apply_theme()
+        except Exception:
+            pass
+        try:
+            # ensure visibility UI reflects current selection at startup
+            self._update_visibility_ui()
+        except Exception:
+            pass
 
 
 def representsInt(s):

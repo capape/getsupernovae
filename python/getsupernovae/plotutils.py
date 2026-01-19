@@ -13,7 +13,12 @@ except Exception:
 from datetime import datetime
 import astropy.units as u
 from astropy.time import Time
-from astropy.coordinates import get_moon, AltAz
+try:
+    from astropy.coordinates import get_moon, AltAz
+    HAS_GET_MOON = True
+except Exception:
+    from astropy.coordinates import AltAz
+    HAS_GET_MOON = False
 from snparser import format_iso_datetime
 from skychart import make_sky_chart as module_make_sky_chart
 
@@ -79,7 +84,7 @@ class VisibilityPlotter:
             ax.plot(times, alts, color="#1f77b4", linewidth=1, label=sn_label)
             ax.fill_between(times, alts, 0, color="#c6dbef", alpha=0.3)
             # optionally plot moon altitude for the same times if requested
-            if show_moon and location is not None:
+            if show_moon and location is not None and HAS_GET_MOON:
                 try:
                     t_astropy = Time(times)
                     moon_coord = get_moon(t_astropy)
