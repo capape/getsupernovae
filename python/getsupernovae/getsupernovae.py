@@ -13,6 +13,9 @@ from astropy.time import Time
 import ssl
 from datetime import datetime, date, timedelta
 import sys
+import os
+# ensure local modules in this directory can be imported when script run directly
+sys.path.insert(0, os.path.dirname(__file__))
 import astropy.units as u
 import re
 
@@ -20,276 +23,28 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.lib.colors import Color, black, blue, red
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from collections import OrderedDict
 import os
 import json
-import io
-from reportlab.lib.utils import ImageReader
 
-# Ensure the module directory is on sys.path so local modules can be imported
-sys.path.insert(0, os.path.dirname(__file__))
-# local modules extracted for clarity
+
 from snmodels import Supernova, AxCordInTime, Visibility
 from snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
 from snvisibility import VisibilityWindow
+from report_text import createText, createTextAsString, textSite, textSupernova, printSupernova, printSupernovaShort
+from report_pdf import createPdf, addSupernovaToPdf
+from snconfig import (
+    load_old_supernovae,
+    load_sites,
+    load_visibility_windows,
+    bootstrap_config,
+    get_user_config_dir,
+)
+
 
 # import the external plotter helper
 from plotutils import VisibilityPlotter
 
-
-def load_old_supernovae(path=None):
-    """Load old supernova names from a file (one per line). If the file
-    is missing, returns an empty list."""
-    # Try a set of candidate config locations (XDG, macOS, Windows, package dir)
-    candidates = []
-    if path:
-        candidates.append(path)
-    # XDG config
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "old_supernovae.txt"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/old_supernovae.txt"))
-    # macOS
-    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/old_supernovae.txt"))
-    # Windows APPDATA
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(os.path.join(appdata, "getsupernovae", "old_supernovae.txt"))
-    # finally, package-local file
-    candidates.append(os.path.join(os.path.dirname(__file__), "old_supernovae.txt"))
-
-    for p in candidates:
-        try:
-            if not p:
-                continue
-            with open(p, "r", encoding="utf-8") as fh:
-                lines = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
-            return lines
-        except Exception:
-            continue
-
-    return []
-
-
-def load_sites(path=None):
-    """Load observing sites from a JSON file and return an OrderedDict of
-    name -> EarthLocation. If the file is missing or invalid, fall back to
-    built-in defaults."""
-    defaults = OrderedDict(
-        [
-            ("Sabadell", {"lat": 41.55, "lon": 2.09, "height": 224}),
-            ("Sant Quirze", {"lat": 41.32, "lon": 2.04, "height": 196}),
-            ("Requena", {"lat": 39.45, "lon": -1.21, "height": 587}),
-        ]
-    )
-
-    # Candidate config locations in order: explicit path, XDG, macOS, Windows, package-local
-    candidates = []
-    if path:
-        candidates.append(path)
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "sites.json"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/sites.json"))
-    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/sites.json"))
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(os.path.join(appdata, "getsupernovae", "sites.json"))
-    candidates.append(os.path.join(os.path.dirname(__file__), "sites.json"))
-
-    sites_conf = None
-    for p in candidates:
-        try:
-            if not p:
-                continue
-            with open(p, "r", encoding="utf-8") as fh:
-                sites_conf = json.load(fh)
-            # stop at first successful load
-            break
-        except Exception:
-            sites_conf = None
-            continue
-
-    result = OrderedDict()
-    source = sites_conf if isinstance(sites_conf, dict) else defaults
-    for name, info in source.items():
-        try:
-            lat = info.get("lat")
-            lon = info.get("lon")
-            height = info.get("height", 0)
-            result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=height * u.m)
-        except Exception:
-            # skip invalid entries
-            continue
-
-    # Ensure there's at least a default site named 'Sabadell'
-    if "Sabadell" not in result:
-        result["Sabadell"] = EarthLocation(lat=41.55 * u.deg, lon=2.09 * u.deg, height=224 * u.m)
-
-    return result
-
-
-def load_visibility_windows(path=None):
-    """Load named visibility window configs from JSON.
-
-    Returns an OrderedDict of name -> dict with keys: minAlt, maxAlt, minAz, maxAz
-    Falls back to a built-in default if file missing or invalid.
-    """
-    defaults = OrderedDict(
-        [
-            (
-                "Default",
-                {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0},
-            ),
-        ]
-    )
-
-    candidates = []
-    if path:
-        candidates.append(path)
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "visibility_windows.json"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/visibility_windows.json"))
-    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/visibility_windows.json"))
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(os.path.join(appdata, "getsupernovae", "visibility_windows.json"))
-    candidates.append(os.path.join(os.path.dirname(__file__), "visibility_windows.json"))
-
-    vis_conf = None
-    for p in candidates:
-        try:
-            if not p:
-                continue
-            with open(p, "r", encoding="utf-8") as fh:
-                vis_conf = json.load(fh)
-            break
-        except Exception:
-            vis_conf = None
-            continue
-
-    source = vis_conf if isinstance(vis_conf, dict) else defaults
-
-    result = OrderedDict()
-    for name, info in source.items():
-        try:
-            minAlt = float(info.get("minAlt", 0.0))
-            maxAlt = float(info.get("maxAlt", 90.0))
-            minAz = float(info.get("minAz", 0.0))
-            maxAz = float(info.get("maxAz", 360.0))
-            result[name] = {"minAlt": minAlt, "maxAlt": maxAlt, "minAz": minAz, "maxAz": maxAz}
-        except Exception:
-            continue
-
-    # ensure Default exists
-    if "Default" not in result:
-        result["Default"] = {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
-
-    return result
-
-
-def get_user_config_dir() -> str:
-    """Return the user config directory for getsupernovae depending on platform.
-
-    Order: $XDG_CONFIG_HOME/getsupernovae, macOS ~/Library/Application Support/getsupernovae,
-    Windows %APPDATA%\\getsupernovae, fallback ~/.config/getsupernovae
-    """
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        return os.path.join(xdg, "getsupernovae")
-
-    if sys.platform == "darwin":
-        return os.path.expanduser("~/Library/Application Support/getsupernovae")
-
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        return os.path.join(appdata, "getsupernovae")
-
-    return os.path.expanduser("~/.config/getsupernovae")
-
-
-def bootstrap_config():
-    """Create user config dir and write default config files if missing."""
-    cfg = get_user_config_dir()
-    try:
-        os.makedirs(cfg, exist_ok=True)
-    except Exception:
-        return
-
-    sites_path = os.path.join(cfg, "sites.json")
-    old_path = os.path.join(cfg, "old_supernovae.txt")
-
-    # default sites
-    default_sites = {
-        "Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}
-    }
-
-    # default old list
-    default_old = [       
-    ]
-
-    try:
-        if not os.path.exists(sites_path):
-            with open(sites_path, "w", encoding="utf-8") as fh:
-                json.dump(default_sites, fh, indent=2)
-    except Exception:
-        pass
-
-    try:
-        if not os.path.exists(old_path):
-            with open(old_path, "w", encoding="utf-8") as fh:
-                for name in default_old:
-                    fh.write(name + "\n")
-    except Exception:
-        pass
-
-    # default visibility windows
-    default_visibility = {
-        "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
-    }
-    vis_path = os.path.join(cfg, "visibility_windows.json")
-    try:
-        if not os.path.exists(vis_path):
-            with open(vis_path, "w", encoding="utf-8") as fh:
-                json.dump(default_visibility, fh, indent=2)
-    except Exception:
-        pass
-
-    # Ensure a bundled font exists in package fonts/ for deterministic embedding on export
-    try:
-        package_fonts = os.path.join(os.path.dirname(__file__), "fonts")
-        os.makedirs(package_fonts, exist_ok=True)
-        bundled = os.path.join(package_fonts, "DejaVuSans.ttf")
-        if not os.path.exists(bundled):
-            sys_candidates = [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-                "/Library/Fonts/Arial Unicode.ttf",
-                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            ]
-            for sc in sys_candidates:
-                try:
-                    if sc and os.path.exists(sc):
-                        shutil.copyfile(sc, bundled)
-                        break
-                except Exception:
-                    continue
-    except Exception:
-        pass
-
-
-# Ensure user config exists (bootstrap) then load configuration files
 bootstrap_config()
 old = load_old_supernovae()
 sites = load_sites()
@@ -319,11 +74,6 @@ class SupernovaCallBackData:
         self.fromDateTime = self.observationStart - timedelta(days=int(daysToSearch))
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
         self.visibilityWindowName = visibilityWindowName
-
-
-# `Supernova`, `AxCordInTime`, and `Visibility` moved to `snmodels.py`.
-# See `snmodels.py` for the dataclass definitions used by the app.
-
 
 class RochesterSupernova:
 
@@ -466,63 +216,6 @@ class Visibility:
         self.visible = visible
         self.azCords = azCords
 
-
-def printSupernova(data):
-    print("-------------------------------------------------")
-    print(
-        "Date:", data.date, ", Mag:", data.mag, ", T: ", data.type, ", Name:", data.name
-    )
-    print("  Const:", data.constellation, ", Host:", data.host)
-    print("  RA:", data.ra, ", DECL.", data.decl)
-    print("")
-    print(
-        "  Visible from :",
-        format_iso_datetime(data.visibility.azCords[0].time),
-        "to:",
-        format_iso_datetime(data.visibility.azCords[-1].time),
-    )
-    print(
-        "  AzCoords az:",
-        data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-        ", lat:",
-        data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-    )
-    print(
-        "  Last azCoords az:",
-        data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
-        ", lat:",
-        data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
-    )
-    print("")
-    print(
-        "  Discovered:",
-        data.firstObserved,
-        ", MAX Mag:",
-        data.maxMagnitude,
-        "on: ",
-        data.maxMagnitudeDate,
-    )
-    print(" ", data.link)
-    print("")
-
-
-def textSupernova(data):
-    
-    return f"""
--------------------------------------------------
-Date: {data.date}, Mag: {data.mag}, , T: {data.type}, Name:{data.name}
-Const: {data.constellation}, Host:{data.host}
-RA:{data.ra}, DECL.{ data.decl}
-
-    Visible from :{format_iso_datetime(data.visibility.azCords[0].time)} to: {format_iso_datetime(data.visibility.azCords[-1].time)}
-    AzCoords az:{data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2)}, lat: {data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2)}
-    Last azCoords az:{data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2)}, lat: {data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2)}
-
-  Discovered: {data.firstObserved}, MAX Mag: {data.maxMagnitude} on: {data.maxMagnitudeDate}
-  {data.link}
-
-"""
-
 class AsyncRochesterDownload(Thread):
     def __init__(self, e: SupernovaCallBackData):
         super().__init__()
@@ -575,394 +268,6 @@ class SearchFilters:
         self.site = site
         self.minLatitude = minLatitude
         self.visibilityWindowName = visibilityWindowName
-
-
-def addSupernovaToPdf(textObject, data):
-
-    lines = [
-        "-------------------------------------------------",
-        "Date:"
-        + data.date
-        + ", Mag:"
-        + data.mag
-        + ", T: "
-        + data.type
-        + " Name:"
-        + data.name,
-        "  Const:" + data.constellation + ", Host:" + data.host,
-        "  RA:" + data.ra + ", DECL." + data.decl,
-        "",
-        "  Visible from :" + format_iso_datetime(data.visibility.azCords[0].time)
-        + " to: "
-        + format_iso_datetime(data.visibility.azCords[-1].time),
-        "  AzCoords az:"
-        + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2)
-        + ", lat:"
-        + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-        "  Last azCoords az:"
-        + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2)
-        + ", lat:"
-        + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
-        "",
-        "  Discovered:"
-        + data.firstObserved
-        + " MAX Mag:"
-        + data.maxMagnitude
-        + " on: "
-        + data.maxMagnitudeDate,
-        " " + data.link,
-        "",
-    ]
-
-    for line in lines:
-        textObject.textLine(line)
-
-    textObject.textLine("")
-
-
-def printSupernovaShort(data):
-    print("-------------------------------------------------")
-    print(
-        "Const:",
-        data.constellation,
-        "-",
-        data.host,
-        " S: ",
-        data.name,
-        ", M:",
-        data.mag,
-        ", T: ",
-        data.type,
-    )
-    print("D: ", data.date, " RA:", data.ra, ", DEC:", data.decl)
-    print(
-        "Visible from :",
-        format_iso_datetime(data.visibility.azCords[0].time),
-        "to:",
-        format_iso_datetime(data.visibility.azCords[-1].time),
-        "az:",
-        data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-        ", LAT:",
-        data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-    )
-    print("")
-
-
-def createText(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
-):
-
-    header = f"""Supernovae from: {fromDate} to {observationDate}. Magnitud <= {magnitude}"""
-    siteInfo = textSite(site, minLatitude, visibilityWindowName)
-    print(header)
-    print(siteInfo)
-
-    for data in supernovas:
-        print(textSupernova(data))
-
-
-    # for data in supernovas:
-    #    printSupernovaShort(data)
-
-
-def textSite(site, minLatitude, visibilityWindowName=None):
-    try:
-        if visibilityWindowName and visibilityWindowName in visibility_windows:
-            cfg = visibility_windows.get(visibilityWindowName, {})
-            return "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º".format(
-                lon=site.lon.value,
-                lat=site.lat.value,
-                height=site.height.value,
-                minAlt=float(cfg.get("minAlt", 0.0)),
-                maxAlt=float(cfg.get("maxAlt", 90.0)),
-                minAz=float(cfg.get("minAz", 0.0)),
-                maxAz=float(cfg.get("maxAz", 360.0)),
-            )
-    except Exception:
-        pass
-
-    return "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Min alt {minAlt}º".format(
-            lon=site.lon.value,
-            lat=site.lat.value,
-            height=site.height.value,
-            minAlt=minLatitude,
-        )
-
-
-def createTextAsString(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
-):
-
-    header = f"""Supernovae from: {fromDate} to {observationDate}. Magnitud <= {magnitude}"""
-    siteInfo = textSite(site, minLatitude, visibilityWindowName)
-    
-    fulltext = f"""{header}
-{siteInfo}
-
-"""
-
-    for data in supernovas:
-        fulltext += f"""
-        {textSupernova(data)}
-    """
-        
-    return fulltext
-
-# parsing helpers extracted to `snparser.py` (parse_magnitude, parse_date,
-# format_iso_datetime, _parse_row_safe)
-
-def createPdf(
-    supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None
-):
-
-    pdfName = observationDate + ".pdf"
-
-    # choose a font to embed for better mobile compatibility (Unicode, degree sign)
-    used_font = "Courier"
-    # prefer bundled font in package/fonts if available
-    bundled_font = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
-    font_candidates = [
-        bundled_font,
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-        "/Library/Fonts/Arial Unicode.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-    ]
-    for fp in font_candidates:
-        try:
-            if not fp:
-                continue
-            if os.path.exists(fp):
-                # register font under a consistent name
-                try:
-                    pdfmetrics.registerFont(TTFont("DejaVuSans", fp))
-                    used_font = "DejaVuSans"
-                    break
-                except Exception:
-                    # fallback to next candidate
-                    continue
-        except Exception:
-            continue
-
-    fontsize = 10
-    marginx = 1.0 * cm
-    margintop = 1.0 * cm
-    marginbotton = 1.0 * cm
-
-    topy = 29.7 * cm - margintop
-
-    canvas = Canvas(pdfName, pagesize=A4)
-    canvas.setFont(used_font, fontsize)
-    canvas.setFillColor(black)
-
-    textObject = canvas.beginText()
-    textObject.setTextOrigin(marginx, topy)
-    textObject.setFont(used_font, fontsize)
-    textObject.setLeading(fontsize)
-
-    # We'll add lines one-by-one and start a new page when we run out of vertical space.
-    textObject.textLine(
-        f"Supernovae from: {fromDate} to {observationDate}. Magnitud <= { magnitude}"
-    )
-    # use textSite which may include numeric visibility window values; place
-    # the site summary on one line and the window values on the following line
-    site_info = textSite(site, minLatitude, visibilityWindowName)
-    try:
-        if ". " in site_info:
-            part0, part1 = site_info.split(". ", 1)
-            textObject.textLine(part0.strip() + ".")
-            textObject.textLine(part1.strip())
-        else:
-            textObject.textLine(site_info)
-    except Exception:
-        # fallback: write whole string as a single line if splitting fails
-        textObject.textLine(site_info)
-    textObject.textLine("")
-
-    def supernova_lines(data):
-        lines = [
-            "",
-            "Date:" + data.date + ", Mag:" + data.mag + ", T: " + data.type + " Name:" + data.name,
-            "  Const:" + data.constellation + ", Host:" + data.host,
-            "  RA:" + data.ra + ", DECL." + data.decl,
-            "",
-            "  Visible from:" + format_iso_datetime(data.visibility.azCords[0].time) + " to: " + format_iso_datetime(data.visibility.azCords[-1].time),
-            "  AzCoords az:" + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-            "  Last azCoords az:" + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
-            "",
-            "  Discovered:" + data.firstObserved + " MAX Mag:" + data.maxMagnitude + " on: " + data.maxMagnitudeDate,
-            # reserve a blank line where the clickable link will be placed (overlayed),
-            # so vertical spacing remains unchanged but the URL text isn't duplicated
-            "",
-            "",
-        ]
-        return lines
-
-    # use a plotter instance to render visibility images
-    plotter = VisibilityPlotter()
-
-    # bottom margin threshold: we consider a small padding equal to fontsize
-    bottom_threshold = marginbotton + fontsize
-
-    for data in supernovas:
-        lines = supernova_lines(data)
-        # prepare image and calculate required vertical space
-        img = plotter.make_image(data, "png", True, site)
-        img_height_pts = (6 * cm) if img else 0
-        # estimate lines height
-        lines_height = len(lines) * fontsize
-        required_space = lines_height + img_height_pts + fontsize  # small padding
-
-        # if there's not enough space for the block, start a new page first
-        if textObject.getY() - required_space < bottom_threshold:
-            canvas.drawText(textObject)
-            canvas.showPage()
-            textObject = canvas.beginText()
-            textObject.setTextOrigin(marginx, topy)
-            textObject.setFont(used_font, fontsize)
-            textObject.setLeading(fontsize)
-            canvas.setFont(used_font, fontsize)
-            canvas.setFillColor(black)
-
-        # record origin Y for this block so we can compute exact positions
-        origin_y = textObject.getY()
-
-        # draw a light-gray background covering the first four lines across
-        # the usable page width (minus margins) so those lines appear
-        # highlighted. Do this before writing the text so the text draws
-        # on top of the rectangle.
-        try:
-            highlight_lines = 4
-            pad = max(2, fontsize * 0.25)
-            usable_width = (21.0 * cm) - (2 * marginx)
-            rect_top = origin_y + pad
-            rect_bottom = origin_y - (highlight_lines * fontsize) - pad
-            rect_height = rect_top - rect_bottom
-            canvas.saveState()
-            canvas.setFillColor(Color(0.95, 0.95, 0.95))
-            canvas.rect(marginx, rect_bottom, usable_width, rect_height, fill=1, stroke=0)
-            canvas.restoreState()
-        except Exception:
-            pass
-
-        # write lines
-        for line in lines:
-            # ensure individual line fits
-            if textObject.getY() - fontsize < bottom_threshold:
-                canvas.drawText(textObject)
-                canvas.showPage()
-                textObject = canvas.beginText()
-                textObject.setTextOrigin(marginx, topy)
-                textObject.setFont(used_font, fontsize)
-                textObject.setLeading(fontsize)
-                canvas.setFont(used_font, fontsize)
-                canvas.setFillColor(black)
-
-            textObject.textLine(line)
-
-        # flush text and draw image just below the last text baseline
-        y_after_text = textObject.getY()
-        canvas.drawText(textObject)
-
-        # If the supernova has a link, draw it as blue clickable text overlay.
-        # We reserved a blank placeholder line in `lines` above to keep spacing.
-        try:
-            link = getattr(data, "link", None) or ""
-            if link:
-                # Find the discovered line and place the link immediately below it.
-                discovered_index = None
-                for idx, txt in enumerate(lines):
-                    if isinstance(txt, str) and txt.strip().startswith("Discovered:") or txt.strip().startswith("Discovered:"):
-                        discovered_index = idx
-                        break
-
-                if discovered_index is None:
-                    # fallback to placeholder position (second-to-last)
-                    discovered_index = len(lines) - 3
-
-                # link baseline: one line below discovered
-                link_y = origin_y - ((discovered_index + 1) * fontsize)
-                canvas.setFillColor(blue)
-                canvas.setFont(used_font, fontsize)
-                canvas.drawString(marginx, link_y, link)
-                w = pdfmetrics.stringWidth(link, used_font, fontsize)
-                canvas.linkURL(link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0)
-                canvas.setFillColor(black)
-        except Exception:
-            pass
-        # Add a second link to WIS-TNS (https://www.wis-tns.org/object/{name}) just below
-        try:
-            name = getattr(data, "name", None)
-            if name:
-                try:
-                    from urllib.parse import quote
-
-                    tnser = f"https://www.wis-tns.org/object/{quote(name)}"
-                    # place it one line below the first link baseline
-                    second_y = link_y - fontsize if 'link_y' in locals() else origin_y - ((len(lines) - 2) * fontsize)
-                    canvas.setFillColor(blue)
-                    canvas.setFont(used_font, fontsize)
-                    canvas.drawString(marginx, second_y, tnser)
-                    w2 = pdfmetrics.stringWidth(tnser, used_font, fontsize)
-                    canvas.linkURL(tnser, (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2), relative=0)
-                    canvas.setFillColor(black)
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        # draw images if available (visibility plot and optional sky chart)
-        try:
-            sky_img = plotter.make_sky_chart(data, fmt="png")
-        except Exception:
-            sky_img = None
-
-        if img or sky_img:
-            try:
-                usable_width = (21.0 * cm) - (2 * marginx)
-                gap = 0.5 * cm
-                # If both images present, allocate ~66% to visibility and rest to sky
-                if img and sky_img:
-                    img_w = usable_width * 0.66
-                    sky_w = usable_width - img_w - gap
-                else:
-                    # single image uses a comfortable width
-                    img_w = min(12.0 * cm, usable_width)
-                    sky_w = 0
-
-                img_h = img_height_pts
-                img_x = marginx
-                img_y = y_after_text - img_h - (0.2 * cm)
-
-                if img_y < marginbotton:
-                    # Not enough space; start new page and place images near top
-                    canvas.showPage()
-                    img_y = topy - img_h - (0.2 * cm)
-
-                if img:
-                    canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
-
-                if sky_img:
-                    sky_x = img_x + img_w + gap
-                    # ensure sky image fits in usable width
-                    if sky_x + sky_w > marginx + usable_width:
-                        # scale down sky_w to fit
-                        sky_w = marginx + usable_width - sky_x
-                    canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
-            except Exception:
-                pass
-
-        # resume text object at current top for next supernova
-        textObject = canvas.beginText()
-        textObject.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
-        textObject.setFont(used_font, fontsize)
-        textObject.setLeading(fontsize)
-        canvas.setFont(used_font, fontsize)
-        canvas.setFillColor(black)
-
-    # draw remaining text
-    canvas.drawText(textObject)
-    canvas.save()
 
 
 class SupernovasApp(tk.Tk):
@@ -1251,8 +556,9 @@ class SupernovasApp(tk.Tk):
             self.end_progress_bar()
 
     def start_progress_bar(self):
-        # place progress bar below the Search button (row 10)
-        self.progressBar.grid(column=0, row=10, columnspan=2)
+        # place progress bar under the Results textbox (results column)
+        # and above the toolbar so it remains visible and doesn't overlap
+        self.progressBar.grid(column=3, row=10, columnspan=2, sticky="ew")
         self.progressBar.start()
 
     def end_progress_bar(self):
@@ -2290,7 +1596,10 @@ class SupernovasApp(tk.Tk):
 
         # Toolbar frame to hold action buttons for the Results pane
         toolbar = ttk.Frame(self)
-        toolbar.grid(column=3, row=10, columnspan=2, padx=5, pady=5, sticky="ew")
+        # move the toolbar down one row so a persistent progress bar
+        # can be shown directly under the Results textbox and above
+        # the toolbar buttons without overlapping.
+        toolbar.grid(column=3, row=11, columnspan=2, padx=5, pady=5, sticky="ew")
         # allow the left cell to expand so the right button aligns to the window edge
         try:
             toolbar.grid_columnconfigure(0, weight=1)
@@ -2350,7 +1659,15 @@ class SupernovasApp(tk.Tk):
         self.searchButton.grid(column=1, row=10, sticky=tk.W)
 
         self.exitButton = ttk.Button(self, text="Exit", command=lambda: self.quit())
-        self.exitButton.grid(column=1, row=13, padx=5, pady=5, sticky=tk.E)
+        # ensure there is visible separation above the Exit button by
+        # reserving two empty grid rows (13 and 14) with a minimum size
+        try:
+            self.grid_rowconfigure(13, minsize=30)
+            self.grid_rowconfigure(14, minsize=30)
+        except Exception:
+            pass
+        # place Exit at the right-bottom of the window under the Results column
+        self.exitButton.grid(column=3, row=15, padx=5, pady=5, sticky=tk.E)
 
         # legacy placement removed; button moved next to the Results controls
 
