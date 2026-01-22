@@ -6,6 +6,7 @@ import astropy.units as u
 # import app helpers
 import getsupernovae as gs
 from snmodels import Supernova, AxCordInTime, Visibility
+from i18n import _
 
 # build visibility azCords: 10 time points over next 5 hours
 now = Time.now()
@@ -37,4 +38,4 @@ sn = Supernova(
 )
 
 outname = gs.createPdf([sn], fromDate="2025-01-01", observationDate="sample", magnitude="17", site=gs.sites.get("Sabadell"), minLatitude=25, visibilityWindowName=None)
-print("Created PDF: sample.pdf")
+print(_("Created PDF: {name}").format(name=outname))

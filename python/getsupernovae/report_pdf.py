@@ -14,41 +14,33 @@ import json
 
 
 from snconfig import load_visibility_windows as _load_visibility_windows
+import i18n
 
 
 def addSupernovaToPdf(textObject, data: Supernova):
     lines = [
-        "-------------------------------------------------",
-        "Date:"
-        + data.date
-        + ", Mag:"
-        + data.mag
-        + ", T: "
-        + data.type
-        + " Name:"
-        + data.name,
-        "  Const:" + data.constellation + ", Host:" + data.host,
-        "  RA:" + data.ra + ", DECL." + data.decl,
+        i18n.i18n._("-------------------------------------------------"),
+        i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(date=data.date, mag=data.mag, type=data.type, name=data.name),
+        i18n._("  Const: {constellation}, Host: {host}").format(constellation=data.constellation, host=data.host),
+        i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
         "",
-        "  Visible from :" + format_iso_datetime(data.visibility.azCords[0].time)
-        + " to: "
-        + format_iso_datetime(data.visibility.azCords[-1].time),
-        "  AzCoords az:"
-        + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2)
-        + ", lat:"
-        + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-        "  Last azCoords az:"
-        + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2)
-        + ", lat:"
-        + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+        i18n._("    Visible from :{visible_from} to: {visible_to}").format(
+            visible_from=format_iso_datetime(data.visibility.azCords[0].time),
+            visible_to=format_iso_datetime(data.visibility.azCords[-1].time),
+        ),
+        i18n._("    AzCoords az:{az0}, lat: {alt0}").format(
+            az0=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
+            alt0=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+        ),
+        i18n._("    Last azCoords az:{az1}, lat: {alt1}").format(
+            az1=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
+            alt1=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+        ),
         "",
-        "  Discovered:"
-        + data.firstObserved
-        + " MAX Mag:"
-        + data.maxMagnitude
-        + " on: "
-        + data.maxMagnitudeDate,
-        " " + data.link,
+        i18n._("  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}").format(
+            firstObserved=data.firstObserved, maxMagnitude=data.maxMagnitude, maxMagnitudeDate=data.maxMagnitudeDate
+        ),
+        " " + (getattr(data, "link", "") or ""),
         "",
     ]
 
@@ -57,6 +49,7 @@ def addSupernovaToPdf(textObject, data: Supernova):
 
 
 def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None):
+    import i18n as i18n_module
     # choose a font to embed for better mobile compatibility (Unicode, degree sign)
     used_font = "Courier"
     # prefer bundled font in package/fonts if available
@@ -105,19 +98,24 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
         txtobj.setLeading(leading)
         # full header (printed only on first page)
         if full:
-            txtobj.textLine(f"Supernovae from: {fromDate} to {observationDate}. Magnitud <= { magnitude}")
+            txtobj.textLine(i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(fromDate=fromDate, to=observationDate, magnitude=magnitude))
             # reuse local visibility windows loader for header/site summary
             vis = _load_visibility_windows()
-            site_info = f"Site: lon: {site.lon.value:.2f} lat: {site.lat.value:.2f} height: {site.height.value:.2f}m"
+            site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(lon=site.lon.value, lat=site.lat.value, height=site.height.value)
             if visibilityWindowName and visibilityWindowName in vis:
                 cfg = vis.get(visibilityWindowName, {})
-                site_info = site_info + f" . Window: minAlt {float(cfg.get('minAlt',0.0)):.1f}º maxAlt {float(cfg.get('maxAlt',90.0)):.1f}º minAz {float(cfg.get('minAz',0.0)):.1f}º maxAz {float(cfg.get('maxAz',360.0)):.1f}º"
+                site_info = site_info + i18n._(" . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º").format(
+                    minAlt=float(cfg.get("minAlt", 0.0)),
+                    maxAlt=float(cfg.get("maxAlt", 90.0)),
+                    minAz=float(cfg.get("minAz", 0.0)),
+                    maxAz=float(cfg.get("maxAz", 360.0)),
+                )
 
             # place site info on two lines if it contains window details
             if ". Window:" in site_info:
                 part0, part1 = site_info.split(". Window:", 1)
                 txtobj.textLine(part0.strip() + ".")
-                txtobj.textLine("Window: " + part1.strip())
+                txtobj.textLine(i18n._("Window: {rest}").format(rest=part1.strip()))
             else:
                 txtobj.textLine(site_info)
             txtobj.textLine("")
@@ -131,15 +129,15 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
     def supernova_lines(data):
         lines = [
             "",
-            "Date:" + data.date + ", Mag:" + data.mag + ", T: " + data.type + " Name:" + data.name,
-            "  Const:" + data.constellation + ", Host:" + data.host,
-            "  RA:" + data.ra + ", DECL." + data.decl,
+            i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(date=data.date, mag=data.mag, type=data.type, name=data.name),
+            i18n._("  Const: {const}, Host: {host}").format(const=data.constellation, host=data.host),
+            i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
             "",
-            "  Visible from :" + format_iso_datetime(data.visibility.azCords[0].time) + " to: " + format_iso_datetime(data.visibility.azCords[-1].time),
-            "  AzCoords az:" + data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-            "  Last azCoords az:" + data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2) + ", lat:" + data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+            i18n._("  Visible from : {from_} to: {to}").format(from_=format_iso_datetime(data.visibility.azCords[0].time), to=format_iso_datetime(data.visibility.azCords[-1].time)),
+            i18n._("  AzCoords az: {az}, lat: {lat}").format(az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2), lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2)),
+            i18n._("  Last azCoords az: {az}, lat: {lat}").format(az=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2), lat=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2)),
             "",
-            "  Discovered:" + data.firstObserved + " MAX Mag:" + data.maxMagnitude + " on: " + data.maxMagnitudeDate,
+            i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(first=data.firstObserved, max=data.maxMagnitude, on=data.maxMagnitudeDate),
             "",
             "",
         ]

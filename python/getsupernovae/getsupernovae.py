@@ -44,6 +44,7 @@ from snconfig import (
 
 # import the external plotter helper
 from plotutils import VisibilityPlotter
+from i18n import _, set_language, get_language
 
 bootstrap_config()
 old = load_old_supernovae()
@@ -219,6 +220,8 @@ class Visibility:
 class AsyncRochesterDownload(Thread):
     def __init__(self, e: SupernovaCallBackData):
         super().__init__()
+
+        # Don't reset language - respect the user's current language setting
         self.result = None
         self.error = None
         # url = 'https://www.physics.purdue.edu/brightsupernovae/snimages/sndate.html'
@@ -315,6 +318,20 @@ class SupernovasApp(tk.Tk):
                 try:
                     sel_color = '#5a5a5a' if dark else '#cde'
                     style.map('Treeview', background=[('selected', sel_color)])
+                except Exception:
+                    pass
+                try:
+                    # also set the main window background for non-ttk widgets
+                    try:
+                        self.configure(background=bg)
+                    except Exception:
+                        pass
+                    # text widget uses native tk control - set its bg/fg explicitly
+                    try:
+                        if hasattr(self, 'textResults') and self.textResults is not None:
+                            self.textResults.config(background=entry_bg, foreground=fg)
+                    except Exception:
+                        pass
                 except Exception:
                     pass
         except Exception:
@@ -649,7 +666,7 @@ class SupernovasApp(tk.Tk):
             sel = ""
 
         if not sel:
-            messagebox.showinfo("No selection", "No text selected in the Results pane.")
+            messagebox.showinfo(_("No selection"), _("No text selected in the Results pane."))
             return
 
         # extract SN-like token
@@ -676,7 +693,7 @@ class SupernovasApp(tk.Tk):
             existing = []
 
         if name in existing:
-            messagebox.showinfo("Already present", f"{name} is already ignored.")
+            messagebox.showinfo(_("Already present"), _("'{name}' is already ignored.").format(name=name))
             return
 
         existing.append(name)
@@ -692,7 +709,7 @@ class SupernovasApp(tk.Tk):
                 old = load_old_supernovae(path)
             except Exception:
                 pass
-            messagebox.showinfo("Added", f"Added {name} to ignored supernovae.")
+            messagebox.showinfo(_("Added"), _("Added '{name}' to ignored supernovae.").format(name=name))
             # Auto-reload results using cached rows when possible
             try:
                 self.refilter_from_cache("REFRESH")
@@ -704,7 +721,7 @@ class SupernovasApp(tk.Tk):
                 except Exception:
                     pass
         except Exception as ex:
-            messagebox.showerror("Save error", f"Failed to update ignore file: {ex}")
+            messagebox.showerror(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
 
     def callbackEditOldSupernovae(self):
         """Open a simple dialog to edit the user's `old_supernovae.txt` file.
@@ -729,7 +746,7 @@ class SupernovasApp(tk.Tk):
 
         # Create editor window
         editor = tk.Toplevel(self)
-        editor.title("Edit ignored/old supernovae")
+        editor.title(_("Edit ignored/old supernovae"))
         editor.geometry("600x400")
 
         txt = tk.Text(editor, wrap="none")
@@ -764,14 +781,14 @@ class SupernovasApp(tk.Tk):
                     except Exception:
                         pass
             except Exception as ex:
-                messagebox.showerror("Save error", f"Failed to save file: {ex}")
+                messagebox.showerror(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
 
         def do_close():
             editor.destroy()
 
-        save_btn = ttk.Button(editor, text="Save", command=do_save)
+        save_btn = ttk.Button(editor, text=_("Save"), command=do_save)
         save_btn.grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
-        close_btn = ttk.Button(editor, text="Close", command=do_close)
+        close_btn = ttk.Button(editor, text=_("Close"), command=do_close)
         close_btn.grid(column=1, row=1, sticky=tk.W, padx=5, pady=5)
         # allow the text widget and buttons to expand
         editor.grid_rowconfigure(0, weight=1)
@@ -801,7 +818,7 @@ class SupernovasApp(tk.Tk):
             current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in sites.items()}
 
         editor = tk.Toplevel(self)
-        editor.title("Add observing site")
+        editor.title(_("Add observing site"))
         # Make dialog larger so the preview table and controls are visible
         editor.geometry("1024x480")
         editor.minsize(700, 420)
@@ -964,19 +981,19 @@ class SupernovasApp(tk.Tk):
         frame_right = ttk.Frame(editor)
         frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
 
-        ttk.Label(frame_right, text="Site name:").grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Site name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
         name_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Latitude (deg):").grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Latitude (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
         lat_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=lat_var, width=20).grid(column=1, row=1, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Longitude (deg):").grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Longitude (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
         lon_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=lon_var, width=20).grid(column=1, row=2, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Height (m):").grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Height (m):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
         height_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=height_var, width=20).grid(column=1, row=3, padx=5, pady=5)
 
@@ -1006,9 +1023,9 @@ class SupernovasApp(tk.Tk):
 
         def validate_coords(lat: float, lon: float, height: float):
             if not (-90.0 <= lat <= 90.0):
-                raise ValueError("Latitude must be between -90 and 90 degrees")
+                raise ValueError(_("Latitude must be between -90 and 90 degrees"))
             if not (-180.0 <= lon <= 180.0):
-                raise ValueError("Longitude must be between -180 and 180 degrees")
+                raise ValueError(_("Longitude must be between -180 and 180 degrees"))
             # height can be negative for below-sea-level sites; no restriction
 
         def persist_current():
@@ -1028,7 +1045,7 @@ class SupernovasApp(tk.Tk):
         def on_save():
             nm = name_var.get().strip()
             if not nm:
-                messagebox.showerror("Error", "Site name is required", parent=editor)
+                messagebox.showerror(_("Error"), _("Site name is required"), parent=editor)
                 return
             try:
                 lat = float(lat_var.get())
@@ -1036,13 +1053,13 @@ class SupernovasApp(tk.Tk):
                 height = float(height_var.get()) if height_var.get().strip() != "" else 0.0
                 validate_coords(lat, lon, height)
             except ValueError as e:
-                messagebox.showerror("Error", f"Invalid input: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Invalid input: {e}").format(e=e), parent=editor)
                 return
 
             old = selected_name["value"]
             # if renaming to an existing site (different from old), ask confirmation
             if nm in current and old is not None and nm != old:
-                if not messagebox.askyesno("Overwrite", f"Site '{nm}' already exists. Overwrite?", parent=editor):
+                if not messagebox.askyesno(_("Overwrite"), _("Site '{nm}' already exists. Overwrite?").format(nm=nm), parent=editor):
                     return
 
             # if renaming, remove old key
@@ -1063,7 +1080,7 @@ class SupernovasApp(tk.Tk):
                     # fallback: if load_sites fails, keep current keys in combobox
                     pass
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to save site: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to save site: {e}").format(e=e), parent=editor)
                 return
 
             # refresh UI widgets and select the saved site
@@ -1093,7 +1110,7 @@ class SupernovasApp(tk.Tk):
             current = {k: v for k, v in visibility_windows.items()}
 
         editor = tk.Toplevel(self)
-        editor.title("Edit visibility windows")
+        editor.title(_("Edit visibility windows"))
         editor.geometry("900x420")
         editor.minsize(600, 360)
 
@@ -1156,23 +1173,23 @@ class SupernovasApp(tk.Tk):
         frame_right = ttk.Frame(editor)
         frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
 
-        ttk.Label(frame_right, text="Name:").grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
         name_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Min Alt (deg):").grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Min Alt (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
         minalt_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=minalt_var, width=20).grid(column=1, row=1, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Max Alt (deg):").grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Max Alt (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
         maxalt_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=maxalt_var, width=20).grid(column=1, row=2, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Min Az (deg):").grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Min Az (deg):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
         minaz_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=minaz_var, width=20).grid(column=1, row=3, padx=5, pady=5)
 
-        ttk.Label(frame_right, text="Max Az (deg):").grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Max Az (deg):")).grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
         maxaz_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=maxaz_var, width=20).grid(column=1, row=4, padx=5, pady=5)
 
@@ -1213,7 +1230,7 @@ class SupernovasApp(tk.Tk):
         def on_save():
             nm = name_var.get().strip()
             if not nm:
-                messagebox.showerror("Error", "Name is required", parent=editor)
+                messagebox.showerror(_("Error"), _("Name is required"), parent=editor)
                 return
             try:
                 mina = float(minalt_var.get())
@@ -1221,12 +1238,12 @@ class SupernovasApp(tk.Tk):
                 minz = float(minaz_var.get())
                 maxz = float(maxaz_var.get())
             except Exception as e:
-                messagebox.showerror("Error", f"Invalid numeric input: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Invalid numeric input: {e}").format(e=e), parent=editor)
                 return
 
             old = selected_name["value"]
             if nm in current and old is not None and nm != old:
-                if not messagebox.askyesno("Overwrite", f"Window '{nm}' already exists. Overwrite?", parent=editor):
+                if not messagebox.askyesno(_("Overwrite"), _("Window '{nm}' already exists. Overwrite?").format(nm=nm), parent=editor):
                     return
 
             if old and old != nm and old in current:
@@ -1241,7 +1258,7 @@ class SupernovasApp(tk.Tk):
                 global visibility_windows
                 visibility_windows = load_visibility_windows()
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to save visibility windows: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=editor)
                 return
 
             populate_tree()
@@ -1254,7 +1271,7 @@ class SupernovasApp(tk.Tk):
         def on_add():
             nm = name_var.get().strip()
             if not nm:
-                messagebox.showerror("Invalid input", "Name is required.", parent=editor)
+                messagebox.showerror(_("Invalid input"), _("Name is required."), parent=editor)
                 return
             try:
                 mina = float(minalt_var.get())
@@ -1262,10 +1279,10 @@ class SupernovasApp(tk.Tk):
                 minz = float(minaz_var.get())
                 maxz = float(maxaz_var.get())
             except Exception:
-                messagebox.showerror("Invalid input", "Numeric fields must be valid numbers.", parent=editor)
+                messagebox.showerror(_("Invalid input"), _("Numeric fields must be valid numbers."), parent=editor)
                 return
             if nm in current:
-                messagebox.showerror("Invalid input", "A window with that name already exists.", parent=editor)
+                messagebox.showerror(_("Invalid input"), _("A window with that name already exists."), parent=editor)
                 return
             current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
             try:
@@ -1273,7 +1290,7 @@ class SupernovasApp(tk.Tk):
                 global visibility_windows
                 visibility_windows = load_visibility_windows()
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to add window: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to add window: {e}").format(e=e), parent=editor)
                 return
             populate_tree()
             try:
@@ -1286,7 +1303,7 @@ class SupernovasApp(tk.Tk):
             nm = selected_name["value"]
             if not nm:
                 return
-            if not messagebox.askyesno("Delete", f"Delete visibility window '{nm}'?", parent=editor):
+            if not messagebox.askyesno(_("Delete"), _("Delete visibility window '{nm}'?").format(nm=nm), parent=editor):
                 return
             try:
                 if nm in current:
@@ -1295,7 +1312,7 @@ class SupernovasApp(tk.Tk):
                 global visibility_windows
                 visibility_windows = load_visibility_windows()
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to delete window: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to delete window: {e}").format(e=e), parent=editor)
                 return
             populate_tree()
             try:
@@ -1308,13 +1325,13 @@ class SupernovasApp(tk.Tk):
 
         tree.bind("<<TreeviewSelect>>", on_select)
 
-        save_btn = ttk.Button(btn_frame, text="Save", command=on_save)
+        save_btn = ttk.Button(btn_frame, text=_("Save"), command=on_save)
         save_btn.grid(column=0, row=0, sticky="w", padx=6)
-        add_btn = ttk.Button(btn_frame, text="Add", command=on_add)
+        add_btn = ttk.Button(btn_frame, text=_("Add"), command=on_add)
         add_btn.grid(column=1, row=0, padx=6)
-        delete_btn = ttk.Button(btn_frame, text="Delete", command=on_delete)
+        delete_btn = ttk.Button(btn_frame, text=_("Delete"), command=on_delete)
         delete_btn.grid(column=2, row=0, padx=6)
-        close_btn = ttk.Button(btn_frame, text="Close", command=on_close)
+        close_btn = ttk.Button(btn_frame, text=_("Close"), command=on_close)
         close_btn.grid(column=3, row=0, sticky="e", padx=6)
 
         populate_tree()
@@ -1327,7 +1344,7 @@ class SupernovasApp(tk.Tk):
             height_s = height_var.get().strip()
 
             if not nm or not lat_s or not lon_s or not height_s:
-                messagebox.showerror("Invalid input", "All fields (name, latitude, longitude, height) are required to add a site.", parent=editor)
+                messagebox.showerror(_("Invalid input"), _("All fields (name, latitude, longitude, height) are required to add a site."), parent=editor)
                 return
 
             try:
@@ -1335,13 +1352,13 @@ class SupernovasApp(tk.Tk):
                 lon = float(lon_s)
                 height = float(height_s)
             except ValueError:
-                messagebox.showerror("Invalid values", "Latitude, longitude and height must be numeric", parent=editor)
+                messagebox.showerror(_("Invalid values"), _("Latitude, longitude and height must be numeric"), parent=editor)
                 return
 
             # case-insensitive duplicate check
             for existing in current.keys():
                 if existing.lower() == nm.lower():
-                    messagebox.showerror("Duplicate site", f"A site named '{existing}' already exists (case-insensitive).", parent=editor)
+                    messagebox.showerror(_("Duplicate site"), _("A site named '{existing}' already exists (case-insensitive).").format(existing=existing), parent=editor)
                     return
 
             # all good: add and persist
@@ -1354,7 +1371,7 @@ class SupernovasApp(tk.Tk):
                 except Exception:
                     pass
             except Exception as ex:
-                messagebox.showerror("Save error", f"Failed to save site: {ex}", parent=editor)
+                messagebox.showerror(_("Save error"), _("Failed to save site: {ex}").format(ex=ex), parent=editor)
                 return
 
             populate_tree()
@@ -1368,14 +1385,14 @@ class SupernovasApp(tk.Tk):
         def on_delete():
             nm = selected_name["value"]
             if not nm:
-                messagebox.showerror("Error", "Select a site to delete", parent=editor)
+                messagebox.showerror(_("Error"), _("Select a site to delete"), parent=editor)
                 return
-            if not messagebox.askyesno("Confirm Delete", f"Delete site '{nm}'?", parent=editor):
+            if not messagebox.askyesno(_("Confirm Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=editor):
                 return
             try:
                 del current[nm]
             except Exception:
-                messagebox.showerror("Error", f"Failed to delete site '{nm}'", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to delete site '{nm}'").format(nm=nm), parent=editor)
                 return
             try:
                 persist_current()
@@ -1385,7 +1402,7 @@ class SupernovasApp(tk.Tk):
                 except Exception:
                     pass
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to save sites after delete: {e}", parent=editor)
+                messagebox.showerror(_("Error"), _("Failed to save sites after delete: {e}").format(e=e), parent=editor)
                 return
             populate_tree()
             try:
@@ -1412,13 +1429,13 @@ class SupernovasApp(tk.Tk):
         # wire selection
         tree.bind("<<TreeviewSelect>>", on_select)
 
-        save_btn = ttk.Button(btn_frame, text="Save", command=on_save)
+        save_btn = ttk.Button(btn_frame, text=_("Save"), command=on_save)
         save_btn.grid(column=0, row=0, sticky="w", padx=6)
-        add_btn = ttk.Button(btn_frame, text="Add", command=on_add)
+        add_btn = ttk.Button(btn_frame, text=_("Add"), command=on_add)
         add_btn.grid(column=1, row=0, padx=6)
-        delete_btn = ttk.Button(btn_frame, text="Delete", command=on_delete)
+        delete_btn = ttk.Button(btn_frame, text=_("Delete"), command=on_delete)
         delete_btn.grid(column=2, row=0, padx=6)
-        close_btn = ttk.Button(btn_frame, text="Close", command=on_close)
+        close_btn = ttk.Button(btn_frame, text=_("Close"), command=on_close)
         close_btn.grid(column=3, row=0, sticky="e", padx=6)
 
         # initial population of preview
@@ -1433,6 +1450,21 @@ class SupernovasApp(tk.Tk):
 
         self.supernovasFound = None
         self.refreshing = False
+        
+        # Create dark_mode variable first (required by apply_theme)
+        self.dark_mode = tk.BooleanVar(value=True)
+        
+        # Force default UI language to English on startup
+        try:
+            set_language("en")
+        except Exception:
+            pass
+        
+        # Apply theme early so initial widgets pick up dark mode colors
+        try:
+            self.apply_theme()
+        except Exception:
+            pass
         
         self.magnitude = tk.StringVar()
         self.magnitude.trace_add(["write", "unset"], self.callbackClearResults)
@@ -1461,12 +1493,11 @@ class SupernovasApp(tk.Tk):
 
         self.results = tk.StringVar()
         self.results.trace_add(["write", "unset"], self.callbackClearResults)
-        # Dark mode enabled by default
-        self.dark_mode = tk.BooleanVar(value=True)
+        # Dark mode variable already created earlier (before apply_theme call)
         self.dark_mode.trace_add(["write", "unset"], lambda *a: None)
         
 
-        self.title("Find latest supernovae")
+        self.title(_("Find latest supernovae"))
 
         window_width = 1400
         window_height = 1200
@@ -1513,32 +1544,32 @@ class SupernovasApp(tk.Tk):
         self.results.set("")
 
         # Labels and entries: create widgets first, then grid them.
-        self.labelMagnitude = ttk.Label(self, text="Max. magnitude: ")
+        self.labelMagnitude = ttk.Label(self, text=_("Max. magnitude: "))
         self.labelMagnitude.grid(column=0, row=0, padx=5, pady=5, sticky=tk.E)
         self.entryMagnitude = ttk.Entry(self, textvariable=self.magnitude)
         self.entryMagnitude.grid(column=1, row=0, padx=5, pady=5)
 
-        self.labelDaysToSearch = ttk.Label(self, text="Find the n previous days: ")
+        self.labelDaysToSearch = ttk.Label(self, text=_("Find the n previous days: "))
         self.labelDaysToSearch.grid(column=0, row=1, padx=5, pady=5, sticky=tk.E)
         self.entryDaysToSearch = ttk.Entry(self, textvariable=self.daysToSearch)
         self.entryDaysToSearch.grid(column=1, row=1, padx=5, pady=5)
 
-        self.labelObservationDate = ttk.Label(self, text="Observation date: ")
+        self.labelObservationDate = ttk.Label(self, text=_("Observation date: "))
         self.labelObservationDate.grid(column=0, row=2, padx=5, pady=5, sticky=tk.E)
         self.entryObservationDate = ttk.Entry(self, textvariable=self.observationDate)
         self.entryObservationDate.grid(column=1, row=2, padx=5, pady=5)
 
-        self.labelInitTime = ttk.Label(self, text="Init time in observation date: ")
+        self.labelInitTime = ttk.Label(self, text=_("Init time in observation date: "))
         self.labelInitTime.grid(column=0, row=3, padx=5, pady=5, sticky=tk.E)
         self.entryInitTime = ttk.Entry(self, textvariable=self.observationTime)
         self.entryInitTime.grid(column=1, row=3, padx=5, pady=5)
 
-        self.labelDuration = ttk.Label(self, text="Hours of observation: ")
+        self.labelDuration = ttk.Label(self, text=_("Hours of observation: "))
         self.labelDuration.grid(column=0, row=4, padx=5, pady=5, sticky=tk.E)
         self.entryDuration = ttk.Entry(self, textvariable=self.observationDuration)
         self.entryDuration.grid(column=1, row=4, padx=5, pady=5)
 
-        self.labelSite = ttk.Label(self, text="Site: ")
+        self.labelSite = ttk.Label(self, text=_("Site: "))
         self.labelSite.grid(column=0, row=5, padx=5, pady=5, sticky=tk.E)
 
         siteValues = sorted(list(sites.keys()))
@@ -1549,8 +1580,47 @@ class SupernovasApp(tk.Tk):
         self.addSiteButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddSite())
         self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5)
 
+        # Language selector (calls set_language and updates widgets)
+        try:
+            locales_dir = os.path.join(os.path.dirname(__file__), "locales")
+            lang_values = [d for d in os.listdir(locales_dir) if os.path.isdir(os.path.join(locales_dir, d))]
+        except Exception:
+            lang_values = ["en", "es"]
+
+        # Ensure English is always available as a default
+        if "en" not in lang_values:
+            lang_values.append("en")
+
+        # Determine current language, default to English
+        current_lang = get_language()
+        if not current_lang:
+            try:
+                set_language("en")
+                current_lang = "en"
+            except Exception:
+                current_lang = "en"
+
+        self.labelLang = ttk.Label(self, text=_("Language:"))
+        self.labelLang.grid(column=3, row=5, padx=5, pady=5, sticky=tk.E)
+        self.langVar = tk.StringVar(value=current_lang)
+        try:
+            self.cbLang = ttk.Combobox(self, values=sorted(lang_values), textvariable=self.langVar, width=6)
+        except Exception:
+            self.cbLang = ttk.Combobox(self, values=sorted(lang_values))
+        self.cbLang.grid(column=4, row=5, padx=5, pady=5)
+        try:
+            # ensure combobox shows the current language on startup
+            self.cbLang.set(self.langVar.get() or "en")
+        except Exception:
+            pass
+        try:
+            self.cbLang.bind('<<ComboboxSelected>>', lambda ev: self._on_language_change())
+        except Exception:
+            pass
+
+
         # Visibility window selector
-        self.labelVisibility = ttk.Label(self, text="Visibility window:")
+        self.labelVisibility = ttk.Label(self, text=_("Visibility window:"))
         # place directly below the Site selector (row 6)
         self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.E)
         # include an empty selection so minLatitude can be used instead
@@ -1577,12 +1647,12 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 pass
 
-        self.labelLatitud = ttk.Label(self, text="Min latitude: ")
+        self.labelLatitud = ttk.Label(self, text=_("Min latitude: "))
         self.labelLatitud.grid(column=0, row=8, padx=5, pady=5, sticky=tk.E)
         self.entryLatitud = ttk.Entry(self, textvariable=self.minLatitud)
         self.entryLatitud.grid(column=1, row=8, padx=5, pady=5)
 
-        self.labelResults = ttk.Label(self, text="Results: ")
+        self.labelResults = ttk.Label(self, text=_("Results: "))
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
         # increase results textbox height to match larger main window
         self.textResults = tk.Text(self, width = 70, height = 25)
@@ -1608,20 +1678,20 @@ class SupernovasApp(tk.Tk):
 
         # Dark mode toggle (default ON)
         try:
-            self.darkToggle = ttk.Checkbutton(toolbar, text="Dark mode", variable=self.dark_mode, command=self.apply_theme)
+            self.darkToggle = ttk.Checkbutton(toolbar, text=_("Dark mode"), variable=self.dark_mode, command=self.apply_theme)
             self.darkToggle.grid(column=2, row=0, sticky=tk.E, padx=6)
         except Exception:
             pass
 
         # Button to ignore a selected SN from the Results pane (left)
         self.ignoreSelectedButton = ttk.Button(
-            toolbar, text="Ignore selected SN", command=lambda: self.callbackIgnoreSelectedSN()
+            toolbar, text=_("Ignore selected SN"), command=lambda: self.callbackIgnoreSelectedSN()
         )
         self.ignoreSelectedButton.grid(column=0, row=0, sticky=tk.W)
 
         # Button to edit ignored SN (right-aligned in the toolbar)
         self.editOldButton = ttk.Button(
-            toolbar, text="Edit Ignored SN", command=lambda: self.callbackEditOldSupernovae()
+            toolbar, text=_("Edit Ignored SN"), command=lambda: self.callbackEditOldSupernovae()
         )
         self.editOldButton.grid(column=1, row=0, sticky=tk.E)
         
@@ -1639,26 +1709,26 @@ class SupernovasApp(tk.Tk):
 
         self.pdfButton = ttk.Button(
             self,
-            text="PDF",
+            text=_("PDF"),
             command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
         )
         self.pdfButton.grid(column=0, row=9, sticky=tk.E)
 
         self.txtButton = ttk.Button(
             self,
-            text="TXT",
+            text=_("TXT"),
             command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
         )
         self.txtButton.grid(column=1, row=9, sticky=tk.W)
 
         self.searchButton = ttk.Button(
             self,
-            text="Refresh Search",
+            text=_("Refresh Search"),
             command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
         )
         self.searchButton.grid(column=1, row=10, sticky=tk.W)
 
-        self.exitButton = ttk.Button(self, text="Exit", command=lambda: self.quit())
+        self.exitButton = ttk.Button(self, text=_("Exit"), command=lambda: self.quit())
         # ensure there is visible separation above the Exit button by
         # reserving two empty grid rows (13 and 14) with a minimum size
         try:
@@ -1672,6 +1742,65 @@ class SupernovasApp(tk.Tk):
         # legacy placement removed; button moved next to the Results controls
 
         self.progressBar = ttk.Progressbar(self, mode='indeterminate', length = 400 );
+
+    def _on_language_change(self):
+        """Handler when UI language selection changes: apply and refresh labels."""
+        try:
+            lang = self.langVar.get().strip()
+            if not lang:
+                set_language(None)
+            else:
+                set_language(lang)
+        except Exception:
+            pass
+
+        # Import _ to use for updating UI labels
+        try:
+            from i18n import _
+        except Exception:
+            pass
+
+        # Update visible widget texts to the new language
+        try:
+            # Update form labels
+            self.labelMagnitude.config(text=_("Max. magnitude: "))
+            self.labelDaysToSearch.config(text=_("Find the n previous days: "))
+            self.labelObservationDate.config(text=_("Observation date: "))
+            self.labelInitTime.config(text=_("Init time in observation date: "))
+            self.labelDuration.config(text=_("Hours of observation: "))
+            self.labelSite.config(text=_("Site: "))
+            self.labelLang.config(text=_("Language:"))
+            self.labelVisibility.config(text=_("Visibility window:"))
+            self.labelLatitud.config(text=_("Min latitude: "))
+            self.labelResults.config(text=_("Results: "))
+            try:
+                self.darkToggle.config(text=_("Dark mode"))
+            except Exception:
+                pass
+            try:
+                self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
+                self.editOldButton.config(text=_("Edit Ignored SN"))
+            except Exception:
+                pass
+            try:
+                self.pdfButton.config(text=_("PDF"))
+                self.txtButton.config(text=_("TXT"))
+                self.searchButton.config(text=_("Refresh Search"))
+                self.exitButton.config(text=_("Exit"))
+            except Exception:
+                pass
+            # Update window title
+            try:
+                self.title(_("Find latest supernovae"))
+            except Exception:
+                pass
+        except Exception:
+            pass
+        try:
+            # re-apply theme in case translations affected widget styles
+            self.apply_theme()
+        except Exception:
+            pass
         try:
             # apply theme after widgets are created
             self.apply_theme()
@@ -1696,7 +1825,7 @@ def representsInt(s):
 def main():
 
     if len(sys.argv) > 3:
-        raise ValueError("Usage: getsupernovae.py maxMag lastDays")
+        raise ValueError(_("Usage: getsupernovae.py maxMag lastDays"))
 
     mag = "17"
     daysToSearch = 21
@@ -1714,7 +1843,7 @@ def main():
     site = list(sites.keys())[0]
     
 
-    filters = SearchFilters(mag, daysToSearch, datetime.now(), "23:00", 5, site, 25)
+    filters = SearchFilters(mag, daysToSearch, datetime.now(), "21:00", 5, site, 25)
     app = SupernovasApp(filters)
     app.mainloop()
 
