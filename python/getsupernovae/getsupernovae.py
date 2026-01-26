@@ -1104,6 +1104,41 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 pass
 
+        def on_delete():
+            nm = selected_name["value"]
+            if not nm:
+                return
+            if not messagebox.askyesno(_("Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=editor):
+                return
+            try:
+                if nm in current:
+                    del current[nm]
+                persist_current()
+                global sites
+                sites = load_sites()
+            except Exception as e:
+                messagebox.showerror(_("Error"), _("Failed to delete site: {e}").format(e=e), parent=editor)
+                return
+            populate_tree()
+            try:
+                self.cbSite["values"] = sorted(list(sites.keys()))
+            except Exception:
+                pass
+
+        def on_close():
+            editor.destroy()
+
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        save_btn = ttk.Button(btn_frame, text=_("Save"), command=on_save)
+        save_btn.grid(column=0, row=0, sticky="w", padx=6)
+        delete_btn = ttk.Button(btn_frame, text=_("Delete"), command=on_delete)
+        delete_btn.grid(column=1, row=0, padx=6)
+        close_btn = ttk.Button(btn_frame, text=_("Close"), command=on_close)
+        close_btn.grid(column=2, row=0, sticky="e", padx=6)
+
+        populate_tree()
+
     def callbackAddVisibilityWindow(self):
         """Open a dialog to add/edit named visibility windows persisted to visibility_windows.json"""
         try:
