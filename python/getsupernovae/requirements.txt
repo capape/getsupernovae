@@ -3,4 +3,5 @@ astropy
 reportlab
 lxml
 astroquery
+matplotlib
 # Optional (usually pulled as dependencies): numpy

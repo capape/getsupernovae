@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-22 22:26+0100\n"
+"POT-Creation-Date: 2026-01-23 08:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,415 +22,347 @@ msgstr ""
 msgid "Created PDF: {name}"
 msgstr ""
 
-#: getsupernovae.py:684
+#: getsupernovae.py:455
+#, python-brace-format
+msgid ""
+"PDF report saved to:\n"
+"{path}"
+msgstr ""
+
+#: getsupernovae.py:456
+msgid "PDF Created"
+msgstr ""
+
+#: getsupernovae.py:456
+msgid "Do you want to open it?"
+msgstr ""
+
+#: getsupernovae.py:463
+msgid "Cannot open file"
+msgstr ""
+
+#: getsupernovae.py:463
+#, python-brace-format
+msgid "File saved but could not be opened automatically: {error}"
+msgstr ""
+
+#: getsupernovae.py:682
 msgid "No selection"
 msgstr ""
 
-#: getsupernovae.py:684
+#: getsupernovae.py:682
 msgid "No text selected in the Results pane."
 msgstr ""
 
-#: getsupernovae.py:711
+#: getsupernovae.py:709
 msgid "Already present"
 msgstr ""
 
-#: getsupernovae.py:711
+#: getsupernovae.py:709
 #, python-brace-format
 msgid "'{name}' is already ignored."
 msgstr ""
 
-#: getsupernovae.py:727
+#: getsupernovae.py:725
 msgid "Added"
 msgstr ""
 
-#: getsupernovae.py:727
+#: getsupernovae.py:725
 #, python-brace-format
 msgid "Added '{name}' to ignored supernovae."
 msgstr ""
 
-#: getsupernovae.py:739 getsupernovae.py:799 getsupernovae.py:1389
+#: getsupernovae.py:737 getsupernovae.py:797 getsupernovae.py:1387
 msgid "Save error"
 msgstr ""
 
-#: getsupernovae.py:739
+#: getsupernovae.py:737
 #, python-brace-format
 msgid "Failed to update ignore file: {ex}"
 msgstr ""
 
-#: getsupernovae.py:764
+#: getsupernovae.py:762
 msgid "Edit ignored/old supernovae"
 msgstr ""
 
-#: getsupernovae.py:799
+#: getsupernovae.py:797
 #, python-brace-format
 msgid "Failed to save file: {ex}"
 msgstr ""
 
-#: getsupernovae.py:804 getsupernovae.py:1343 getsupernovae.py:1447
+#: getsupernovae.py:802 getsupernovae.py:1341 getsupernovae.py:1445
 msgid "Save"
 msgstr ""
 
-#: getsupernovae.py:806 getsupernovae.py:1349 getsupernovae.py:1453
+#: getsupernovae.py:804 getsupernovae.py:1347 getsupernovae.py:1451
 msgid "Close"
 msgstr ""
 
-#: getsupernovae.py:836
+#: getsupernovae.py:834
 msgid "Add observing site"
 msgstr ""
 
-#: getsupernovae.py:999
+#: getsupernovae.py:997
 msgid "Site name:"
 msgstr ""
 
-#: getsupernovae.py:1003
+#: getsupernovae.py:1001
 msgid "Latitude (deg):"
 msgstr ""
 
-#: getsupernovae.py:1007
+#: getsupernovae.py:1005
 msgid "Longitude (deg):"
 msgstr ""
 
-#: getsupernovae.py:1011
+#: getsupernovae.py:1009
 msgid "Height (m):"
 msgstr ""
 
-#: getsupernovae.py:1041
+#: getsupernovae.py:1039
 msgid "Latitude must be between -90 and 90 degrees"
 msgstr ""
 
-#: getsupernovae.py:1043
+#: getsupernovae.py:1041
 msgid "Longitude must be between -180 and 180 degrees"
 msgstr ""
 
-#: getsupernovae.py:1063 getsupernovae.py:1071 getsupernovae.py:1098
-#: getsupernovae.py:1248 getsupernovae.py:1256 getsupernovae.py:1276
-#: getsupernovae.py:1308 getsupernovae.py:1330 getsupernovae.py:1403
-#: getsupernovae.py:1410 getsupernovae.py:1420
+#: getsupernovae.py:1061 getsupernovae.py:1069 getsupernovae.py:1096
+#: getsupernovae.py:1246 getsupernovae.py:1254 getsupernovae.py:1274
+#: getsupernovae.py:1306 getsupernovae.py:1328 getsupernovae.py:1401
+#: getsupernovae.py:1408 getsupernovae.py:1418
 msgid "Error"
 msgstr ""
 
-#: getsupernovae.py:1063
+#: getsupernovae.py:1061
 msgid "Site name is required"
 msgstr ""
 
-#: getsupernovae.py:1071
+#: getsupernovae.py:1069
 #, python-brace-format
 msgid "Invalid input: {e}"
 msgstr ""
 
-#: getsupernovae.py:1077 getsupernovae.py:1261
+#: getsupernovae.py:1075 getsupernovae.py:1259
 msgid "Overwrite"
 msgstr ""
 
-#: getsupernovae.py:1077
+#: getsupernovae.py:1075
 #, python-brace-format
 msgid "Site '{nm}' already exists. Overwrite?"
 msgstr ""
 
-#: getsupernovae.py:1098
+#: getsupernovae.py:1096
 #, python-brace-format
 msgid "Failed to save site: {e}"
 msgstr ""
 
-#: getsupernovae.py:1128
+#: getsupernovae.py:1126
 msgid "Edit visibility windows"
 msgstr ""
 
-#: getsupernovae.py:1191
+#: getsupernovae.py:1189
 msgid "Name:"
 msgstr ""
 
-#: getsupernovae.py:1195
+#: getsupernovae.py:1193
 msgid "Min Alt (deg):"
 msgstr ""
 
-#: getsupernovae.py:1199
+#: getsupernovae.py:1197
 msgid "Max Alt (deg):"
 msgstr ""
 
-#: getsupernovae.py:1203
+#: getsupernovae.py:1201
 msgid "Min Az (deg):"
 msgstr ""
 
-#: getsupernovae.py:1207
+#: getsupernovae.py:1205
 msgid "Max Az (deg):"
 msgstr ""
 
-#: getsupernovae.py:1248
+#: getsupernovae.py:1246
 msgid "Name is required"
 msgstr ""
 
-#: getsupernovae.py:1256
+#: getsupernovae.py:1254
 #, python-brace-format
 msgid "Invalid numeric input: {e}"
 msgstr ""
 
-#: getsupernovae.py:1261
+#: getsupernovae.py:1259
 #, python-brace-format
 msgid "Window '{nm}' already exists. Overwrite?"
 msgstr ""
 
-#: getsupernovae.py:1276
+#: getsupernovae.py:1274
 #, python-brace-format
 msgid "Failed to save visibility windows: {e}"
 msgstr ""
 
-#: getsupernovae.py:1289 getsupernovae.py:1297 getsupernovae.py:1300
-#: getsupernovae.py:1362
+#: getsupernovae.py:1287 getsupernovae.py:1295 getsupernovae.py:1298
+#: getsupernovae.py:1360
 msgid "Invalid input"
 msgstr ""
 
-#: getsupernovae.py:1289
+#: getsupernovae.py:1287
 msgid "Name is required."
 msgstr ""
 
-#: getsupernovae.py:1297
+#: getsupernovae.py:1295
 msgid "Numeric fields must be valid numbers."
 msgstr ""
 
-#: getsupernovae.py:1300
+#: getsupernovae.py:1298
 msgid "A window with that name already exists."
 msgstr ""
 
-#: getsupernovae.py:1308
+#: getsupernovae.py:1306
 #, python-brace-format
 msgid "Failed to add window: {e}"
 msgstr ""
 
-#: getsupernovae.py:1321 getsupernovae.py:1347 getsupernovae.py:1451
+#: getsupernovae.py:1319 getsupernovae.py:1345 getsupernovae.py:1449
 msgid "Delete"
 msgstr ""
 
-#: getsupernovae.py:1321
+#: getsupernovae.py:1319
 #, python-brace-format
 msgid "Delete visibility window '{nm}'?"
 msgstr ""
 
-#: getsupernovae.py:1330
+#: getsupernovae.py:1328
 #, python-brace-format
 msgid "Failed to delete window: {e}"
 msgstr ""
 
-#: getsupernovae.py:1345 getsupernovae.py:1449
+#: getsupernovae.py:1343 getsupernovae.py:1447
 msgid "Add"
 msgstr ""
 
-#: getsupernovae.py:1362
+#: getsupernovae.py:1360
 msgid ""
 "All fields (name, latitude, longitude, height) are required to add a site."
 msgstr ""
 
-#: getsupernovae.py:1370
+#: getsupernovae.py:1368
 msgid "Invalid values"
 msgstr ""
 
-#: getsupernovae.py:1370
+#: getsupernovae.py:1368
 msgid "Latitude, longitude and height must be numeric"
 msgstr ""
 
-#: getsupernovae.py:1376
+#: getsupernovae.py:1374
 msgid "Duplicate site"
 msgstr ""
 
-#: getsupernovae.py:1376
+#: getsupernovae.py:1374
 #, python-brace-format
 msgid "A site named '{existing}' already exists (case-insensitive)."
 msgstr ""
 
-#: getsupernovae.py:1389
+#: getsupernovae.py:1387
 #, python-brace-format
 msgid "Failed to save site: {ex}"
 msgstr ""
 
-#: getsupernovae.py:1403
+#: getsupernovae.py:1401
 msgid "Select a site to delete"
 msgstr ""
 
-#: getsupernovae.py:1405
+#: getsupernovae.py:1403
 msgid "Confirm Delete"
 msgstr ""
 
-#: getsupernovae.py:1405
+#: getsupernovae.py:1403
 #, python-brace-format
 msgid "Delete site '{nm}'?"
 msgstr ""
 
-#: getsupernovae.py:1410
+#: getsupernovae.py:1408
 #, python-brace-format
 msgid "Failed to delete site '{nm}'"
 msgstr ""
 
-#: getsupernovae.py:1420
+#: getsupernovae.py:1418
 #, python-brace-format
 msgid "Failed to save sites after delete: {e}"
 msgstr ""
 
-#: getsupernovae.py:1515
+#: getsupernovae.py:1513 getsupernovae.py:1807
 msgid "Find latest supernovae"
 msgstr ""
 
-#: getsupernovae.py:1562
+#: getsupernovae.py:1560 getsupernovae.py:1779
 msgid "Max. magnitude: "
 msgstr ""
 
-#: getsupernovae.py:1567
+#: getsupernovae.py:1565 getsupernovae.py:1780
 msgid "Find the n previous days: "
 msgstr ""
 
-#: getsupernovae.py:1572
+#: getsupernovae.py:1570 getsupernovae.py:1781
 msgid "Observation date: "
 msgstr ""
 
-#: getsupernovae.py:1577
+#: getsupernovae.py:1575 getsupernovae.py:1782
 msgid "Init time in observation date: "
 msgstr ""
 
-#: getsupernovae.py:1582
+#: getsupernovae.py:1580 getsupernovae.py:1783
 msgid "Hours of observation: "
 msgstr ""
 
-#: getsupernovae.py:1587 getsupernovae.py:1780
+#: getsupernovae.py:1585 getsupernovae.py:1784
 msgid "Site: "
 msgstr ""
 
-#: getsupernovae.py:1618
+#: getsupernovae.py:1616 getsupernovae.py:1785
 msgid "Language:"
 msgstr ""
 
-#: getsupernovae.py:1638 getsupernovae.py:1781
+#: getsupernovae.py:1636 getsupernovae.py:1786
 msgid "Visibility window:"
 msgstr ""
 
-#: getsupernovae.py:1665
+#: getsupernovae.py:1663 getsupernovae.py:1787
 msgid "Min latitude: "
 msgstr ""
 
-#: getsupernovae.py:1670 getsupernovae.py:1782
+#: getsupernovae.py:1668 getsupernovae.py:1788
 msgid "Results: "
 msgstr ""
 
-#: getsupernovae.py:1696 getsupernovae.py:1784
+#: getsupernovae.py:1694 getsupernovae.py:1790
 msgid "Dark mode"
 msgstr ""
 
-#: getsupernovae.py:1703 getsupernovae.py:1788
+#: getsupernovae.py:1701 getsupernovae.py:1794
 msgid "Ignore selected SN"
 msgstr ""
 
-#: getsupernovae.py:1709 getsupernovae.py:1789
+#: getsupernovae.py:1707 getsupernovae.py:1795
 msgid "Edit Ignored SN"
 msgstr ""
 
-#: getsupernovae.py:1727 getsupernovae.py:1793
+#: getsupernovae.py:1725 getsupernovae.py:1799
 msgid "PDF"
 msgstr ""
 
-#: getsupernovae.py:1734 getsupernovae.py:1794
+#: getsupernovae.py:1732 getsupernovae.py:1800
 msgid "TXT"
 msgstr ""
 
-#: getsupernovae.py:1741 getsupernovae.py:1795
+#: getsupernovae.py:1739 getsupernovae.py:1801
 msgid "Refresh Search"
 msgstr ""
 
-#: getsupernovae.py:1746 getsupernovae.py:1796
+#: getsupernovae.py:1744 getsupernovae.py:1802
 msgid "Exit"
 msgstr ""
 
-#: getsupernovae.py:1830
+#: getsupernovae.py:1841
 msgid "Usage: getsupernovae.py maxMag lastDays"
-msgstr ""
-
-#: report_pdf.py:22
-msgid "-------------------------------------------------"
-msgstr ""
-
-#: report_pdf.py:23
-#, python-brace-format
-msgid "Date: {date}, Mag:{mag}, T: {type}, Name:{name}"
-msgstr ""
-
-#: report_pdf.py:24
-#, python-brace-format
-msgid "  Const: {constellation}, Host: {host}"
-msgstr ""
-
-#: report_pdf.py:25 report_pdf.py:133 report_text.py:100
-#, python-brace-format
-msgid "  RA: {ra}, DECL. {decl}"
-msgstr ""
-
-#: report_pdf.py:27
-#, python-brace-format
-msgid "    Visible from :{visible_from} to: {visible_to}"
-msgstr ""
-
-#: report_pdf.py:31
-#, python-brace-format
-msgid "    AzCoords az:{az0}, lat: {alt0}"
-msgstr ""
-
-#: report_pdf.py:35
-#, python-brace-format
-msgid "    Last azCoords az:{az1}, lat: {alt1}"
-msgstr ""
-
-#: report_pdf.py:40
-#, python-brace-format
-msgid ""
-"  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}"
-msgstr ""
-
-#: report_pdf.py:100 report_text.py:74 report_text.py:84
-#, python-brace-format
-msgid "Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}"
-msgstr ""
-
-#: report_pdf.py:103
-#, python-brace-format
-msgid "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m"
-msgstr ""
-
-#: report_pdf.py:106
-#, python-brace-format
-msgid ""
-" . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º "
-"maxAz {maxAz:.1f}º"
-msgstr ""
-
-#: report_pdf.py:117
-#, python-brace-format
-msgid "Window: {rest}"
-msgstr ""
-
-#: report_pdf.py:131 report_text.py:98
-#, python-brace-format
-msgid "Date: {date}, Mag: {mag}, T: {type}, Name: {name}"
-msgstr ""
-
-#: report_pdf.py:132 report_text.py:99
-#, python-brace-format
-msgid "  Const: {const}, Host: {host}"
-msgstr ""
-
-#: report_pdf.py:135 report_text.py:102
-#, python-brace-format
-msgid "  Visible from : {from_} to: {to}"
-msgstr ""
-
-#: report_pdf.py:136 report_text.py:103
-#, python-brace-format
-msgid "  AzCoords az: {az}, lat: {lat}"
-msgstr ""
-
-#: report_pdf.py:137 report_text.py:104
-#, python-brace-format
-msgid "  Last azCoords az: {az}, lat: {lat}"
-msgstr ""
-
-#: report_pdf.py:139 report_text.py:106
-#, python-brace-format
-msgid "  Discovered: {first} , MAX Mag: {max} on: {on}"
 msgstr ""
 
 #: report_text.py:12
@@ -464,6 +396,11 @@ msgid ""
 "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Min alt {minAlt}º"
 msgstr ""
 
+#: report_text.py:74 report_text.py:84 report_pdf.py:122
+#, python-brace-format
+msgid "Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}"
+msgstr ""
+
 #: report_text.py:87
 #, python-brace-format
 msgid ""
@@ -479,6 +416,41 @@ msgid ""
 "{sn}\n"
 msgstr ""
 
+#: report_text.py:98 report_pdf.py:153
+#, python-brace-format
+msgid "Date: {date}, Mag: {mag}, T: {type}, Name: {name}"
+msgstr ""
+
+#: report_text.py:99 report_pdf.py:154
+#, python-brace-format
+msgid "  Const: {const}, Host: {host}"
+msgstr ""
+
+#: report_text.py:100 report_pdf.py:25 report_pdf.py:155
+#, python-brace-format
+msgid "  RA: {ra}, DECL. {decl}"
+msgstr ""
+
+#: report_text.py:102 report_pdf.py:157
+#, python-brace-format
+msgid "  Visible from : {from_} to: {to}"
+msgstr ""
+
+#: report_text.py:103 report_pdf.py:158
+#, python-brace-format
+msgid "  AzCoords az: {az}, lat: {lat}"
+msgstr ""
+
+#: report_text.py:104 report_pdf.py:159
+#, python-brace-format
+msgid "  Last azCoords az: {az}, lat: {lat}"
+msgstr ""
+
+#: report_text.py:106 report_pdf.py:161
+#, python-brace-format
+msgid "  Discovered: {first} , MAX Mag: {max} on: {on}"
+msgstr ""
+
 #: report_text.py:114
 #, python-brace-format
 msgid "Const: {const} - {host} S: {name}, M: {mag}, T: {type}"
@@ -492,4 +464,56 @@ msgstr ""
 #: report_text.py:116
 #, python-brace-format
 msgid "Visible from : {from_} to: {to} az: {az}, LAT: {lat}"
+msgstr ""
+
+#: report_pdf.py:22
+msgid "-------------------------------------------------"
+msgstr ""
+
+#: report_pdf.py:23
+#, python-brace-format
+msgid "Date: {date}, Mag:{mag}, T: {type}, Name:{name}"
+msgstr ""
+
+#: report_pdf.py:24
+#, python-brace-format
+msgid "  Const: {constellation}, Host: {host}"
+msgstr ""
+
+#: report_pdf.py:27
+#, python-brace-format
+msgid "    Visible from :{visible_from} to: {visible_to}"
+msgstr ""
+
+#: report_pdf.py:31
+#, python-brace-format
+msgid "    AzCoords az:{az0}, lat: {alt0}"
+msgstr ""
+
+#: report_pdf.py:35
+#, python-brace-format
+msgid "    Last azCoords az:{az1}, lat: {alt1}"
+msgstr ""
+
+#: report_pdf.py:40
+#, python-brace-format
+msgid ""
+"  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}"
+msgstr ""
+
+#: report_pdf.py:125
+#, python-brace-format
+msgid "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m"
+msgstr ""
+
+#: report_pdf.py:128
+#, python-brace-format
+msgid ""
+" . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º "
+"maxAz {maxAz:.1f}º"
+msgstr ""
+
+#: report_pdf.py:139
+#, python-brace-format
+msgid "Window: {rest}"
 msgstr ""

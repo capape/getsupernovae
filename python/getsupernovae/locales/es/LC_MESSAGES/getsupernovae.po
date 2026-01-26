@@ -523,7 +523,3 @@ msgstr ""
 msgid "Window: {rest}"
 msgstr "Ventana: {rest}"
 
-#: generate_sample_pdf.py:41
-#, python-brace-format
-msgid "Created PDF: {name}"
-msgstr "PDF creado: {name}"

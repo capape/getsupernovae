@@ -439,7 +439,7 @@ class SupernovasApp(tk.Tk):
                 float(e.minLatitude),
                 getattr(e, 'visibilityWindowName', None))
             self.set_results_text(datatxt)
-            createPdf(
+            pdf_path = createPdf(
                 self.supernovasFound,
                 e.fromDate,
                 e.observationDate,
@@ -448,6 +448,19 @@ class SupernovasApp(tk.Tk):
                 float(e.minLatitude),
                 getattr(e, 'visibilityWindowName', None),
             )
+            
+            # Show success message with PDF location
+            import os
+            import subprocess
+            msg = _("PDF report saved to:\n{path}").format(path=pdf_path)
+            if messagebox.askyesno(_("PDF Created"), msg + "\n\n" + _("Do you want to open it?")):
+                try:
+                    if os.name == 'nt':  # Windows
+                        os.startfile(pdf_path)
+                    elif os.name == 'posix':  # Linux/Mac
+                        subprocess.run(['xdg-open' if 'linux' in os.sys.platform else 'open', pdf_path])
+                except Exception as ex:
+                    messagebox.showwarning(_("Cannot open file"), _("File saved but could not be opened automatically: {error}").format(error=str(ex)))
 
     #    
     # TXT button callback

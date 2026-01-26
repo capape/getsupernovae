@@ -15,6 +15,8 @@ import json
 
 from snconfig import load_visibility_windows as _load_visibility_windows
 import i18n
+from pathlib import Path
+import platform
 
 
 def addSupernovaToPdf(textObject, data: Supernova):
@@ -84,7 +86,28 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
 
     topy = 29.7 * cm - margintop
 
-    canvas = Canvas(observationDate + ".pdf", pagesize=A4)
+    # Determine user-friendly save location
+    if platform.system() == "Windows":
+        # Try Documents folder first, fall back to Desktop, then current dir
+        try:
+            docs = Path.home() / "Documents"
+            if not docs.exists():
+                docs = Path.home() / "Desktop"
+            if not docs.exists():
+                docs = Path.cwd()
+        except:
+            docs = Path.cwd()
+    else:
+        # Linux/Mac: use Documents or home directory
+        try:
+            docs = Path.home() / "Documents"
+            if not docs.exists():
+                docs = Path.home()
+        except:
+            docs = Path.cwd()
+    
+    pdf_filename = docs / f"{observationDate}.pdf"
+    canvas = Canvas(str(pdf_filename), pagesize=A4)
     try:
         canvas.setPageCompression(0)
     except Exception:
@@ -292,4 +315,4 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
     canvas.drawText(textObject)
     canvas.save()
 
-    return observationDate + ".pdf"
+    return str(pdf_filename)
