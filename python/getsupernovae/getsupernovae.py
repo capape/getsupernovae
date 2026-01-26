@@ -277,7 +277,63 @@ class SupernovasApp(tk.Tk):
 
     #
     # Create object with filters to search
-    #    
+    #
+    def _configure_results_tree_styling(self):
+        """Configure results tree row height and alternating row colors."""
+        try:
+            if not hasattr(self, 'resultsTree') or self.resultsTree is None:
+                return
+            
+            # Configure row height - must use self as the first argument
+            style = ttk.Style(self)
+            style.configure("ResultsTreeview.Treeview", rowheight=28)
+            
+            # Configure alternating row colors based on current theme
+            dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
+            if dark:
+                self.resultsTree.tag_configure('evenrow', background="#393838")
+                self.resultsTree.tag_configure('oddrow', background="#262525")
+                self.resultsTree.tag_configure('evenrow_bright', background="#393838", foreground="#ff4444")
+                self.resultsTree.tag_configure('oddrow_bright', background="#262525", foreground="#ff4444")
+            else:
+                self.resultsTree.tag_configure('evenrow', background="#f0f0f0")
+                self.resultsTree.tag_configure('oddrow', background="#ffffff")
+                self.resultsTree.tag_configure('evenrow_bright', background="#f0f0f0", foreground="#cc0000")
+                self.resultsTree.tag_configure('oddrow_bright', background="#ffffff", foreground="#cc0000")
+            
+            # Reapply tags to all existing items to preserve bright highlighting
+            self._reapply_tree_tags()
+        except Exception:
+            pass
+    
+    def _reapply_tree_tags(self):
+        """Reapply tags to all tree items based on magnitude and position."""
+        try:
+            if not hasattr(self, 'resultsTree') or self.resultsTree is None:
+                return
+            
+            items = self.resultsTree.get_children('')
+            for index, item in enumerate(items):
+                try:
+                    if item in self.supernova_data:
+                        sn = self.supernova_data[item]
+                        mag = getattr(sn, 'mag', None)
+                        try:
+                            is_bright = mag is not None and float(mag) < 15
+                        except (ValueError, TypeError):
+                            is_bright = False
+                        
+                        if is_bright:
+                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
+                        else:
+                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+                        
+                        self.resultsTree.item(item, tags=(tag,))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    
     def apply_theme(self):
         """Apply light/dark theme to ttk widgets and some native widgets."""
         try:
@@ -311,7 +367,8 @@ class SupernovasApp(tk.Tk):
                 style.configure("TButton", background=btn_bg, foreground=fg)
                 style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
                 style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
-                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg)
+                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=28)
+                style.configure("ResultsTreeview.Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=28)
                 style.configure("TFrame", background=bg)
                 style.configure("TCheckbutton", background=bg, foreground=fg)
                 # selection highlight for treeview — choose a subtle color per theme
@@ -326,26 +383,26 @@ class SupernovasApp(tk.Tk):
                         self.configure(background=bg)
                     except Exception:
                         pass
-                    # text widget uses native tk control - set its bg/fg explicitly
+                    # Treeview styling
                     try:
-                        if hasattr(self, 'textResults') and self.textResults is not None:
-                            self.textResults.config(background=entry_bg, foreground=fg)
+                        if hasattr(self, 'resultsTree') and self.resultsTree is not None:
+                            self.resultsTree.configure(style="Treeview")
                     except Exception:
                         pass
                 except Exception:
                     pass
         except Exception:
             pass
+        
+        # Reapply results tree styling after theme change
+        try:
+            self._configure_results_tree_styling()
+        except Exception:
+            pass
 
         try:
             if bg:
                 self.configure(bg=bg)
-        except Exception:
-            pass
-
-        # configure native Text widget colors
-        try:
-            self.textResults.config(bg=entry_bg, fg=fg, insertbackground=fg)
         except Exception:
             pass
 
@@ -600,14 +657,343 @@ class SupernovasApp(tk.Tk):
         self.supernovasFound = None
 
     def set_results_text(self, datatxt: str):
-        """Helper to update the results Text widget safely and consistently."""
+        """Helper to update the results table from supernova data."""
+        # Clear existing tree entries
         try:
-            self.textResults['state'] = 'normal'
-            self.textResults.delete('1.0', 'end')
-            self.textResults.insert('1.0', datatxt)
-            self.textResults['state'] = 'disabled'
+            for item in self.resultsTree.get_children():
+                self.resultsTree.delete(item)
+            self.supernova_data.clear()
         except Exception:
-            # Best-effort: ignore GUI errors to avoid crashing background operations
+            pass
+        
+        # If datatxt is an error message, show it
+        if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
+            try:
+                # Insert error as a single row
+                self.resultsTree.insert("", "end", values=(datatxt, "", "", "", "", "", "", "", "", ""))
+            except Exception:
+                pass
+            return
+        
+        # Populate tree from self.supernovasFound
+        try:
+            if self.supernovasFound:
+                for idx, sn in enumerate(self.supernovasFound):
+                    name = getattr(sn, 'name', '')
+                    sn_type = getattr(sn, 'type', '')
+                    constellation = getattr(sn, 'constellation', '')
+                    host = getattr(sn, 'host', '')
+                    
+                    # Format RA/Dec
+                    try:
+                        coord = getattr(sn, 'coordinates', None)
+                        if coord:
+                            ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
+                            dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1)
+                        else:
+                            ra_str = dec_str = ""
+                    except Exception:
+                        ra_str = dec_str = ""
+                    
+                    # Discovery date - use 'date' attribute
+                    date_str = getattr(sn, 'date', '') or ''
+                    
+                    # Magnitude - use 'mag' attribute
+                    mag = getattr(sn, 'mag', '')
+                    mag_float = None
+                    if mag is not None:
+                        try:
+                            mag_float = float(mag)
+                            mag_str = f"{mag_float:.1f}"
+                        except Exception:
+                            mag_str = str(mag)
+                    else:
+                        mag_str = ""
+                    
+                    # Insert row with alternating tag and bright tag if mag < 15
+                    is_bright = mag_float is not None and mag_float < 15
+                    if is_bright:
+                        tag = 'evenrow_bright' if idx % 2 == 0 else 'oddrow_bright'
+                    else:
+                        tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                    
+                    item_id = self.resultsTree.insert("", "end", values=(
+                        name, sn_type, mag_str, date_str, host, constellation, ra_str, dec_str, "🔗", "🔗"
+                    ), tags=(tag,))
+                    
+                    # Store full supernova object for tooltips and links
+                    self.supernova_data[item_id] = sn
+        except Exception as e:
+            # If population fails, show error
+            try:
+                self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", ""))
+            except Exception:
+                pass
+    
+    def _sort_column(self, col, is_numeric):
+        """Sort treeview by column."""
+        try:
+            # Toggle sort direction if same column clicked
+            if self.sort_column == col:
+                self.sort_reverse = not self.sort_reverse
+            else:
+                self.sort_column = col
+                self.sort_reverse = False
+            
+            # Get column index
+            col_idx = self.resultsTree['columns'].index(col)
+            
+            # Get all items with their values
+            items = [(self.resultsTree.set(item, col), item) for item in self.resultsTree.get_children('')]
+            
+            # Sort items
+            if is_numeric:
+                # Numeric sort - handle empty values
+                def sort_key(x):
+                    try:
+                        return float(x[0]) if x[0] else float('inf')
+                    except (ValueError, TypeError):
+                        return float('inf')
+                items.sort(key=sort_key, reverse=self.sort_reverse)
+            else:
+                # Alphabetic sort
+                items.sort(key=lambda x: x[0].lower() if x[0] else '', reverse=self.sort_reverse)
+            
+            # Rearrange items in sorted order
+            for index, (val, item) in enumerate(items):
+                self.resultsTree.move(item, '', index)
+                
+                # Reapply alternating row colors and brightness after sorting
+                try:
+                    if item in self.supernova_data:
+                        sn = self.supernova_data[item]
+                        mag = getattr(sn, 'mag', None)
+                        try:
+                            is_bright = mag is not None and float(mag) < 15
+                        except (ValueError, TypeError):
+                            is_bright = False
+                        
+                        if is_bright:
+                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
+                        else:
+                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+                        
+                        self.resultsTree.item(item, tags=(tag,))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    
+    def _on_selection_change(self, event):
+        """Enable or disable Find stars button based on tree selection."""
+        try:
+            selection = self.resultsTree.selection()
+            if selection and len(selection) > 0:
+                self.findStarsButton.config(state=tk.NORMAL)
+            else:
+                self.findStarsButton.config(state=tk.DISABLED)
+        except Exception:
+            pass
+    
+    def _find_stars_in_simbad(self):
+        """Query SIMBAD for objects near the selected supernova."""
+        try:
+            selection = self.resultsTree.selection()
+            if not selection or len(selection) == 0:
+                return
+            
+            item = selection[0]
+            if item not in self.supernova_data:
+                return
+            
+            sn = self.supernova_data[item]
+            
+            
+            # Build SIMBAD query URL for the region around the supernova
+            # Using the web interface format
+            coord = getattr(sn, 'coordinates', None)
+            if coord:
+                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
+                dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1)
+            else:
+               ra_str = dec_str = ""
+             
+            # SIMBAD coordinate query URL (searches within 10 arcmin radius)
+            # Filter for stellar objects (maintype '*') with Vmag < 17
+            # URL-encode the region parameter to handle colons/spaces in RA/Dec
+            try:
+                criteria_str = ( 
+                    f"region(box,{ra_str} +{dec_str},30m 30m) & "       
+                    f"Vmag<17 & "
+                    f"maintype='*'"       
+                )
+                criteria_enc=urllib.parse.quote(criteria_str)
+                
+            except Exception:
+                criteria_enc = ""
+
+            simbad_url = (
+                f"https://simbad.cds.unistra.fr/simbad/sim-sam?"
+                f"Criteria={criteria_enc}&"
+                f"OutputMode=LIST&"
+                f"maxObjectect=100&"
+                f"submit=submit+query"
+            )
+
+            # Open in browser
+            import webbrowser
+            webbrowser.open(simbad_url)
+            
+        except Exception as e:
+            try:
+                messagebox.showerror(
+                    _("Error"),
+                    _("Failed to query SIMBAD: ") + str(e)
+                )
+            except Exception:
+                pass
+    
+    def _on_results_double_click(self, event):
+        """Handle double-click on results table to open links."""
+        try:
+            region = self.resultsTree.identify("region", event.x, event.y)
+            if region != "cell":
+                return
+            
+            column = self.resultsTree.identify_column(event.x)
+            item = self.resultsTree.identify_row(event.y)
+            
+            if not item or item not in self.supernova_data:
+                return
+            
+            sn = self.supernova_data[item]
+            
+            # Column #9 is rochester, #10 is tns (1-indexed)
+            if column == "#9":  # Rochester
+                url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
+                self._open_url(url)
+            elif column == "#10":  # TNS
+                url = getattr(sn, 'tnsUrl', None) or f"https://www.wis-tns.org/object/{getattr(sn, 'name', '')}"
+                self._open_url(url)
+        except Exception:
+            pass
+    
+    def _open_url(self, url):
+        """Open URL in default browser."""
+        import webbrowser
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+    
+    def _on_results_motion(self, event):
+        """Show tooltip with visibility and discovery info on hover."""
+        try:
+            item = self.resultsTree.identify_row(event.y)
+            
+            # If we're over a different item or no item, update tooltip
+            if item != self.tooltip_item:
+                self._hide_tooltip()
+                
+                if item and item in self.supernova_data:
+                    self.tooltip_item = item
+                    sn = self.supernova_data[item]
+                    
+                    # Build tooltip text with visibility and discovery info
+                    tooltip_lines = []
+                    
+                    # Discovery information
+                    first_obs = getattr(sn, 'firstObserved', None)
+                    if first_obs:
+                        tooltip_lines.append(f"First observed: {first_obs}")
+                    
+                    max_mag = getattr(sn, 'maxMagnitude', None)
+                    max_mag_date = getattr(sn, 'maxMagnitudeDate', None)
+                    if max_mag:
+                        mag_line = f"Max magnitude: {max_mag}"
+                        if max_mag_date:
+                            mag_line += f" on {max_mag_date}"
+                        tooltip_lines.append(mag_line)
+                    
+                    # Visibility information
+                    visibility = getattr(sn, 'visibility', None)
+                    if visibility:
+                        is_visible = getattr(visibility, 'visible', False)
+                        tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
+                        
+                        # Get altitude/azimuth coordinates if available
+                        az_coords = getattr(visibility, 'azCords', None)
+                        if az_coords and len(az_coords) > 0:
+                            # Show first and last altitudes
+                            try:
+                                first_coord = az_coords[0]
+                                last_coord = az_coords[-1]
+                                
+                                first_time = getattr(first_coord, 'time', None)
+                                first_alt = getattr(first_coord, 'coord', None)
+                                last_time = getattr(last_coord, 'time', None)
+                                last_alt = getattr(last_coord, 'coord', None)
+                                
+                                if first_alt and hasattr(first_alt, 'alt'):
+                                    tooltip_lines.append(f"Start altitude: {first_alt.alt.degree:.1f}°")
+                                if last_alt and hasattr(last_alt, 'alt'):
+                                    tooltip_lines.append(f"End altitude: {last_alt.alt.degree:.1f}°")
+                                
+                                # Find max altitude
+                                max_alt = max((getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')), 
+                                             default=None, key=lambda a: a.degree if a else -999)
+                                if max_alt:
+                                    tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
+                            except Exception:
+                                pass
+                    
+                    if tooltip_lines:
+                        self._show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
+        except Exception:
+            pass
+    
+    def _on_results_leave(self, event):
+        """Hide tooltip when mouse leaves the tree."""
+        self._hide_tooltip()
+    
+    def _show_tooltip(self, x, y, text):
+        """Display tooltip at specified position."""
+        try:
+            self._hide_tooltip()
+            
+            self.tooltip_window = tk.Toplevel(self)
+            self.tooltip_window.wm_overrideredirect(True)
+            self.tooltip_window.wm_geometry(f"+{x+10}+{y+10}")
+            
+            # Style tooltip based on dark mode
+            dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
+            bg_color = "#3a3a3a" if dark else "#ffffe0"
+            fg_color = "#eaeaea" if dark else "#000000"
+            
+            label = tk.Label(
+                self.tooltip_window,
+                text=text,
+                justify=tk.LEFT,
+                background=bg_color,
+                foreground=fg_color,
+                relief=tk.SOLID,
+                borderwidth=1,
+                padx=8,
+                pady=6,
+                font=("TkDefaultFont", 9)
+            )
+            label.pack()
+        except Exception:
+            pass
+    
+    def _hide_tooltip(self):
+        """Hide and destroy tooltip window."""
+        try:
+            if self.tooltip_window:
+                self.tooltip_window.destroy()
+                self.tooltip_window = None
+            self.tooltip_item = None
+        except Exception:
             pass
 
     def refilter_from_cache(self, source="REFRESH"):
@@ -669,25 +1055,30 @@ class SupernovasApp(tk.Tk):
                 pass
 
     def callbackIgnoreSelectedSN(self):
-        """Add the currently selected SN from the Results text area to the
+        """Add the currently selected SN from the Results table to the
         user's `old_supernovae.txt`, sorting and deduplicating the file.
         """
-        # get selection
+        # get selection from tree
         try:
-            sel = self.textResults.get("sel.first", "sel.last").strip()
+            selection = self.resultsTree.selection()
+            if not selection:
+                messagebox.showinfo(_("No selection"), _("No supernova selected in the Results table."))
+                return
+            
+            item = selection[0]
+            if item not in self.supernova_data:
+                messagebox.showinfo(_("No selection"), _("No supernova data found for selection."))
+                return
+            
+            sn = self.supernova_data[item]
+            name = getattr(sn, 'name', '').strip()
         except Exception:
-            sel = ""
-
-        if not sel:
-            messagebox.showinfo(_("No selection"), _("No text selected in the Results pane."))
+            messagebox.showinfo(_("No selection"), _("No supernova selected in the Results table."))
             return
 
-        # extract SN-like token
-        m = re.search(r"\bSN[-A-Za-z0-9_]+\b", sel, re.IGNORECASE)
-        if m:
-            name = m.group(0)
-        else:
-            name = sel.split()[0]
+        if not name:
+            messagebox.showinfo(_("No selection"), _("Selected supernova has no name."))
+            return
 
         # determine path
         try:
@@ -1702,13 +2093,78 @@ class SupernovasApp(tk.Tk):
 
         self.labelResults = ttk.Label(self, text=_("Results: "))
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
-        # increase results textbox height to match larger main window
-        self.textResults = tk.Text(self, width = 70, height = 25)
-        self.textResults.grid(column = 3, row=1, rowspan=9)        
-        self.textResults['state']='normal'
+        
+        # Results table (Treeview) instead of Text widget
+        results_frame = ttk.Frame(self)
+        results_frame.grid(column=3, row=1, rowspan=9, sticky="nsew", padx=5, pady=5)
+        results_frame.grid_rowconfigure(0, weight=1)
+        results_frame.grid_columnconfigure(0, weight=1)
+        
+        # Define columns for the results table
+        columns = ("name", "type", "magnitude", "date", "host", "constellation", "ra", "dec", "rochester", "tns")
+        
+        self.resultsTree = ttk.Treeview(results_frame, columns=columns, show="headings", selectmode="browse", style="ResultsTreeview.Treeview")
+        
+        # Configure column headings and widths with sort commands
+        self.resultsTree.heading("name", text=_("Name"), command=lambda: self._sort_column("name", False))
+        self.resultsTree.heading("type", text=_("Type"), command=lambda: self._sort_column("type", False))
+        self.resultsTree.heading("magnitude", text=_("Mag"), command=lambda: self._sort_column("magnitude", True))
+        self.resultsTree.heading("date", text=_("Date"), command=lambda: self._sort_column("date", False))
+        self.resultsTree.heading("host", text=_("Host"), command=lambda: self._sort_column("host", False))
+        self.resultsTree.heading("constellation", text=_("Constellation"), command=lambda: self._sort_column("constellation", False))
+        self.resultsTree.heading("ra", text=_("RA"), command=lambda: self._sort_column("ra", False))
+        self.resultsTree.heading("dec", text=_("Dec"), command=lambda: self._sort_column("dec", False))
+        self.resultsTree.heading("rochester", text=_("Rochester"), command=lambda: self._sort_column("rochester", False))
+        self.resultsTree.heading("tns", text=_("TNS"), command=lambda: self._sort_column("tns", False))
+        
+        # Track sort state (column, reverse)
+        self.sort_column = None
+        self.sort_reverse = False
+        
+        self.resultsTree.column("name", width=120, anchor=tk.W)
+        self.resultsTree.column("type", width=60, anchor=tk.CENTER)
+        self.resultsTree.column("magnitude", width=60, anchor=tk.CENTER)
+        self.resultsTree.column("date", width=100, anchor=tk.CENTER)
+        self.resultsTree.column("host", width=150, anchor=tk.W)
+        self.resultsTree.column("constellation", width=80, anchor=tk.CENTER)
+        self.resultsTree.column("ra", width=90, anchor=tk.CENTER)
+        self.resultsTree.column("dec", width=90, anchor=tk.CENTER)
+        self.resultsTree.column("rochester", width=80, anchor=tk.CENTER)
+        self.resultsTree.column("tns", width=60, anchor=tk.CENTER)
+        
+        # Add scrollbars
+        vsb = ttk.Scrollbar(results_frame, orient="vertical", command=self.resultsTree.yview)
+        hsb = ttk.Scrollbar(results_frame, orient="horizontal", command=self.resultsTree.xview)
+        self.resultsTree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        
+        self.resultsTree.grid(column=0, row=0, sticky="nsew")
+        vsb.grid(column=1, row=0, sticky="ns")
+        hsb.grid(column=0, row=1, sticky="ew")
+        
+        # Bind double-click to open links
+        self.resultsTree.bind("<Double-Button-1>", self._on_results_double_click)
+        
+        # Bind motion event for tooltips
+        self.resultsTree.bind("<Motion>", self._on_results_motion)
+        self.resultsTree.bind("<Leave>", self._on_results_leave)
+        
+        # Bind selection change to enable/disable Find stars button
+        self.resultsTree.bind("<<TreeviewSelect>>", self._on_selection_change)
+        
+        # Store supernova data for tooltips and links
+        self.supernova_data = {}
+        
+        # Tooltip window
+        self.tooltip_window = None
+        self.tooltip_item = None
+        
+        # Apply initial tree styling (row height and alternating colors)
+        self._configure_results_tree_styling()
+        
         # Make results column expandable so we can align buttons nicely
         try:
             self.grid_columnconfigure(3, weight=1)
+            self.grid_rowconfigure(1, weight=1)
         except Exception:
             pass
 
@@ -1724,24 +2180,30 @@ class SupernovasApp(tk.Tk):
         except Exception:
             pass
 
-        # Dark mode toggle (default ON)
-        try:
-            self.darkToggle = ttk.Checkbutton(toolbar, text=_("Dark mode"), variable=self.dark_mode, command=self.apply_theme)
-            self.darkToggle.grid(column=2, row=0, sticky=tk.E, padx=6)
-        except Exception:
-            pass
+        # Find stars button - enable when a supernova is selected
+        self.findStarsButton = ttk.Button(
+            toolbar, text=_("Find stars"), command=self._find_stars_in_simbad, state=tk.DISABLED
+        )
+        self.findStarsButton.grid(column=0, row=0, sticky=tk.W, padx=6)
 
-        # Button to ignore a selected SN from the Results pane (left)
+        # Button to ignore a selected SN from the Results pane
         self.ignoreSelectedButton = ttk.Button(
             toolbar, text=_("Ignore selected SN"), command=lambda: self.callbackIgnoreSelectedSN()
         )
-        self.ignoreSelectedButton.grid(column=0, row=0, sticky=tk.W)
+        self.ignoreSelectedButton.grid(column=1, row=0, sticky=tk.W, padx=6)
 
-        # Button to edit ignored SN (right-aligned in the toolbar)
+        # Button to edit ignored SN
         self.editOldButton = ttk.Button(
             toolbar, text=_("Edit Ignored SN"), command=lambda: self.callbackEditOldSupernovae()
         )
-        self.editOldButton.grid(column=1, row=0, sticky=tk.E)
+        self.editOldButton.grid(column=2, row=0, sticky=tk.W, padx=6)
+
+        # Dark mode toggle (default ON)
+        try:
+            self.darkToggle = ttk.Checkbutton(toolbar, text=_("Dark mode"), variable=self.dark_mode, command=self.apply_theme)
+            self.darkToggle.grid(column=3, row=0, sticky=tk.E, padx=6)
+        except Exception:
+            pass
         
         # (Add Site button moved next to the site combobox.)
         
@@ -1842,6 +2304,12 @@ class SupernovasApp(tk.Tk):
                 self.title(_("Find latest supernovae"))
             except Exception:
                 pass
+        except Exception:
+            pass
+        
+        # Reapply results tree styling after language change
+        try:
+            self._configure_results_tree_styling()
         except Exception:
             pass
         try:
