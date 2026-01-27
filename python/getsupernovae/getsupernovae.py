@@ -746,7 +746,7 @@ class SupernovasApp(tk.Tk):
         if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
             try:
                 # Insert error as a single row
-                self.resultsTree.insert("", "end", values=(datatxt, "", "", "", "", "", "", "", "", ""))
+                self.resultsTree.insert("", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", ""))
             except Exception:
                 pass
             return
@@ -793,8 +793,30 @@ class SupernovasApp(tk.Tk):
                     else:
                         tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
                     
+                    # compute observation time string from visibility window
+                    try:
+                        vis = getattr(sn, 'visibility', None)
+                        if vis and getattr(vis, 'azCords', None) and len(vis.azCords) > 0:
+                            obs_from_full = format_iso_datetime(vis.azCords[0].time)
+                            obs_to_full = format_iso_datetime(vis.azCords[-1].time)
+                            # Extract only time portion (HH:MM) from 'YYYY-MM-DD HH:MM'
+                            def _time_only(s):
+                                if not s:
+                                    return ""
+                                parts = str(s).rsplit(" ", 1)
+                                if len(parts) == 2:
+                                    return parts[1]
+                                # fallback: last 5 chars (HH:MM) if string long enough
+                                return s[-5:] if len(s) >= 5 else s
+
+                            obs_time_str = f"{_time_only(obs_from_full)} - {_time_only(obs_to_full)}"
+                        else:
+                            obs_time_str = ""
+                    except Exception:
+                        obs_time_str = ""
+
                     item_id = self.resultsTree.insert("", "end", values=(
-                        name, sn_type, mag_str, date_str, host, constellation, ra_str, dec_str, "🔗", "🔗"
+                        name, sn_type, mag_str, date_str, obs_time_str, host, constellation, ra_str, dec_str, "🔗", "🔗"
                     ), tags=(tag,))
                     
                     # Store full supernova object for tooltips and links
@@ -802,7 +824,7 @@ class SupernovasApp(tk.Tk):
         except Exception as e:
             # If population fails, show error
             try:
-                self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", ""))
+                self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", ""))
             except Exception:
                 pass
     
@@ -944,11 +966,11 @@ class SupernovasApp(tk.Tk):
             
             sn = self.supernova_data[item]
             
-            # Column #9 is rochester, #10 is tns (1-indexed)
-            if column == "#9":  # Rochester
+            # Column #10 is rochester, #11 is tns (1-indexed)
+            if column == "#10":  # Rochester
                 url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
                 self._open_url(url)
-            elif column == "#10":  # TNS
+            elif column == "#11":  # TNS
                 url = getattr(sn, 'tnsUrl', None) or f"https://www.wis-tns.org/object/{getattr(sn, 'name', '')}"
                 self._open_url(url)
         except Exception:
@@ -2058,42 +2080,52 @@ class SupernovasApp(tk.Tk):
                 pass
         self.results.set("")
 
-        # Labels and entries: create widgets first, then grid them.
-        self.labelMagnitude = ttk.Label(self, text=_("Max. magnitude: "))
-        self.labelMagnitude.grid(column=0, row=0, padx=5, pady=5, sticky=tk.E)
-        self.entryMagnitude = ttk.Entry(self, textvariable=self.magnitude)
-        self.entryMagnitude.grid(column=1, row=0, padx=5, pady=5)
+        # Left-side controls: group into a dedicated frame for predictable layout
+        left_frame = ttk.Frame(self)
+        left_frame.grid(column=0, row=1, rowspan=11, columnspan=3, sticky="nw", padx=5, pady=5)
+        try:
+            left_frame.grid_columnconfigure(0, weight=0)
+            left_frame.grid_columnconfigure(1, weight=0)
+            left_frame.grid_columnconfigure(2, weight=0)
+        except Exception:
+            pass
 
-        self.labelDaysToSearch = ttk.Label(self, text=_("Find the n previous days: "))
-        self.labelDaysToSearch.grid(column=0, row=1, padx=5, pady=5, sticky=tk.E)
-        self.entryDaysToSearch = ttk.Entry(self, textvariable=self.daysToSearch)
-        self.entryDaysToSearch.grid(column=1, row=1, padx=5, pady=5)
+        # Labels and entries: create widgets as children of left_frame, rows start at 0
+        self.labelMagnitude = ttk.Label(left_frame, text=_("Max. magnitude: "))
+        self.labelMagnitude.grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
+        self.entryMagnitude = ttk.Entry(left_frame, textvariable=self.magnitude)
+        self.entryMagnitude.grid(column=1, row=0, padx=5, pady=5, sticky=tk.W)
 
-        self.labelObservationDate = ttk.Label(self, text=_("Observation date: "))
-        self.labelObservationDate.grid(column=0, row=2, padx=5, pady=5, sticky=tk.E)
-        self.entryObservationDate = ttk.Entry(self, textvariable=self.observationDate)
-        self.entryObservationDate.grid(column=1, row=2, padx=5, pady=5)
+        self.labelDaysToSearch = ttk.Label(left_frame, text=_("Find the n previous days: "))
+        self.labelDaysToSearch.grid(column=0, row=1, padx=5, pady=5, sticky=tk.W)
+        self.entryDaysToSearch = ttk.Entry(left_frame, textvariable=self.daysToSearch)
+        self.entryDaysToSearch.grid(column=1, row=1, padx=5, pady=5, sticky=tk.W)
 
-        self.labelInitTime = ttk.Label(self, text=_("Init time in observation date: "))
-        self.labelInitTime.grid(column=0, row=3, padx=5, pady=5, sticky=tk.E)
-        self.entryInitTime = ttk.Entry(self, textvariable=self.observationTime)
-        self.entryInitTime.grid(column=1, row=3, padx=5, pady=5)
+        self.labelObservationDate = ttk.Label(left_frame, text=_("Observation date: "))
+        self.labelObservationDate.grid(column=0, row=2, padx=5, pady=5, sticky=tk.W)
+        self.entryObservationDate = ttk.Entry(left_frame, textvariable=self.observationDate)
+        self.entryObservationDate.grid(column=1, row=2, padx=5, pady=5, sticky=tk.W)
 
-        self.labelDuration = ttk.Label(self, text=_("Hours of observation: "))
-        self.labelDuration.grid(column=0, row=4, padx=5, pady=5, sticky=tk.E)
-        self.entryDuration = ttk.Entry(self, textvariable=self.observationDuration)
-        self.entryDuration.grid(column=1, row=4, padx=5, pady=5)
+        self.labelInitTime = ttk.Label(left_frame, text=_("Init time in observation date: "))
+        self.labelInitTime.grid(column=0, row=3, padx=5, pady=5, sticky=tk.W)
+        self.entryInitTime = ttk.Entry(left_frame, textvariable=self.observationTime)
+        self.entryInitTime.grid(column=1, row=3, padx=5, pady=5, sticky=tk.W)
 
-        self.labelSite = ttk.Label(self, text=_("Site: "))
-        self.labelSite.grid(column=0, row=5, padx=5, pady=5, sticky=tk.E)
+        self.labelDuration = ttk.Label(left_frame, text=_("Hours of observation: "))
+        self.labelDuration.grid(column=0, row=4, padx=5, pady=5, sticky=tk.W)
+        self.entryDuration = ttk.Entry(left_frame, textvariable=self.observationDuration)
+        self.entryDuration.grid(column=1, row=4, padx=5, pady=5, sticky=tk.W)
+
+        self.labelSite = ttk.Label(left_frame, text=_("Site: "))
+        self.labelSite.grid(column=0, row=5, padx=5, pady=5, sticky=tk.W)
 
         siteValues = sorted(list(sites.keys()))
-        self.cbSite = ttk.Combobox(self, values=siteValues, textvariable=self.site)
-        self.cbSite.grid(column=1, row=5, padx=5, pady=5)
+        self.cbSite = ttk.Combobox(left_frame, values=siteValues, textvariable=self.site)
+        self.cbSite.grid(column=1, row=5, padx=5, pady=5, sticky=tk.W)
 
         # Add Site button next to combobox (pencil icon)
-        self.addSiteButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddSite())
-        self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5)
+        self.addSiteButton = ttk.Button(left_frame, text="✎", width=3, command=lambda: self.callbackAddSite())
+        self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5, sticky=tk.W)
 
         # Language selector (calls set_language and updates widgets)
         try:
@@ -2115,14 +2147,14 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 current_lang = "en"
 
-        self.labelLang = ttk.Label(self, text=_("Language:"))
-        self.labelLang.grid(column=3, row=5, padx=5, pady=5, sticky=tk.E)
+        self.labelLang = ttk.Label(left_frame, text=_("Language:"))
+        self.labelLang.grid(column=0, row=9, padx=5, pady=5, sticky=tk.W)
         self.langVar = tk.StringVar(value=current_lang)
         try:
-            self.cbLang = ttk.Combobox(self, values=sorted(lang_values), textvariable=self.langVar, width=6)
+            self.cbLang = ttk.Combobox(left_frame, values=sorted(lang_values), textvariable=self.langVar, width=6)
         except Exception:
-            self.cbLang = ttk.Combobox(self, values=sorted(lang_values))
-        self.cbLang.grid(column=4, row=5, padx=5, pady=5)
+            self.cbLang = ttk.Combobox(left_frame, values=sorted(lang_values))
+        self.cbLang.grid(column=1, row=9, padx=5, pady=5, sticky=tk.W)
         try:
             # ensure combobox shows the current language on startup
             self.cbLang.set(self.langVar.get() or "en")
@@ -2135,23 +2167,23 @@ class SupernovasApp(tk.Tk):
 
 
         # Visibility window selector
-        self.labelVisibility = ttk.Label(self, text=_("Visibility window:"))
+        self.labelVisibility = ttk.Label(left_frame, text=_("Visibility window:"))
         # place directly below the Site selector (row 6)
-        self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.E)
+        self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.W)
         # include an empty selection so minLatitude can be used instead
         visValues = [""] + sorted(list(visibility_windows.keys()))
         try:
-            self.cbVisibility = ttk.Combobox(self, values=visValues, textvariable=self.visibilityWindow)
+            self.cbVisibility = ttk.Combobox(left_frame, values=visValues, textvariable=self.visibilityWindow)
         except Exception:
-            self.cbVisibility = ttk.Combobox(self, values=visValues)
-        self.cbVisibility.grid(column=1, row=6, padx=5, pady=5)
+            self.cbVisibility = ttk.Combobox(left_frame, values=visValues)
+        self.cbVisibility.grid(column=1, row=6, padx=5, pady=5, sticky=tk.W)
 
-        self.addVisibilityButton = ttk.Button(self, text="✎", width=3, command=lambda: self.callbackAddVisibilityWindow())
-        self.addVisibilityButton.grid(column=2, row=6, padx=(2, 10), pady=5)
+        self.addVisibilityButton = ttk.Button(left_frame, text="✎", width=3, command=lambda: self.callbackAddVisibilityWindow())
+        self.addVisibilityButton.grid(column=2, row=6, padx=(2, 10), pady=5, sticky=tk.W)
 
         # Label to display selected visibility window numeric values (shown below dropdown)
-        self.visibilityValuesLabel = ttk.Label(self, text="", justify=tk.LEFT)
-        self.visibilityValuesLabel.grid(column=0, row=7, padx=5,  columnspan=3, pady=(0, 6), sticky=tk.W)
+        self.visibilityValuesLabel = ttk.Label(left_frame, text="", justify=tk.LEFT)
+        self.visibilityValuesLabel.grid(column=0, row=8, padx=5,  columnspan=3, pady=(0, 6), sticky=tk.W)
 
         # update UI when visibility selection changes
         try:
@@ -2219,10 +2251,16 @@ class SupernovasApp(tk.Tk):
         except Exception:
             pass
 
-        self.labelLatitud = ttk.Label(self, text=_("Min latitude: "))
-        self.labelLatitud.grid(column=0, row=8, padx=5, pady=5, sticky=tk.E)
-        self.entryLatitud = ttk.Entry(self, textvariable=self.minLatitud)
-        self.entryLatitud.grid(column=1, row=8, padx=5, pady=5)
+        # Min latitude - keep inside left_frame if available, otherwise parent to self
+        try:
+            parent_for_lat = left_frame
+        except Exception:
+            parent_for_lat = self
+
+        self.labelLatitud = ttk.Label(parent_for_lat, text=_("Min latitude: "))
+        self.labelLatitud.grid(column=0, row=7, padx=5, pady=5, sticky=tk.W)
+        self.entryLatitud = ttk.Entry(parent_for_lat, textvariable=self.minLatitud)
+        self.entryLatitud.grid(column=1, row=7, padx=5, pady=5, sticky=tk.W)
 
         self.labelResults = ttk.Label(self, text=_("Results: "))
         self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
@@ -2234,7 +2272,7 @@ class SupernovasApp(tk.Tk):
         results_frame.grid_columnconfigure(0, weight=1)
         
         # Define columns for the results table
-        columns = ("name", "type", "magnitude", "date", "host", "constellation", "ra", "dec", "rochester", "tns")
+        columns = ("name", "type", "magnitude", "date", "observation_time", "host", "constellation", "ra", "dec", "rochester", "tns")
         
         self.resultsTree = ttk.Treeview(results_frame, columns=columns, show="headings", selectmode="browse", style="ResultsTreeview.Treeview")
         
@@ -2243,6 +2281,7 @@ class SupernovasApp(tk.Tk):
         self.resultsTree.heading("type", text=_("Type"), command=lambda: self._sort_column("type", False))
         self.resultsTree.heading("magnitude", text=_("Mag"), command=lambda: self._sort_column("magnitude", True))
         self.resultsTree.heading("date", text=_("Date"), command=lambda: self._sort_column("date", False))
+        self.resultsTree.heading("observation_time", text=_("Observation time"), command=lambda: self._sort_column("observation_time", False))
         self.resultsTree.heading("host", text=_("Host"), command=lambda: self._sort_column("host", False))
         self.resultsTree.heading("constellation", text=_("Constellation"), command=lambda: self._sort_column("constellation", False))
         self.resultsTree.heading("ra", text=_("RA"), command=lambda: self._sort_column("ra", False))
@@ -2255,13 +2294,14 @@ class SupernovasApp(tk.Tk):
         self.sort_reverse = False
         
         self.resultsTree.column("name", width=120, anchor=tk.W)
-        self.resultsTree.column("type", width=60, anchor=tk.CENTER)
-        self.resultsTree.column("magnitude", width=60, anchor=tk.CENTER)
-        self.resultsTree.column("date", width=100, anchor=tk.CENTER)
+        self.resultsTree.column("type", width=60, anchor=tk.W)
+        self.resultsTree.column("magnitude", width=60, anchor=tk.E)
+        self.resultsTree.column("date", width=100, anchor=tk.E)
+        self.resultsTree.column("observation_time", width=180, anchor=tk.E)
         self.resultsTree.column("host", width=150, anchor=tk.W)
-        self.resultsTree.column("constellation", width=80, anchor=tk.CENTER)
-        self.resultsTree.column("ra", width=90, anchor=tk.CENTER)
-        self.resultsTree.column("dec", width=90, anchor=tk.CENTER)
+        self.resultsTree.column("constellation", width=80, anchor=tk.W)
+        self.resultsTree.column("ra", width=90, anchor=tk.E)
+        self.resultsTree.column("dec", width=90, anchor=tk.E)
         self.resultsTree.column("rochester", width=80, anchor=tk.CENTER)
         self.resultsTree.column("tns", width=60, anchor=tk.CENTER)
         
@@ -2355,28 +2395,28 @@ class SupernovasApp(tk.Tk):
             text=_("PDF"),
             command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
         )
-        self.pdfButton.grid(column=0, row=9, sticky=tk.E)
+        self.pdfButton.grid(column=0, row=12, sticky=tk.E)
 
         self.txtButton = ttk.Button(
             self,
             text=_("TXT"),
             command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
         )
-        self.txtButton.grid(column=1, row=9, sticky=tk.W)
+        self.txtButton.grid(column=1, row=12, sticky=tk.W)
 
         self.searchButton = ttk.Button(
             self,
             text=_("Refresh Search"),
             command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
         )
-        self.searchButton.grid(column=1, row=10, sticky=tk.W)
+        self.searchButton.grid(column=2, row=12, sticky=tk.W)
 
         self.exitButton = ttk.Button(self, text=_("Exit"), command=lambda: self.quit())
         # ensure there is visible separation above the Exit button by
         # reserving two empty grid rows (13 and 14) with a minimum size
         try:
-            self.grid_rowconfigure(13, minsize=30)
-            self.grid_rowconfigure(14, minsize=30)
+            self.grid_rowconfigure(15, minsize=30)
+            self.grid_rowconfigure(16, minsize=30)
         except Exception:
             pass
         # place Exit at the right-bottom of the window under the Results column
