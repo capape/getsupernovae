@@ -180,6 +180,52 @@ def bootstrap_config():
     except Exception:
         pass
 
+
+def load_user_prefs():
+    """Load persisted UI prefs from user config dir, return {} on error."""
+    try:
+        cfg = get_user_config_dir()
+        os.makedirs(cfg, exist_ok=True)
+        p = os.path.join(cfg, "prefs.json")
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+                if isinstance(data, dict):
+                    return data
+    except Exception:
+        pass
+    # fallback: try package-local prefs file
+    try:
+        p = os.path.join(os.path.dirname(__file__), "prefs.json")
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+                if isinstance(data, dict):
+                    return data
+    except Exception:
+        pass
+    return {}
+
+
+def save_user_prefs(prefs: dict):
+    """Save prefs dict to user config dir; best-effort, ignore failures."""
+    try:
+        cfg = get_user_config_dir()
+        os.makedirs(cfg, exist_ok=True)
+        p = os.path.join(cfg, "prefs.json")
+        with open(p, "w", encoding="utf-8") as fh:
+            json.dump(prefs, fh, indent=2)
+        return
+    except Exception:
+        pass
+    # last resort: write next to module
+    try:
+        p = os.path.join(os.path.dirname(__file__), "prefs.json")
+        with open(p, "w", encoding="utf-8") as fh:
+            json.dump(prefs, fh, indent=2)
+    except Exception:
+        pass
+
     # default visibility windows
     default_visibility = {
         "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}

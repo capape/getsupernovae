@@ -39,6 +39,8 @@ from snconfig import (
     load_visibility_windows,
     bootstrap_config,
     get_user_config_dir,
+    load_user_prefs,
+    save_user_prefs,
 )
 
 
@@ -454,6 +456,80 @@ class SupernovasApp(tk.Tk):
                     self.entryLatitud.config(state="normal")
                 except Exception:
                     pass
+        except Exception:
+            pass
+
+    def _persist_prefs(self, *args):
+        """Collect current tracked UI values and persist them to disk."""
+        try:
+            prefs = {
+                "magnitude": (getattr(self, "magnitude", None) and self.magnitude.get()) or "",
+                "language": (getattr(self, "langVar", None) and self.langVar.get()) or "",
+                "site": (getattr(self, "site", None) and self.site.get()) or "",
+                "visibilityWindow": (getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or "",
+                "observationHours": (getattr(self, "observationDuration", None) and self.observationDuration.get()) or "",
+                "observationTime": (getattr(self, "observationTime", None) and self.observationTime.get()) or "",
+            }
+            try:
+                save_user_prefs(prefs)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _load_and_apply_prefs(self):
+        """Load persisted prefs and apply to UI variables where valid."""
+        try:
+            prefs = load_user_prefs() or {}
+            if not isinstance(prefs, dict):
+                return
+        except Exception:
+            prefs = {}
+
+        try:
+            if prefs.get("magnitude"):
+                self.magnitude.set(str(prefs.get("magnitude")))
+        except Exception:
+            pass
+        try:
+            if prefs.get("observationTime"):
+                self.observationTime.set(str(prefs.get("observationTime")))
+        except Exception:
+            pass
+        try:
+            if prefs.get("observationHours"):
+                self.observationDuration.set(str(prefs.get("observationHours")))
+        except Exception:
+            pass
+        try:
+            site = prefs.get("site")
+            if site and site in list(sites.keys()):
+                self.site.set(site)
+        except Exception:
+            pass
+        try:
+            vw = prefs.get("visibilityWindow")
+            if vw and vw in visibility_windows:
+                self.visibilityWindow.set(vw)
+        except Exception:
+            pass
+        try:
+            lang = prefs.get("language")
+            if lang:
+                try:
+                    set_language(lang)
+                    if getattr(self, "langVar", None):
+                        self.langVar.set(lang)
+                    try:
+                        self._on_language_change()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            self._update_visibility_ui()
         except Exception:
             pass
 
@@ -2085,6 +2161,63 @@ class SupernovasApp(tk.Tk):
                 self.visibilityWindow.trace_add('write', lambda *a: self._update_visibility_ui())
             except Exception:
                 pass
+
+        # Persist preferences when key UI options change
+        try:
+            try:
+                self.magnitude.trace_add(["write", "unset"], lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+            except Exception:
+                try:
+                    self.magnitude.trace_add("write", lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+                except Exception:
+                    pass
+            try:
+                self.observationTime.trace_add(["write", "unset"], lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+            except Exception:
+                try:
+                    self.observationTime.trace_add("write", lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+                except Exception:
+                    pass
+            try:
+                self.observationDuration.trace_add(["write", "unset"], lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+            except Exception:
+                try:
+                    self.observationDuration.trace_add("write", lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+                except Exception:
+                    pass
+            try:
+                self.site.trace_add(["write", "unset"], lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+            except Exception:
+                try:
+                    self.site.trace_add("write", lambda *a: (self.callbackClearResults(*a), self._persist_prefs()))
+                except Exception:
+                    pass
+            try:
+                self.visibilityWindow.trace_add(["write", "unset"], lambda *a: (self.callbackClearResults(*a), self._persist_prefs(), self._update_visibility_ui()))
+            except Exception:
+                try:
+                    self.visibilityWindow.trace_add("write", lambda *a: (self.callbackClearResults(*a), self._persist_prefs(), self._update_visibility_ui()))
+                except Exception:
+                    pass
+            try:
+                if getattr(self, 'langVar', None):
+                    try:
+                        self.langVar.trace_add(["write", "unset"], lambda *a: (self._persist_prefs(),))
+                    except Exception:
+                        try:
+                            self.langVar.trace_add("write", lambda *a: (self._persist_prefs(),))
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+        # Apply persisted prefs if present (best-effort)
+        try:
+            self._load_and_apply_prefs()
+        except Exception:
+            pass
 
         self.labelLatitud = ttk.Label(self, text=_("Min latitude: "))
         self.labelLatitud.grid(column=0, row=8, padx=5, pady=5, sticky=tk.E)
