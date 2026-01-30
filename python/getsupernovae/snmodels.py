@@ -1,37 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
-from astropy.coordinates import SkyCoord
-from datetime import date
+"""Compatibility shim for `snmodels`.
 
+This module was migrated to `app.models.snmodels`. Keep a thin shim
+here to preserve existing import paths while the refactor completes.
+"""
 
-class AxCordInTime:
-    def __init__(self, time, coord):
-        self.time = time
-        self.coord = coord
-
-
-class Visibility:
-    def __init__(self, visible, azCords):
-        self.visible = visible
-        self.azCords = azCords
-
-
-@dataclass
-class Supernova:
-    name: str
-    date: Optional[str]
-    mag: Optional[float]
-    host: Optional[str]
-    ra: Optional[str]
-    decl: Optional[str]
-    link: Optional[str]
-    constellation: Optional[str]
-    coordinates: Optional[SkyCoord]
-    firstObserved: Optional[str]
-    maxMagnitude: Optional[str]
-    maxMagnitudeDate: Optional[str]
-    type: Optional[str]
-    visibility: Visibility
-    # optional parsed date objects
-    maxMagnitudeDate_obj: Optional[date] = None
-    firstObserved_obj: Optional[date] = None
+try:
+    from app.models.snmodels import *  # noqa: F401,F403
+except Exception as _exc:  # pragma: no cover - fail early if migration incomplete
+    raise

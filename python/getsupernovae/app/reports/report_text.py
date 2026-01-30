@@ -1,19 +1,10 @@
 import os
 import json
 from typing import List
-"""Compatibility shim for report_text.
-
-Re-export the implementation from `app.reports.report_text` to keep
-old import paths working during the refactor.
-"""
-
-try:
-    from app.reports.report_text import *  # noqa: F401,F403
-except Exception:
-    # If the migrated module is unavailable, raise to surface the error.
-    raise
-from snconfig import load_visibility_windows
-import i18n
+from app.models.snmodels import Supernova
+from app.utils.snparser import format_iso_datetime
+from app.config.snconfig import load_visibility_windows
+import app.i18n as i18n
 
 
 def textSupernova(data: Supernova) -> str:

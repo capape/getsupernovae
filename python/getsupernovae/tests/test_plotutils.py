@@ -4,8 +4,8 @@ import pytest
 import astropy.units as u
 from astropy.time import Time
 
-import plotutils
-from snmodels import AxCordInTime, Visibility, Supernova
+import app.reports.plotutils as plotutils
+from app.models.snmodels import AxCordInTime, Visibility, Supernova
 
 HERE = os.path.dirname(__file__)
 FIXTURE = os.path.join(HERE, "fixtures", "sample_supernova.json")

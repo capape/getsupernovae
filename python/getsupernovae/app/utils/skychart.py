@@ -1,13 +1,3 @@
-"""Compatibility shim for skychart.
-
-Re-export implementation from `app.utils.skychart` to preserve
-top-level import paths during migration.
-"""
-
-try:
-    from app.utils.skychart import *  # noqa: F401,F403
-except Exception:
-    raise
 import io
 import astropy.units as u
 from reportlab.lib.utils import ImageReader

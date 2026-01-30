@@ -5,7 +5,7 @@ import astropy.units as u
 
 # Import VisibilityWindow directly from snvisibility; keep `sites` from the
 # application module for site definitions.
-from snvisibility import VisibilityWindow
+from app.ui.snvisibility import VisibilityWindow
 from getsupernovae import sites
 
 

@@ -7,21 +7,12 @@ from reportlab.lib.colors import Color, black, blue
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
-"""Compatibility shim for report_pdf.
-
-Re-export the implementation from `app.reports.report_pdf` to keep
-old import paths working during the refactor.
-"""
-
-try:
-    from app.reports.report_pdf import *  # noqa: F401,F403
-except Exception:
-    raise
+from app.utils.snparser import format_iso_datetime
+from app.models.snmodels import Supernova
+from app.reports.plotutils import VisibilityPlotter
 import json
-
-
-from snconfig import load_visibility_windows as _load_visibility_windows
-import i18n
+from app.config.snconfig import load_visibility_windows as _load_visibility_windows
+import app.i18n as i18n
 from pathlib import Path
 import platform
 
