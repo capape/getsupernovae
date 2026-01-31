@@ -1669,357 +1669,71 @@ class SupernovasApp(tk.Tk):
             pass
 
     def callbackAddVisibilityWindow(self):
-        """Open a dialog to add/edit named visibility windows persisted to visibility_windows.json"""
         try:
-            cfgdir = get_user_config_dir()
-            os.makedirs(cfgdir, exist_ok=True)
-            path = os.path.join(cfgdir, "visibility_windows.json")
+            from app.ui.visibility_dialog import VisibilityDialog
         except Exception:
-            path = os.path.join(os.path.dirname(__file__), "visibility_windows.json")
-
-        # Load existing visibility windows
-        try:
-            with open(path, "r", encoding="utf-8") as fh:
-                current = json.load(fh)
-                if not isinstance(current, dict):
-                    current = {k: v for k, v in visibility_windows.items()}
-        except Exception:
-            current = {k: v for k, v in visibility_windows.items()}
-
-        editor = tk.Toplevel(self)
-        editor.title(_("Edit visibility windows"))
-        editor.geometry("900x420")
-        editor.minsize(600, 360)
-
-        editor.grid_rowconfigure(0, weight=1)
-        editor.grid_columnconfigure(0, weight=3)
-        editor.grid_columnconfigure(1, weight=1)
-
-        # normalize helper
-        def _normalize(v):
-            try:
-                return {
-                    "minAlt": float(v.get("minAlt", 0.0)),
-                    "maxAlt": float(v.get("maxAlt", 90.0)),
-                    "minAz": float(v.get("minAz", 0.0)),
-                    "maxAz": float(v.get("maxAz", 360.0)),
-                }
-            except Exception:
-                return {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+            return
 
         try:
-            current = {k: _normalize(v) for k, v in current.items()}
+            current = load_visibility_windows()
         except Exception:
             current = {}
 
-        # left: preview tree
-        frame_left = ttk.Frame(editor)
-        frame_left.grid(column=0, row=0, sticky="nsew", padx=8, pady=8)
-        frame_left.grid_rowconfigure(0, weight=1)
-        frame_left.grid_columnconfigure(0, weight=1)
+        dlg = VisibilityDialog(self, current)
+        self.wait_window(dlg)
 
-        columns = ("name", "minAlt", "maxAlt", "minAz", "maxAz")
         try:
-            style = ttk.Style()
-            style.configure("VisTreeview.Treeview", rowheight=26)
-            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", style="VisTreeview.Treeview", height=12)
+            new_vis = getattr(dlg, "result", None)
+            if new_vis is None:
+                try:
+                    new_vis = load_visibility_windows()
+                except Exception:
+                    new_vis = None
+
+            if new_vis is not None:
+                try:
+                    global visibility_windows
+                    visibility_windows = new_vis
+                except Exception:
+                    visibility_windows = new_vis
+
+                try:
+                    vals = [""] + sorted(list(visibility_windows.keys()))
+                    self.cbVisibility["values"] = vals
+
+                    # Prefer newly added selection when possible
+                    sel_name = None
+                    try:
+                        old_keys = set(current.keys()) if isinstance(current, dict) else set()
+                        new_keys = set(visibility_windows.keys())
+                        added = sorted(new_keys - old_keys)
+                        if added:
+                            sel_name = added[0]
+                    except Exception:
+                        sel_name = None
+
+                    prev = None
+                    try:
+                        prev = self.visibilityWindow.get()
+                    except Exception:
+                        prev = None
+
+                    if not sel_name:
+                        if prev in vals:
+                            sel_name = prev
+                        elif vals:
+                            sel_name = vals[0]
+
+                    if sel_name:
+                        try:
+                            self.visibilityWindow.set(sel_name)
+                            self.cbVisibility.update_idletasks()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
         except Exception:
-            tree = ttk.Treeview(frame_left, columns=columns, show="headings", selectmode="browse", height=12)
-        for col in columns:
-            tree.heading(col, text=col.capitalize())
-            tree.column(col, width=100, anchor=tk.CENTER)
-
-        def populate_tree():
-            tree.delete(*tree.get_children())
-            for nm, info in sorted(current.items(), key=lambda kv: kv[0].lower()):
-                try:
-                    ma = float(info.get("minAlt", 0.0))
-                    xa = float(info.get("maxAlt", 90.0))
-                    mz = float(info.get("minAz", 0.0))
-                    xz = float(info.get("maxAz", 360.0))
-                    tree.insert("", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}"))
-                except Exception:
-                    tree.insert("", "end", values=(nm, "", "", "", ""))
-
-        vsb = ttk.Scrollbar(frame_left, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=vsb.set)
-        tree.grid(column=0, row=0, sticky="nsew")
-        vsb.grid(column=1, row=0, sticky="ns")
-
-        # right: editor form
-        frame_right = ttk.Frame(editor)
-        frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
-
-        ttk.Label(frame_right, text=_("Name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
-        name_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
-
-        ttk.Label(frame_right, text=_("Min Alt (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
-        minalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=minalt_var, width=20).grid(column=1, row=1, padx=5, pady=5)
-
-        ttk.Label(frame_right, text=_("Max Alt (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
-        maxalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=maxalt_var, width=20).grid(column=1, row=2, padx=5, pady=5)
-
-        ttk.Label(frame_right, text=_("Min Az (deg):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
-        minaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=minaz_var, width=20).grid(column=1, row=3, padx=5, pady=5)
-
-        ttk.Label(frame_right, text=_("Max Az (deg):")).grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
-        maxaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=maxaz_var, width=20).grid(column=1, row=4, padx=5, pady=5)
-
-        btn_frame = ttk.Frame(editor)
-        btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
-
-        selected_name = {"value": None}
-
-        def on_select(ev=None):
-            sel = tree.selection()
-            if not sel:
-                selected_name["value"] = None
-                return
-            vals = tree.item(sel[0], "values")
-            if not vals:
-                selected_name["value"] = None
-                return
-            nm, mina, maxa, minz, maxz = vals
-            selected_name["value"] = nm
-            name_var.set(nm)
-            minalt_var.set(str(mina))
-            maxalt_var.set(str(maxa))
-            minaz_var.set(str(minz))
-            maxaz_var.set(str(maxz))
-
-        def persist_current():
-            normalized = {k: {"minAlt": float(v.get("minAlt", 0.0)), "maxAlt": float(v.get("maxAlt", 90.0)), "minAz": float(v.get("minAz", 0.0)), "maxAz": float(v.get("maxAz", 360.0))} for k, v in current.items()}
-            try:
-                cfg_dir = get_user_config_dir()
-                os.makedirs(cfg_dir, exist_ok=True)
-                user_path = os.path.join(cfg_dir, "visibility_windows.json")
-                with open(user_path, "w", encoding="utf-8") as fh:
-                    json.dump(normalized, fh, indent=2)
-            except Exception:
-                with open(path, "w", encoding="utf-8") as fh:
-                    json.dump(normalized, fh, indent=2)
-
-        def on_save():
-            nm = name_var.get().strip()
-            if not nm:
-                messagebox.showerror(_("Error"), _("Name is required"), parent=editor)
-                return
-            try:
-                mina = float(minalt_var.get())
-                maxa = float(maxalt_var.get())
-                minz = float(minaz_var.get())
-                maxz = float(maxaz_var.get())
-            except Exception as e:
-                messagebox.showerror(_("Error"), _("Invalid numeric input: {e}").format(e=e), parent=editor)
-                return
-
-            old = selected_name["value"]
-            if nm in current and old is not None and nm != old:
-                if not messagebox.askyesno(_("Overwrite"), _("Window '{nm}' already exists. Overwrite?").format(nm=nm), parent=editor):
-                    return
-
-            if old and old != nm and old in current:
-                try:
-                    del current[old]
-                except Exception:
-                    pass
-
-            current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
-            try:
-                persist_current()
-                global visibility_windows
-                visibility_windows = load_visibility_windows()
-            except Exception as e:
-                messagebox.showerror(_("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=editor)
-                return
-
-            populate_tree()
-            try:
-                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
-                self.visibilityWindow.set(nm)
-            except Exception:
-                pass
-
-        def on_add():
-            nm = name_var.get().strip()
-            if not nm:
-                messagebox.showerror(_("Invalid input"), _("Name is required."), parent=editor)
-                return
-            try:
-                mina = float(minalt_var.get())
-                maxa = float(maxalt_var.get())
-                minz = float(minaz_var.get())
-                maxz = float(maxaz_var.get())
-            except Exception:
-                messagebox.showerror(_("Invalid input"), _("Numeric fields must be valid numbers."), parent=editor)
-                return
-            if nm in current:
-                messagebox.showerror(_("Invalid input"), _("A window with that name already exists."), parent=editor)
-                return
-            current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
-            try:
-                persist_current()
-                global visibility_windows
-                visibility_windows = load_visibility_windows()
-            except Exception as e:
-                messagebox.showerror(_("Error"), _("Failed to add window: {e}").format(e=e), parent=editor)
-                return
-            populate_tree()
-            try:
-                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
-                self.visibilityWindow.set(nm)
-            except Exception:
-                pass
-
-        def on_delete():
-            nm = selected_name["value"]
-            if not nm:
-                return
-            if not messagebox.askyesno(_("Delete"), _("Delete visibility window '{nm}'?").format(nm=nm), parent=editor):
-                return
-            try:
-                if nm in current:
-                    del current[nm]
-                persist_current()
-                global visibility_windows
-                visibility_windows = load_visibility_windows()
-            except Exception as e:
-                messagebox.showerror(_("Error"), _("Failed to delete window: {e}").format(e=e), parent=editor)
-                return
-            populate_tree()
-            try:
-                self.cbVisibility["values"] = [""] + sorted(list(visibility_windows.keys()))
-            except Exception:
-                pass
-
-        def on_close():
-            editor.destroy()
-
-        tree.bind("<<TreeviewSelect>>", on_select)
-
-        save_btn = ttk.Button(btn_frame, text=_("Save"), command=on_save)
-        save_btn.grid(column=0, row=0, sticky="w", padx=6)
-        add_btn = ttk.Button(btn_frame, text=_("Add"), command=on_add)
-        add_btn.grid(column=1, row=0, padx=6)
-        delete_btn = ttk.Button(btn_frame, text=_("Delete"), command=on_delete)
-        delete_btn.grid(column=2, row=0, padx=6)
-        close_btn = ttk.Button(btn_frame, text=_("Close"), command=on_close)
-        close_btn.grid(column=3, row=0, sticky="e", padx=6)
-
-        populate_tree()
-
-        def on_add():
-            # Add a new site. Require all fields filled and name uniqueness (case-insensitive).
-            nm = name_var.get().strip()
-            lat_s = lat_var.get().strip()
-            lon_s = lon_var.get().strip()
-            height_s = height_var.get().strip()
-
-            if not nm or not lat_s or not lon_s or not height_s:
-                messagebox.showerror(_("Invalid input"), _("All fields (name, latitude, longitude, height) are required to add a site."), parent=editor)
-                return
-
-            try:
-                lat = float(lat_s)
-                lon = float(lon_s)
-                height = float(height_s)
-            except ValueError:
-                messagebox.showerror(_("Invalid values"), _("Latitude, longitude and height must be numeric"), parent=editor)
-                return
-
-            # case-insensitive duplicate check
-            for existing in current.keys():
-                if existing.lower() == nm.lower():
-                    messagebox.showerror(_("Duplicate site"), _("A site named '{existing}' already exists (case-insensitive).").format(existing=existing), parent=editor)
-                    return
-
-            # all good: add and persist
-            current[nm] = {"lat": lat, "lon": lon, "height": height}
-            try:
-                persist_current()
-                try:
-                    global sites
-                    sites = load_sites()
-                except Exception:
-                    pass
-            except Exception as ex:
-                messagebox.showerror(_("Save error"), _("Failed to save site: {ex}").format(ex=ex), parent=editor)
-                return
-
-            populate_tree()
-            try:
-                self.cbSite["values"] = sorted(list(sites.keys() if isinstance(sites, dict) else current.keys()))
-                self.site.set(nm)
-            except Exception:
-                pass
-            selected_name["value"] = nm
-
-        def on_delete():
-            nm = selected_name["value"]
-            if not nm:
-                messagebox.showerror(_("Error"), _("Select a site to delete"), parent=editor)
-                return
-            if not messagebox.askyesno(_("Confirm Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=editor):
-                return
-            try:
-                del current[nm]
-            except Exception:
-                messagebox.showerror(_("Error"), _("Failed to delete site '{nm}'").format(nm=nm), parent=editor)
-                return
-            try:
-                persist_current()
-                try:
-                    global sites
-                    sites = load_sites()
-                except Exception:
-                    pass
-            except Exception as e:
-                messagebox.showerror(_("Error"), _("Failed to save sites after delete: {e}").format(e=e), parent=editor)
-                return
-            populate_tree()
-            try:
-                # prefer the authoritative `sites` mapping when updating the combobox
-                vals = sorted(list(sites.keys())) if isinstance(sites, dict) else sorted(list(current.keys()))
-                self.cbSite["values"] = vals
-                # if current selection was deleted, clear or pick first
-                if vals:
-                    self.site.set(vals[0])
-                else:
-                    self.site.set("")
-            except Exception:
-                pass
-            # clear form
-            name_var.set("")
-            lat_var.set("")
-            lon_var.set("")
-            height_var.set("")
-            selected_name["value"] = None
-
-        def on_close():
-            editor.destroy()
-
-        # wire selection
-        tree.bind("<<TreeviewSelect>>", on_select)
-
-        save_btn = ttk.Button(btn_frame, text=_("Save"), command=on_save)
-        save_btn.grid(column=0, row=0, sticky="w", padx=6)
-        add_btn = ttk.Button(btn_frame, text=_("Add"), command=on_add)
-        add_btn.grid(column=1, row=0, padx=6)
-        delete_btn = ttk.Button(btn_frame, text=_("Delete"), command=on_delete)
-        delete_btn.grid(column=2, row=0, padx=6)
-        close_btn = ttk.Button(btn_frame, text=_("Close"), command=on_close)
-        close_btn.grid(column=3, row=0, sticky="e", padx=6)
-
-        # initial population of preview
-        populate_tree()
-
-        # Note: legacy separate Save button removed — use the Save button in the
-        # dialog button bar which updates `sites` and reloads the mapping.
+            pass
 
     def __init__(self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
 
