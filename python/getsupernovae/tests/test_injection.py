@@ -6,17 +6,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from getsupernovae import AsyncRochesterDownload, RochesterSupernova, SupernovaCallBackData, sites
 
-
 class DummyProvider:
     last_instance = None
 
     def __init__(self, timeout=None):
         DummyProvider.last_instance = self
 
-    def fetch(self, source):
+    def fetch(self):
         # record that fetch was called and return empty parsed list and rows
-        self.fetched = source
-        return [], []
+         return [], []
 
 
 class DummyReporter:
@@ -36,15 +34,14 @@ def test_async_uses_injected_provider():
     )
 
     # run downloader with dummy provider factory
-    dl = AsyncRochesterDownload(e, visibility_factory=None, provider_factory=DummyProvider, reporter=None)
+    downloader = AsyncRochesterDownload(e, visibility_factory=None, provider_factory=DummyProvider, reporter=None)
     # call run directly to avoid threading in tests
-    dl.run()
+    downloader.run()
 
     assert DummyProvider.last_instance is not None
-    assert hasattr(DummyProvider.last_instance, "fetched")
     # result should be list (empty) and raw_rows should be set to rows (also empty list)
-    assert isinstance(dl.result, list) or dl.result is None
-    assert hasattr(dl, "raw_rows")
+    assert isinstance(downloader.result, list) or downloader.result is None
+    assert hasattr(downloader, "dto_list")
 
 
 def test_reporter_propagation_to_rochester():

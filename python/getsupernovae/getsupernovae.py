@@ -3,7 +3,7 @@
 #
 
 from threading import Thread
-from typing import Any
+from typing import Any, List
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -14,6 +14,8 @@ import ssl
 from datetime import datetime, date, timedelta
 import sys
 import os
+
+from app.models.dto import SupernovaDTO
 # ensure local modules in this directory can be imported when script run directly
 sys.path.insert(0, os.path.dirname(__file__))
 import astropy.units as u
@@ -93,7 +95,7 @@ class RochesterSupernova:
         self.reporter = reporter
 
     def selectAndSortSupernovas(
-        self, e: SupernovaCallBackData, dataRows: ResultSet[Any]
+        self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]
     ):
 
         # Determine visibility window values: prefer named window if provided
@@ -122,7 +124,7 @@ class RochesterSupernova:
             maxAz = 360.0
 
         supernovas = self.selectSupernovas(
-            dataRows,
+            supernovaeList,
             e.magnitude,
             e.observationStart,
             e.observationTime,
@@ -142,7 +144,7 @@ class RochesterSupernova:
 
     def selectSupernovas(
         self,
-        dataRows: ResultSet[Any],
+        supernovaeList: List[SupernovaDTO],
         maxMag: str,
         observationDay: datetime,
         localStartTime: str,
@@ -168,53 +170,46 @@ class RochesterSupernova:
             from_date_obj = parse_date(fromDate)[0]
         except Exception:
             from_date_obj = None
-        for dataRow in dataRows:
-            parsed = _parse_row_safe(dataRow)
-            if not parsed:
-                continue
-
+        for snDto in supernovaeList:
+            
             # numeric comparison (ensure maxMag param is numeric)
             try:
                 max_mag_threshold = float(maxMag)
             except Exception:
                 max_mag_threshold = float(str(maxMag))
 
-            if parsed["mag"] > max_mag_threshold:
+            if snDto.mag > max_mag_threshold:
                 continue
 
             # if parsed date failed to parse, skip
-            if parsed.get("date_obj") is None:
+            if snDto.date is None:
                 continue
 
-            if from_date_obj is not None and parsed["date_obj"] <= from_date_obj:
+            if from_date_obj is not None and snDto.date_obj <= from_date_obj:
                 continue
 
             visibility = self.visibility_factory(minAlt, maxAlt, minAz, maxAz).getVisibility(
-                site, parsed["coord"], time1, time2)
+                site, snDto.coordinates, time1, time2)
 
-            if visibility.visible and parsed["name"] not in old:
+            if visibility.visible and snDto.name not in old:
                 data = Supernova(
-                    parsed["name"],
-                    parsed["date"],
-                    str(parsed["mag"]),
-                    parsed["host"],
-                    parsed["ra"],
-                    parsed["decl"],
-                    parsed["link"] or "",
-                    parsed["coord"].get_constellation(),
-                    parsed["coord"],
-                    parsed["firstObserved"],
-                    parsed["maxMagnitude"],
-                    parsed["maxMagnitudeDate"],
-                    parsed["type"],
+                    snDto.name,
+                    snDto.date,
+                    str(snDto.mag),
+                    snDto.host,
+                    snDto.ra,
+                    snDto.decl,
+                    snDto.link or "",
+                    snDto.coordinates.get_constellation(),
+                    snDto.coordinates,
+                    snDto.firstObserved,
+                    snDto.maxMagnitude,
+                    snDto.maxMagnitudeDate,
+                    snDto.type,
                     visibility,
+                    snDto.maxMagnitudeDate_obj,
+                    snDto.firstObserved_obj,
                 )
-                # attach parsed date objects for downstream use
-                try:
-                    data.maxMagnitudeDate_obj = parsed.get("maxMagnitudeDate_obj")
-                    data.firstObserved_obj = parsed.get("firstObserved_obj")
-                except Exception:
-                    pass
                 supernovas.append(data)
 
         return supernovas
@@ -229,15 +224,14 @@ class AsyncRochesterDownload(Thread):
 
         # Don't reset language - respect the user's current language setting
         self.result = None
-        self.error = None
-        # url = 'https://www.physics.purdue.edu/brightsupernovae/snimages/sndate.html'
-        self.url = "https://www.rochesterastronomy.org/snimages/snactive.html"
+        self.error = None        
         self.config = e
         self.visibility_factory = visibility_factory
         # provider_factory may be a class or callable that accepts timeout kwarg
         self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
         # optional reporter object/module for DI
         self.reporter = reporter
+        self.dto_list = None
 
     def run(self):
         try:
@@ -247,7 +241,7 @@ class AsyncRochesterDownload(Thread):
             except TypeError:
                 # provider_factory may be a class that doesn't accept timeout
                 provider = self.provider_factory()
-            parsed_list, rows = provider.fetch(self.url)
+            supernovaeList = provider.fetch()
             # propagate injected provider_factory and reporter to selection logic
             rochesterSupernova = RochesterSupernova(
                 visibility_factory=self.visibility_factory,
@@ -255,9 +249,9 @@ class AsyncRochesterDownload(Thread):
                 reporter=self.reporter,
             )
             # Continue using existing selection/filtering logic which expects raw rows
-            self.result = rochesterSupernova.selectAndSortSupernovas(self.config, rows)
+            self.result = rochesterSupernova.selectAndSortSupernovas(self.config, supernovaeList)
             # keep raw rows so the app can re-filter without re-downloading
-            self.raw_rows = rows
+            self.dto_list = supernovaeList
         except Exception as ex:
             # record the error for the main thread to show
             try:
@@ -762,7 +756,7 @@ class SupernovasApp(tk.Tk):
                 self.searchButton["state"] = tk.NORMAL            
                 # cache raw rows if available for later re-filtering
                 try:
-                    self.last_rows = getattr(thread, "raw_rows", None)
+                    self.last_rows = getattr(thread, "dto_list", None)
                 except Exception:
                     self.last_rows = None
             self.end_progress_bar()

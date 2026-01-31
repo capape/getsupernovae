@@ -1,3 +1,4 @@
+from ast import List
 import os
 import sys
 from bs4 import BeautifulSoup
@@ -6,8 +7,11 @@ from datetime import datetime
 # Ensure package imports work when running this test standalone
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from app.models.dto import SupernovaDTO
 from app.models.snmodels import Visibility, AxCordInTime
 from getsupernovae import RochesterSupernova, sites
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 
 class DummyVisibilityFactory:
@@ -25,7 +29,22 @@ class DummyVisibilityFactory:
 
 def test_rochester_uses_injected_visibility_factory():
     # Build a minimal HTML row similar to provider tests
-    row_html = '''
+    snList : List[SupernovaDTO] = []
+    sn = SupernovaDTO(
+        name="SN2025abc",
+        host="NGC 1234",
+        ra="12:34:56",
+        decl="+12:34:56",
+        mag=15.3,
+        date="2025/12/01",
+        date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
+        coordinates= SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
+        type="Ia"
+    )
+    snList.append(sn)
+
+
+    html = '''
     <table>
     <tr>
         <td><a href="../snimages/sn2025abc.html">SN2025abc</a></td>
@@ -44,15 +63,14 @@ def test_rochester_uses_injected_visibility_factory():
     </table>
     '''
 
-    soup = BeautifulSoup(row_html, 'html.parser')
-    tr = soup.find('tr')
+    
 
     # Instantiate RochesterSupernova with the dummy factory
     rv = RochesterSupernova(visibility_factory=DummyVisibilityFactory)
 
     # Run selection with permissive thresholds so the single row is included
     results = rv.selectSupernovas(
-        [tr],
+        snList,
         maxMag="16",
         observationDay=datetime.now(),
         localStartTime="21:00",
