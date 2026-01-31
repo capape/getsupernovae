@@ -12,6 +12,8 @@ a = Analysis(
         ('locales', 'locales'),
         ('fonts', 'fonts'),
         ('sites.json', '.'),
+        # include icons so PyInstaller can bundle them and the EXE can reference the .ico
+        ('assets/icons', 'assets/icons'),
     ],
     hiddenimports=[
         'tkinter',
@@ -67,4 +69,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='assets/icons/app_icon.ico',
 )

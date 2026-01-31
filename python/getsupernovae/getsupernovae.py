@@ -1797,6 +1797,34 @@ class SupernovasApp(tk.Tk):
 
         self.title(_("Find latest supernovae"))
 
+        # Load application icon if available. Prefer app_icon.ico (Windows),
+        # then app_icon.png. If present, set the window icon; fallback is silent.
+        try:
+            icon_dir = os.path.join(os.path.dirname(__file__), "assets", "icons")
+            ico = os.path.join(icon_dir, "app_icon.ico")
+            png = os.path.join(icon_dir, "icon-256.png")
+            svg = os.path.join(icon_dir, "app_icon.svg")
+            if os.path.exists(ico):
+                try:
+                    self.iconbitmap(ico)
+                except Exception:
+                    pass
+            elif os.path.exists(png):
+                try:
+                    img = tk.PhotoImage(file=png)
+                    self.iconphoto(False, img)
+                    # keep reference to avoid GC
+                    self._icon_image = img
+                except Exception:
+                    pass
+            else:
+                # If only SVG is present, we don't attempt to parse it here.
+                # Users can convert the SVG to PNG/ICO (see docs).
+                if os.path.exists(svg):
+                    pass
+        except Exception:
+            pass
+
         window_width = 1400
         window_height = 1200
 
