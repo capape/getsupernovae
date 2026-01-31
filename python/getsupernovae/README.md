@@ -71,6 +71,25 @@ pip install pytest
 pytest -q
 ```
 
+Test isolation note
+- When running tests or CI, avoid letting test runs read/write the real user config (`~/.config/getsupernovae`). Two safe options:
+  - **Set `GETSUPERNOVAE_CONFIG_DIR` in CI**: point this environment variable to a temporary directory so the application uses that path for config files during tests. Example in a CI job:
+
+    ```bash
+    export GETSUPERNOVAE_CONFIG_DIR="$CI_PROJECT_DIR/.getsupernovae_test_config"
+    pytest -q
+    ```
+
+  - **Pass an explicit `path` to `SitesDialog` in tests**: the `SitesDialog` constructor accepts a `path` parameter so tests can provide a temporary `sites.json` file and avoid touching user config. Example in a pytest test:
+
+    ```python
+    from app.ui.sites_dialog import SitesDialog
+
+    dlg = SitesDialog(root, sites={}, path=str(tmp_path / 'sites.json'))
+    ```
+
+Either approach ensures test runs are hermetic and do not overwrite or depend on a developer's real configuration.
+
 Troubleshooting & Notes
 - SSL: the current downloader uses the standard library; historically SSL verification was relaxed for some servers. If you see SSL errors, consider replacing the downloader with `requests` and enabling retries and proper certificate verification.
 - GUI errors: if you get Tkinter callback errors, check that you are running the script with a supported Python version and that required packages are installed.
