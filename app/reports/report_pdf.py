@@ -10,11 +10,11 @@ from reportlab.lib.utils import ImageReader
 from app.utils.snparser import format_iso_datetime
 from app.models.snmodels import Supernova
 from app.reports.plotutils import VisibilityPlotter
-import json
 from app.config.snconfig import load_visibility_windows as _load_visibility_windows
 import app.i18n as i18n
 from pathlib import Path
 import platform
+from app.utils.skychart import make_sky_chart 
 
 
 def addSupernovaToPdf(textObject, data: Supernova):
@@ -263,7 +263,7 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
             pass
 
         try:
-            sky_img = plotter.make_sky_chart(data, fmt="png")
+            sky_img = make_sky_chart(data, fmt="png")
         except Exception:
             sky_img = None
 

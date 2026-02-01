@@ -20,7 +20,7 @@ except Exception:
     from astropy.coordinates import AltAz
     HAS_GET_MOON = False
 from app.utils.snparser import format_iso_datetime
-from app.utils.skychart import make_sky_chart as module_make_sky_chart
+
 
 
 class VisibilityPlotter:
@@ -128,21 +128,5 @@ class VisibilityPlotter:
                 plt.close(fig)
                 bio.seek(0)
                 return ImageReader(bio)
-        except Exception:
-            return None
-
-    def make_sky_chart(self, data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: str = "png"):
-        """Wrapper around the module sky-chart maker that uses this instance's
-        sizing and DPI settings."""
-        try:
-            return module_make_sky_chart(
-                data,
-                fov_deg=fov_deg,
-                mag_limit=mag_limit,
-                fmt=fmt,
-                width_cm=self.width_cm,
-                height_cm=self.height_cm,
-                dpi=self.dpi,
-            )
         except Exception:
             return None
