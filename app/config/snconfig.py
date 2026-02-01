@@ -10,22 +10,8 @@ import astropy.units as u
 def load_old_supernovae(path=None):
     """Load old supernova names from a file (one per line). If the file
     is missing, returns an empty list."""
-    candidates = []
-    if path:
-        candidates.append(path)
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "old_supernovae.txt"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/old_supernovae.txt"))
-    # macOS
-    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/old_supernovae.txt"))
-    # Windows APPDATA
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(os.path.join(appdata, "getsupernovae", "old_supernovae.txt"))
-    # package-local fallback
-    candidates.append(os.path.join(os.path.dirname(__file__), "old_supernovae.txt"))
+
+    candidates =get_config_candidates(path, "old_supernovae.txt")
 
     for p in candidates:
         try:
@@ -51,19 +37,7 @@ def load_sites(path=None):
         ]
     )
 
-    candidates = []
-    if path:
-        candidates.append(path)
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "sites.json"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/sites.json"))
-    candidates.append(os.path.expanduser("~/Library/Application Support/getsupernovae/sites.json"))
-    appdata = os.environ.get("APPDATA")
-    if appdata:
-        candidates.append(os.path.join(appdata, "getsupernovae", "sites.json"))
-    candidates.append(os.path.join(os.path.dirname(__file__), "sites.json"))
+    candidates = get_config_candidates(path, "sites.json")
 
     sites_conf = None
     for p in candidates:
@@ -112,18 +86,19 @@ def load_sites(path=None):
 
     return result
 
-
-def load_visibility_windows(path=None):
-    defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
+def get_config_candidates(path:str, config_file:str):
     candidates = []
     if path:
         candidates.append(path)
+    config_path = get_user_config_dir()
+    candidates.append(os.path.join(config_path, config_file))
     xdg = os.environ.get("XDG_CONFIG_HOME")
-    if xdg:
-        candidates.append(os.path.join(xdg, "getsupernovae", "visibility_windows.json"))
-    else:
-        candidates.append(os.path.expanduser("~/.config/getsupernovae/visibility_windows.json"))
-    candidates.append(os.path.join(os.path.dirname(__file__), "visibility_windows.json"))
+    return candidates
+
+def load_visibility_windows(path=None):
+    defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
+
+    candidates = get_config_candidates(None,"visibility_windows.json")
 
     for p in candidates:
         try:
