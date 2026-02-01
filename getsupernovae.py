@@ -1623,15 +1623,13 @@ class SupernovasApp(tk.Tk):
         dlg = SitesDialog(self, current_sites)
         self.wait_window(dlg)
 
-        # if dialog produced an updated mapping, update globals and combobox
+        # Reload persisted sites using the canonical loader so the global
+        # `sites` mapping contains `EarthLocation` objects (not plain dicts).
         try:
-            # prefer the dialog's in-memory result when available (more reliable)
-            new_sites = getattr(dlg, "result", None)
-            if new_sites is None:
-                try:
-                    new_sites = load_sites()
-                except Exception:
-                    new_sites = None
+            try:
+                new_sites = load_sites()
+            except Exception:
+                new_sites = None
 
             if new_sites is not None:
                 try:
@@ -1641,8 +1639,9 @@ class SupernovasApp(tk.Tk):
                     sites = new_sites
 
                 try:
-                    vals = sorted(list(sites.keys())) if isinstance(sites, dict) else []
+                    vals = sorted(list(sites.keys())) if isinstance(sites, dict) or hasattr(sites, 'keys') else []
                     self.cbSite["values"] = vals
+
                     # prefer selecting a newly added site (difference between
                     # previous and new), otherwise preserve previous selection.
                     sel_name = None
@@ -1810,7 +1809,7 @@ class SupernovasApp(tk.Tk):
         # Load application icon if available. Prefer app_icon.ico (Windows),
         # then app_icon.png. If present, set the window icon; fallback is silent.
         try:
-            icon_dir = os.path.join(os.path.dirname(__file__), "assets", "icons")
+            icon_dir = os.path.join(os.path.dirnammoree(__file__), "assets", "icons")
             ico = os.path.join(icon_dir, "app_icon.ico")
             png = os.path.join(icon_dir, "icon-256.png")
             svg = os.path.join(icon_dir, "app_icon.svg")
