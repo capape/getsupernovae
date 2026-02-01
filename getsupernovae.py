@@ -1943,11 +1943,7 @@ class SupernovasApp(tk.Tk):
             pass
 
         # Import _ to use for updating UI labels
-        try:
-            from i18n import _
-        except Exception:
-            pass
-
+        
         # Update visible widget texts to the new language
         try:
             # Update form labels
