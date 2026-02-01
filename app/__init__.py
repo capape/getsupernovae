@@ -5,4 +5,6 @@ This package provides a place for refactoring to move modules under `app.*` whil
 keeping the existing top-level modules working via shims.
 """
 
-__all__ = []
+__version__ = "0.1.0"
+
+__all__ = ["__version__"]
