@@ -14,35 +14,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from app.i18n import _
-
-# Note: avoid importing the top-level `getsupernovae` module here to prevent
-# import-time side-effects during test collection. Callers may still invoke
-# the application's `load_sites()` or `get_user_config_dir()` if needed.
-def get_user_config_dir():
-    """Return a writable user config directory.
-
-    Respects `GETSUPERNOVAE_CONFIG_DIR` and falls back to a pytest-local
-    directory when tests are running to avoid touching the real user's
-    configuration.
-    """
-    # Allow overriding config dir via environment (useful for tests).
-    env = os.getenv("GETSUPERNOVAE_CONFIG_DIR")
-    if env:
-        return env
-    # Detect pytest and use a workspace-local test config dir to avoid
-    # writing into the real user's home during automated tests.
-    if "PYTEST_CURRENT_TEST" in os.environ:
-        return os.path.join(os.getcwd(), ".getsupernovae_test_config")
-    return os.path.expanduser("~")
-
-
-def load_sites():
-    """Fallback loader used when the application-level loader is unavailable.
-
-    Returns an empty mapping — callers should prefer the package `load_sites`
-    helpers when available.
-    """
-    return {}
+from app.config.snconfig import get_user_config_dir, load_sites
 
 
 class SitesDialog(tk.Toplevel):
