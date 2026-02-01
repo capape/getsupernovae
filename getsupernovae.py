@@ -3,39 +3,31 @@
 #
 
 from threading import Thread
-from typing import Any, List
-import urllib.request
+from typing import List
 import urllib.parse
-import urllib.error
-from bs4 import BeautifulSoup, ResultSet, Tag
-from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+from astropy.coordinates import EarthLocation
 from astropy.time import Time
-import ssl
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 import sys
 import os
-
-from app.models.dto import SupernovaDTO
-# ensure local modules in this directory can be imported when script run directly
-sys.path.insert(0, os.path.dirname(__file__))
-import astropy.units as u
-import re
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
-from collections import OrderedDict
-import os
-import json
+from app.models.dto import SupernovaDTO
+# ensure local modules in this directory can be imported when script run directly
+sys.path.insert(0, os.path.dirname(__file__))
+import astropy.units as u
 
 
-from app.models.snmodels import Supernova, AxCordInTime, Visibility
-from app.utils.snparser import parse_magnitude, parse_date, format_iso_datetime, _parse_row_safe
+
+from app.models.snmodels import Supernova
+from app.utils.snparser import parse_date
 from app.ui.snvisibility import VisibilityWindow
 from app.ui.results_presenter import ResultsPresenter
-from app.reports.report_text import createText, createTextAsString, textSite, textSupernova, printSupernova, printSupernovaShort
-from app.reports.report_pdf import createPdf, addSupernovaToPdf
+from app.reports.report_text import createText, createTextAsString
+from app.reports.report_pdf import createPdf
 from app.config.snconfig import (
     load_old_supernovae,
     load_sites,
@@ -46,11 +38,10 @@ from app.config.snconfig import (
     save_user_prefs,
 )
 
-
 # import the external plotter helper
-from app.reports.plotutils import VisibilityPlotter
 from app.i18n import _, set_language, get_language
 from app.services.provider import NetworkRochesterProvider
+from app import __version__
 
 bootstrap_config()
 old = load_old_supernovae()
@@ -1804,7 +1795,7 @@ class SupernovasApp(tk.Tk):
         self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
         self.reporter = reporter
 
-        self.title(_("Find latest supernovae"))
+        self.title(_("Find latest supernovae - {}").format(__version__))
 
         # Load application icon if available. Prefer app_icon.ico (Windows),
         # then app_icon.png. If present, set the window icon; fallback is silent.
