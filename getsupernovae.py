@@ -1191,6 +1191,16 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 pass
 
+            # Rochester attribution: use readonly Text for better wrapping and selectable text
+            try:
+                rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
+                self.rochesterText = tk.Text(left_frame, wrap='word', height=3, width=60, borderwidth=0, relief=tk.FLAT)                
+                self.rochesterText.insert('1.0', rochester_text)
+                self.rochesterText.config(state='disabled', background='darkgray')
+                self.rochesterText.grid(column=0, row=10, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
+            except Exception:
+                pass
+
             # Visibility window selector
             self.labelVisibility = ttk.Label(left_frame, text=_("Visibility window:"))
             self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.W)
@@ -1954,6 +1964,19 @@ class SupernovasApp(tk.Tk):
             self.labelDuration.config(text=_("Hours of observation: "))
             self.labelSite.config(text=_("Site: "))
             self.labelLang.config(text=_("Language:"))
+            try:
+                # refresh readonly text widget content
+                rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
+                if getattr(self, 'rochesterText', None):
+                    try:
+                        self.rochesterText.config(state='normal')
+                        self.rochesterText.delete('1.0', 'end')
+                        self.rochesterText.insert('1.0', rochester_text)
+                        self.rochesterText.config(state='disabled')
+                    except Exception:
+                        pass
+            except Exception:
+                pass
             self.labelVisibility.config(text=_("Visibility window:"))
             self.labelLatitud.config(text=_("Min latitude: "))
             self.labelResults.config(text=_("Results: "))
