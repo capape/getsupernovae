@@ -4,6 +4,10 @@
 
 block_cipher = None
 
+# Ensure package data from astroquery (CITATION, etc.) are bundled
+from PyInstaller.utils.hooks import collect_data_files
+extra_datas = collect_data_files('astroquery')
+
 a = Analysis(
     ['getsupernovae.py'],
     pathex=[],
@@ -14,7 +18,7 @@ a = Analysis(
         ('sites.json', '.'),
         # include icons so PyInstaller can bundle them and the EXE can reference the .ico
         ('assets/icons', 'assets/icons'),
-    ],
+    ] + extra_datas,
     hiddenimports=[
         'tkinter',
         'tkinter.ttk',
@@ -54,13 +58,13 @@ exe = EXE(
     a.datas,
     [],
     name='getsupernovae',
-    debug=False,
+    debug=True,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # No console window for GUI app
+    console=True,  # No console window for GUI app
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
