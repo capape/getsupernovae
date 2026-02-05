@@ -15,6 +15,15 @@ import app.i18n as i18n
 from pathlib import Path
 import platform
 from app.utils.skychart import make_sky_chart 
+import logging
+
+# Module logger: ensure a simple stderr StreamHandler so exceptions are visible
+logger = logging.getLogger(__name__)
+if not logger.hasHandlers():
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logger.addHandler(_handler)
+logger.setLevel(logging.INFO)
 
 
 def addSupernovaToPdf(textObject, data: Supernova):
@@ -49,6 +58,7 @@ def addSupernovaToPdf(textObject, data: Supernova):
 
 
 def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None):
+    logger.info("Creating pdf")
     import i18n as i18n_module
     # choose a font to embed for better mobile compatibility (Unicode, degree sign)
     used_font = "Courier"
@@ -72,8 +82,10 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                     used_font = "DejaVuSans"
                     break
                 except Exception:
+                    logger.exception("failed to register font %s", fp)
                     continue
         except Exception:
+            logger.exception("unexpected error while checking font candidate %s", fp)
             continue
 
     fontsize = 10
@@ -93,7 +105,8 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                 docs = Path.home() / "Desktop"
             if not docs.exists():
                 docs = Path.cwd()
-        except:
+        except Exception:
+            logger.exception("failed to determine Documents/Desktop path on Windows; falling back to cwd")
             docs = Path.cwd()
     else:
         # Linux/Mac: use Documents or home directory
@@ -101,7 +114,8 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
             docs = Path.home() / "Documents"
             if not docs.exists():
                 docs = Path.home()
-        except:
+        except Exception:
+            logger.exception("failed to determine Documents/home path; falling back to cwd")
             docs = Path.cwd()
     
     pdf_filename = docs / f"{observationDate}.pdf"
@@ -109,7 +123,7 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
     try:
         canvas.setPageCompression(0)
     except Exception:
-        pass
+        logger.exception("failed to set page compression (non-fatal)")
     canvas.setFont(used_font, fontsize)
     canvas.setFillColor(black)
 
@@ -202,10 +216,10 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                 canvas.setLineWidth(0.6)
                 canvas.line(marginx, rect_top, marginx + usable_width, rect_top)
             except Exception:
-                pass
+                logger.exception("failed drawing highlight top border for %s", getattr(data, "name", None))
             canvas.restoreState()
         except Exception:
-            pass
+            logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
 
         for line in lines:
             if textObject.getY() - leading < bottom_threshold:
@@ -241,7 +255,7 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                 canvas.linkURL(link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0)
                 canvas.setFillColor(black)
         except Exception:
-            pass
+            logger.exception("failed to draw link for %s", getattr(data, "name", None))
 
         try:
             name = getattr(data, "name", None)
@@ -258,15 +272,17 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                     canvas.linkURL(tnser, (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2), relative=0)
                     canvas.setFillColor(black)
                 except Exception:
-                    pass
+                    logger.exception("failed to draw tnser link for %s", getattr(data, "name", None))
         except Exception:
-            pass
+            logger.exception("error while attempting to add tnser link for %s", getattr(data, "name", None))
 
         try:
             sky_img = make_sky_chart(data, fmt="png")
         except Exception:
+            logger.exception("make_sky_chart raised an exception for %s", getattr(data, "name", None))
             sky_img = None
 
+        logger.info("adding images for %s: plot=%s skychart=%s", getattr(data, "name", None), "yes" if img else "no", "yes" if sky_img else "no")  
         if img or sky_img:
             try:
                 usable_width = (21.0 * cm) - (2 * marginx)
@@ -301,7 +317,7 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                         sky_w = marginx + usable_width - sky_x
                     canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
             except Exception:
-                pass
+                logger.exception("failed to draw images for %s", getattr(data, "name", None))
 
         textObject = canvas.beginText()
         textObject.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
