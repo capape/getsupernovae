@@ -1,14 +1,26 @@
 import io
+import logging
 import astropy.units as u
 from reportlab.lib.utils import ImageReader
 
+# Try to import astroquery; availability flagged in HAS_ASTROQUERY
 try:
     from astroquery.vizier import Vizier
     HAS_ASTROQUERY = True
-except Exception:
+except Exception as e:
+    # Log the import failure so frozen executables expose the root cause
+    logging.getLogger(__name__).exception("astroquery.vizier import failed: %s", e)
     HAS_ASTROQUERY = False
 
 from astropy.coordinates import SkyCoord
+
+# Module logger: ensure a simple stderr StreamHandler so exceptions are visible
+logger = logging.getLogger(__name__)
+if not logger.hasHandlers():
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logger.addHandler(_handler)
+logger.setLevel(logging.INFO)
 
 
 def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: str = "png", width_cm: float = 8.0, height_cm: float = 6.0, dpi: int = 150):
@@ -17,6 +29,7 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
     Returns a ReportLab ImageReader (PNG) or an io.BytesIO (SVG) depending
     on `fmt`. Returns None on error or when dependencies are missing.
     """
+    logger.info("generating sky chart for %s, astroquery=%s", getattr(data, "name", None), "yes" if HAS_ASTROQUERY else "no")
     center = None
     try:
         if hasattr(data, "coordinates") and data.coordinates is not None:
@@ -28,11 +41,14 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
                 try:
                     center = SkyCoord(ra, dec, frame="icrs", unit=(u.hourangle, u.deg))
                 except Exception:
+                    logger.exception("failed to create SkyCoord for %s", getattr(data, "name", None))
                     center = None
     except Exception:
+        logger.exception("error obtaining center coordinates for %s", getattr(data, "name", None))
         center = None
 
     if center is None:
+        logger.info("no valid coordinates for %s; cannot generate sky chart", getattr(data, "name", None))
         return None
 
     if not HAS_ASTROQUERY:
@@ -49,6 +65,7 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
                     stars = t
                     break
         if stars is None:
+            logger.info("no stars found for sky chart of %s", getattr(data, "name", None))
             return None
 
         ras = stars["RAJ2000"] if "RAJ2000" in stars.colnames else stars["RAJ2000"]
@@ -134,6 +151,7 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
             bio.seek(0)
             return ImageReader(bio)
     except Exception:
+        logger.exception("failed to generate sky chart for %s", getattr(data, "name", None))
         return None
 
 
@@ -143,7 +161,8 @@ def _mag_to_marker_size(mags):
 
         arr = _np.array(mags, dtype=float)
         arr = _np.nan_to_num(arr, nan=99.0)
-        sizes = 40.0 * (1.0 - (_np.clip(arr, 0, 17) / 17.0)) + 2.0
+        sizes = 30.0 * (1.0 - (_np.clip(arr, 0, 17) / 17.0)) + 2.0
         return sizes
     except Exception:
+        logger.exception("error computing marker sizes from mags")
         return 4.0
