@@ -58,13 +58,13 @@ exe = EXE(
     a.datas,
     [],
     name='getsupernovae',
-    debug=True,
+    debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # No console window for GUI app
+    console=False,  # No console window for GUI app
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
