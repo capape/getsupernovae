@@ -26,6 +26,7 @@ from app.models.snmodels import Supernova
 from app.utils.snparser import parse_date
 from app.ui.snvisibility import VisibilityWindow
 from app.ui.results_presenter import ResultsPresenter
+from app.ui.filter_panel_manager import FilterPanelManager, FilterPanelCallbacks
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.reports.report_text import createText, createTextAsString
@@ -437,23 +438,36 @@ class SupernovasApp(tk.Tk):
                 minAz = cfg.get("minAz", 0.0)
                 maxAz = cfg.get("maxAz", 360.0)
                 txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
-                try:
-                    self.visibilityValuesLabel.config(text=txt)
-                except Exception:
-                    pass
-                try:
-                    self.entryLatitud.config(state="disabled")
-                except Exception:
-                    pass
+                
+                # Use filter panel manager if available
+                if hasattr(self, 'filter_panel_manager'):
+                    self.filter_panel_manager.update_visibility_values_label(txt)
+                    self.filter_panel_manager.set_min_latitude_state("disabled")
+                else:
+                    # Fallback to direct widget access
+                    try:
+                        self.visibilityValuesLabel.config(text=txt)
+                    except Exception:
+                        pass
+                    try:
+                        self.entryLatitud.config(state="disabled")
+                    except Exception:
+                        pass
             else:
-                try:
-                    self.visibilityValuesLabel.config(text="")
-                except Exception:
-                    pass
-                try:
-                    self.entryLatitud.config(state="normal")
-                except Exception:
-                    pass
+                # Use filter panel manager if available
+                if hasattr(self, 'filter_panel_manager'):
+                    self.filter_panel_manager.update_visibility_values_label("")
+                    self.filter_panel_manager.set_min_latitude_state("normal")
+                else:
+                    # Fallback to direct widget access
+                    try:
+                        self.visibilityValuesLabel.config(text="")
+                    except Exception:
+                        pass
+                    try:
+                        self.entryLatitud.config(state="normal")
+                    except Exception:
+                        pass
         except Exception:
             pass
 
@@ -1079,149 +1093,65 @@ class SupernovasApp(tk.Tk):
             pass
 
     def build_left_panel(self):
-        """Build the left-side filter controls into a dedicated frame."""
+        """Build the left-side filter controls using FilterPanelManager."""
         try:
-            left_frame = ttk.Frame(self)
-            left_frame.grid(column=0, row=1, rowspan=11, columnspan=3, sticky="nw", padx=5, pady=5)
-            try:
-                left_frame.grid_columnconfigure(0, weight=0)
-                left_frame.grid_columnconfigure(1, weight=0)
-                left_frame.grid_columnconfigure(2, weight=0)
-            except Exception:
-                pass
-
-            # Labels and entries: create widgets as children of left_frame, rows start at 0
-            self.labelMagnitude = ttk.Label(left_frame, text=_("Max. magnitude: "))
-            self.labelMagnitude.grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
-            self.entryMagnitude = ttk.Entry(left_frame, textvariable=self.magnitude)
-            self.entryMagnitude.grid(column=1, row=0, padx=5, pady=5, sticky=tk.W)
-
-            self.labelDaysToSearch = ttk.Label(left_frame, text=_("Find the n previous days: "))
-            self.labelDaysToSearch.grid(column=0, row=1, padx=5, pady=5, sticky=tk.W)
-            self.entryDaysToSearch = ttk.Entry(left_frame, textvariable=self.daysToSearch)
-            self.entryDaysToSearch.grid(column=1, row=1, padx=5, pady=5, sticky=tk.W)
-
-            self.labelObservationDate = ttk.Label(left_frame, text=_("Observation date: "))
-            self.labelObservationDate.grid(column=0, row=2, padx=5, pady=5, sticky=tk.W)
-            self.entryObservationDate = ttk.Entry(left_frame, textvariable=self.observationDate)
-            self.entryObservationDate.grid(column=1, row=2, padx=5, pady=5, sticky=tk.W)
-
-            self.labelInitTime = ttk.Label(left_frame, text=_("Init time in observation date: "))
-            self.labelInitTime.grid(column=0, row=3, padx=5, pady=5, sticky=tk.W)
-            self.entryInitTime = ttk.Entry(left_frame, textvariable=self.observationTime)
-            self.entryInitTime.grid(column=1, row=3, padx=5, pady=5, sticky=tk.W)
-
-            self.labelDuration = ttk.Label(left_frame, text=_("Hours of observation: "))
-            self.labelDuration.grid(column=0, row=4, padx=5, pady=5, sticky=tk.W)
-            self.entryDuration = ttk.Entry(left_frame, textvariable=self.observationDuration)
-            self.entryDuration.grid(column=1, row=4, padx=5, pady=5, sticky=tk.W)
-
-            self.labelSite = ttk.Label(left_frame, text=_("Site: "))
-            self.labelSite.grid(column=0, row=5, padx=5, pady=5, sticky=tk.W)
-
-            siteValues = sorted(list(sites.keys()))
-            self.cbSite = ttk.Combobox(left_frame, values=siteValues, textvariable=self.site)
-            self.cbSite.grid(column=1, row=5, padx=5, pady=5, sticky=tk.W)
-
-            # Add Site button next to combobox (pencil icon)
-            self.addSiteButton = ttk.Button(left_frame, text=UI_STRINGS.EDIT_ICON, width=UI_CONSTANTS.EDIT_BUTTON_WIDTH, command=lambda: self.callbackAddSite())
-            self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5, sticky=tk.W)
-
-            # Language selector
-            try:
-                locales_dir = os.path.join(os.path.dirname(__file__), "locales")
-                lang_values = [d for d in os.listdir(locales_dir) if os.path.isdir(os.path.join(locales_dir, d))]
-            except Exception:
-                lang_values = ["en", "es"]
-
-            if "en" not in lang_values:
-                lang_values.append("en")
-
-            current_lang = get_language()
-            if not current_lang:
-                try:
-                    set_language("en")
-                    current_lang = "en"
-                except Exception:
-                    current_lang = "en"
-
-            self.labelLang = ttk.Label(left_frame, text=_("Language:"))
-            self.labelLang.grid(column=0, row=9, padx=5, pady=5, sticky=tk.W)
-            self.langVar = tk.StringVar(value=current_lang)
-            try:
-                self.cbLang = ttk.Combobox(left_frame, values=sorted(lang_values), textvariable=self.langVar, width=6)
-            except Exception:
-                self.cbLang = ttk.Combobox(left_frame, values=sorted(lang_values))
-            self.cbLang.grid(column=1, row=9, padx=5, pady=5, sticky=tk.W)
-            try:
-                self.cbLang.set(self.langVar.get() or "en")
-            except Exception:
-                pass
-            try:
-                self.cbLang.bind('<<ComboboxSelected>>', lambda ev: self._on_language_change())
-            except Exception:
-                pass
-
-            # Rochester attribution: use readonly Text for better wrapping and selectable text
-            try:
-                rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
-                self.rochesterText = tk.Text(left_frame, wrap='word', height=UI_CONSTANTS.ROCHESTER_TEXT_HEIGHT, width=UI_CONSTANTS.ROCHESTER_TEXT_WIDTH, borderwidth=0, relief=tk.FLAT)                
-                self.rochesterText.insert('1.0', rochester_text)
-                self.rochesterText.config(state='disabled', background=THEME_COLORS.DARK_ROCHESTER_BG if getattr(self, 'dark_mode', None) and self.dark_mode.get() else THEME_COLORS.LIGHT_ROCHESTER_BG)
-                self.rochesterText.grid(column=0, row=10, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
-            except Exception:
-                pass
-
-            # Visibility window selector
-            self.labelVisibility = ttk.Label(left_frame, text=_("Visibility window:"))
-            self.labelVisibility.grid(column=0, row=6, padx=5, pady=5, sticky=tk.W)
-            visValues = [""] + sorted(list(visibility_windows.keys()))
-            try:
-                self.cbVisibility = ttk.Combobox(left_frame, values=visValues, textvariable=self.visibilityWindow)
-            except Exception:
-                self.cbVisibility = ttk.Combobox(left_frame, values=visValues)
-            self.cbVisibility.grid(column=1, row=6, padx=5, pady=5, sticky=tk.W)
-
-            self.addVisibilityButton = ttk.Button(left_frame, text=UI_STRINGS.EDIT_ICON, width=UI_CONSTANTS.EDIT_BUTTON_WIDTH, command=lambda: self.callbackAddVisibilityWindow())
-            self.addVisibilityButton.grid(column=2, row=6, padx=(2, 10), pady=5, sticky=tk.W)
-
-            self.visibilityValuesLabel = ttk.Label(left_frame, text="", justify=tk.LEFT)
-            self.visibilityValuesLabel.grid(column=0, row=8, padx=5,  columnspan=3, pady=(0, 6), sticky=tk.W)
-
-            try:
-                self.cbVisibility.bind('<<ComboboxSelected>>', lambda ev: self._update_visibility_ui())
-            except Exception:
-                try:
-                    self.visibilityWindow.trace_add('write', lambda *a: self._update_visibility_ui())
-                except Exception:
-                    pass
-
-            # Min latitude - keep inside left_frame if available
-            parent_for_lat = left_frame
-            self.labelLatitud = ttk.Label(parent_for_lat, text=_("Min latitude: "))
-            self.labelLatitud.grid(column=0, row=7, padx=5, pady=5, sticky=tk.W)
-            self.entryLatitud = ttk.Entry(parent_for_lat, textvariable=self.minLatitud)
-            self.entryLatitud.grid(column=1, row=7, padx=5, pady=5, sticky=tk.W)
-
-            # Persist preferences when key UI options change
-            try:
-                cb = lambda *a: (self.callbackClearResults(*a), self._persist_prefs())
-                self._safe_trace_add(self.magnitude, cb)
-                self._safe_trace_add(self.observationTime, cb)
-                self._safe_trace_add(self.observationDuration, cb)
-                self._safe_trace_add(self.site, cb)
-
-                vis_cb = lambda *a: (self.callbackClearResults(*a), self._persist_prefs(), self._update_visibility_ui())
-                self._safe_trace_add(self.visibilityWindow, vis_cb)
-
-                try:
-                    if getattr(self, 'langVar', None):
-                        self._safe_trace_add(self.langVar, lambda *a: (self._persist_prefs(),))
-                except Exception:
-                    pass
-            except Exception:
-                pass
-
+            # Prepare variables dictionary for the filter panel
+            filter_variables = {
+                'magnitude': self.magnitude,
+                'days_to_search': self.daysToSearch,
+                'observation_date': self.observationDate,
+                'observation_time': self.observationTime,
+                'observation_duration': self.observationDuration,
+                'site': self.site,
+                'visibility_window': self.visibilityWindow,
+                'min_latitude': self.minLatitud,
+            }
+            
+            # Create callbacks for the filter panel
+            callbacks = FilterPanelCallbacks(
+                on_clear_results=self.callbackClearResults,
+                on_persist_prefs=self._persist_prefs,
+                on_update_visibility_ui=self._update_visibility_ui,
+                on_language_change=self._on_language_change,
+                on_add_site=self.callbackAddSite,
+                on_add_visibility_window=self.callbackAddVisibilityWindow,
+            )
+            
+            # Create and build the filter panel manager
+            self.filter_panel_manager = FilterPanelManager(
+                parent=self,
+                variables=filter_variables,
+                sites=sites,
+                visibility_windows=visibility_windows,
+                callbacks=callbacks,
+                dark_mode=self.dark_mode
+            )
+            
+            self.filter_panel_manager.build()
+            
+            # Store references to commonly accessed widgets for backward compatibility
+            self.cbSite = self.filter_panel_manager.widgets.get('combobox_site')
+            self.cbVisibility = self.filter_panel_manager.widgets.get('combobox_visibility')
+            self.entryLatitud = self.filter_panel_manager.widgets.get('entry_min_latitude')
+            self.visibilityValuesLabel = self.filter_panel_manager.widgets.get('label_visibility_values')
+            
+            # Store widget references for language change updates
+            self.labelMagnitude = self.filter_panel_manager.widgets.get('label_magnitude')
+            self.labelDaysToSearch = self.filter_panel_manager.widgets.get('label_days_to_search')
+            self.labelObservationDate = self.filter_panel_manager.widgets.get('label_observation_date')
+            self.labelInitTime = self.filter_panel_manager.widgets.get('label_init_time')
+            self.labelDuration = self.filter_panel_manager.widgets.get('label_duration')
+            self.labelSite = self.filter_panel_manager.widgets.get('label_site')
+            self.labelLang = self.filter_panel_manager.widgets.get('label_language')
+            self.labelVisibility = self.filter_panel_manager.widgets.get('label_visibility')
+            self.labelLatitud = self.filter_panel_manager.widgets.get('label_min_latitude')
+            self.rochesterText = self.filter_panel_manager.widgets.get('text_rochester')
+            self.cbLang = self.filter_panel_manager.widgets.get('combobox_language')
+            
+            # Get langVar from filter panel manager
+            if 'language' in filter_variables:
+                self.langVar = filter_variables['language']
+            
             # Apply persisted prefs if present (best-effort)
             try:
                 self._load_and_apply_prefs()
@@ -1611,7 +1541,12 @@ class SupernovasApp(tk.Tk):
 
                 try:
                     vals = sorted(list(sites.keys())) if isinstance(sites, dict) or hasattr(sites, 'keys') else []
-                    self.cbSite["values"] = vals
+                    
+                    # Use filter panel manager if available
+                    if hasattr(self, 'filter_panel_manager'):
+                        self.filter_panel_manager.update_site_values(vals)
+                    elif self.cbSite:
+                        self.cbSite["values"] = vals
 
                     # prefer selecting a newly added site (difference between
                     # previous and new), otherwise preserve previous selection.
@@ -1640,7 +1575,8 @@ class SupernovasApp(tk.Tk):
                     if sel_name:
                         try:
                             self.site.set(sel_name)
-                            self.cbSite.update_idletasks()
+                            if self.cbSite:
+                                self.cbSite.update_idletasks()
                         except Exception:
                             pass
                 except Exception:
@@ -1679,7 +1615,12 @@ class SupernovasApp(tk.Tk):
 
                 try:
                     vals = [""] + sorted(list(visibility_windows.keys()))
-                    self.cbVisibility["values"] = vals
+                    
+                    # Use filter panel manager if available
+                    if hasattr(self, 'filter_panel_manager'):
+                        self.filter_panel_manager.update_visibility_window_values(vals)
+                    elif self.cbVisibility:
+                        self.cbVisibility["values"] = vals
 
                     # Prefer newly added selection when possible
                     sel_name = None
@@ -1707,7 +1648,8 @@ class SupernovasApp(tk.Tk):
                     if sel_name:
                         try:
                             self.visibilityWindow.set(sel_name)
-                            self.cbVisibility.update_idletasks()
+                            if self.cbVisibility:
+                                self.cbVisibility.update_idletasks()
                         except Exception:
                             pass
                 except Exception:
@@ -1926,28 +1868,41 @@ class SupernovasApp(tk.Tk):
         
         # Update visible widget texts to the new language
         try:
-            # Update form labels
-            self.labelMagnitude.config(text=_("Max. magnitude: "))
-            self.labelDaysToSearch.config(text=_("Find the n previous days: "))
-            self.labelObservationDate.config(text=_("Observation date: "))
-            self.labelInitTime.config(text=_("Init time in observation date: "))
-            self.labelDuration.config(text=_("Hours of observation: "))
-            self.labelSite.config(text=_("Site: "))
-            self.labelLang.config(text=_("Language:"))
-            try:
-                # refresh readonly text widget content
-                rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
-                if getattr(self, 'rochesterText', None):
-                    try:
-                        self.rochesterText.config(state='normal')
-                        self.rochesterText.delete('1.0', 'end')
-                        self.rochesterText.insert('1.0', rochester_text)
-                        self.rochesterText.config(state='disabled')
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-            self.labelVisibility.config(text=_("Visibility window:"))
+            # Use filter panel manager if available
+            if hasattr(self, 'filter_panel_manager'):
+                self.filter_panel_manager.refresh_labels()
+            else:
+                # Fallback to direct widget updates
+                # Update form labels
+                if hasattr(self, 'labelMagnitude'):
+                    self.labelMagnitude.config(text=_("Max. magnitude: "))
+                if hasattr(self, 'labelDaysToSearch'):
+                    self.labelDaysToSearch.config(text=_("Find the n previous days: "))
+                if hasattr(self, 'labelObservationDate'):
+                    self.labelObservationDate.config(text=_("Observation date: "))
+                if hasattr(self, 'labelInitTime'):
+                    self.labelInitTime.config(text=_("Init time in observation date: "))
+                if hasattr(self, 'labelDuration'):
+                    self.labelDuration.config(text=_("Hours of observation: "))
+                if hasattr(self, 'labelSite'):
+                    self.labelSite.config(text=_("Site: "))
+                if hasattr(self, 'labelLang'):
+                    self.labelLang.config(text=_("Language:"))
+                try:
+                    # refresh readonly text widget content
+                    rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
+                    if getattr(self, 'rochesterText', None):
+                        try:
+                            self.rochesterText.config(state='normal')
+                            self.rochesterText.delete('1.0', 'end')
+                            self.rochesterText.insert('1.0', rochester_text)
+                            self.rochesterText.config(state='disabled')
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                if hasattr(self, 'labelVisibility'):
+                    self.labelVisibility.config(text=_("Visibility window:"))
             self.labelLatitud.config(text=_("Min latitude: "))
             self.labelResults.config(text=_("Results: "))
             try:
