@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 # make the package root importable when running tests
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from getsupernovae import parse_magnitude, _parse_row_safe
+from app.utils.snparser import parse_magnitude, _parse_row_safe
 
 class TestParsing(unittest.TestCase):
     def test_parse_magnitude_examples(self):
