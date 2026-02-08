@@ -26,6 +26,8 @@ from app.models.snmodels import Supernova
 from app.utils.snparser import parse_date
 from app.ui.snvisibility import VisibilityWindow
 from app.ui.results_presenter import ResultsPresenter
+from app.services.supernova_filter_service import SupernovaFilterService
+from app.services.supernova_selection_service import SupernovaSelectionService
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.config.snconfig import (
@@ -83,7 +85,7 @@ class SupernovaCallBackData:
 
 class RochesterSupernova:
 
-    def __init__(self, visibility_factory=None, provider_factory=None, reporter=None):
+    def __init__(self, visibility_factory=None, provider_factory=None, reporter=None, filter_service=None, selection_service=None):
         # visibility_factory should be a callable/class that creates a
         # visibility window instance with signature
         # VisibilityWindow(minAlt, maxAlt, minAz, maxAz)
@@ -92,52 +94,41 @@ class RochesterSupernova:
         self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
         # reporter is optional; selection logic does not require it but keep for DI consistency
         self.reporter = reporter
+        # filter_service handles all filtering logic
+        self.filter_service = filter_service if filter_service is not None else SupernovaFilterService(visibility_factory=self.visibility_factory)
+        # selection_service coordinates selection and sorting
+        self.selection_service = selection_service if selection_service is not None else SupernovaSelectionService(
+            filter_service=self.filter_service,
+            visibility_windows=visibility_windows
+        )
 
     def selectAndSortSupernovas(
         self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]
     ):
-
-        # Determine visibility window values: prefer named window if provided
+        """Select and sort supernovae using the selection service.
+        
+        This method now delegates to SupernovaSelectionService for all
+        selection, filtering, and sorting logic.
+        """
+        # Convert magnitude to float
         try:
-            if getattr(e, "visibilityWindowName", None):
-                cfg = visibility_windows.get(e.visibilityWindowName)
-                if cfg is not None:
-                    minAlt = float(cfg.get("minAlt", 0.0))
-                    maxAlt = float(cfg.get("maxAlt", 90.0))
-                    minAz = float(cfg.get("minAz", 0.0))
-                    maxAz = float(cfg.get("maxAz", 360.0))
-                else:
-                    minAlt = float(e.minLatitude)
-                    maxAlt = 90.0
-                    minAz = 0.0
-                    maxAz = 360.0
-            else:
-                minAlt = float(e.minLatitude)
-                maxAlt = 90.0
-                minAz = 0.0
-                maxAz = 360.0
-        except Exception:
-            minAlt = float(e.minLatitude)
-            maxAlt = 90.0
-            minAz = 0.0
-            maxAz = 360.0
-
-        supernovas = self.selectSupernovas(
-            supernovaeList,
-            e.magnitude,
-            e.observationStart,
-            e.observationTime,
-            int(e.observationHours),
-            e.fromDate,
-            e.site,
-            minAlt,
-            maxAlt,
-            minAz,
-            maxAz,
+            max_magnitude = float(e.magnitude)
+        except (ValueError, TypeError):
+            max_magnitude = float(str(e.magnitude))
+        
+        # Use selection service to coordinate the entire selection process
+        supernovas = self.selection_service.select_and_sort_supernovae(
+            supernova_list=supernovaeList,
+            max_magnitude=max_magnitude,
+            observation_start=e.observationStart,
+            observation_hours=int(e.observationHours),
+            from_date=e.fromDate,
+            site=e.site,
+            exclusion_list=set(old) if old else set(),
+            visibility_window_name=getattr(e, "visibilityWindowName", None),
+            min_latitude=float(e.minLatitude),
+            visibility_factory=self.visibility_factory
         )
-
-        supernovas.sort(key=lambda x: x.visibility.azCords[-1].time)
-        supernovas.sort(key=lambda x: x.visibility.azCords[0].time)
 
         return supernovas
 
@@ -155,7 +146,11 @@ class RochesterSupernova:
         minAz: float = 0,
         maxAz: float = 360,
     ):
-
+        """Select supernovae using the filter service.
+        
+        Legacy method kept for backward compatibility. Delegates to filter service.
+        For new code, prefer using selectAndSortSupernovas with SupernovaCallBackData.
+        """
         observationStart = (
             observationDay.strftime("%Y-%m-%d") + "T" + localStartTime + "Z"
         )
@@ -163,53 +158,30 @@ class RochesterSupernova:
         time1 = Time(observationStart)
         time2 = time1 + timedelta(hours=hoursObservation)
 
-        supernovas = []
-        # parse fromDate string to a date object for reliable comparisons
+        # Convert maxMag to float
         try:
-            from_date_obj = parse_date(fromDate)[0]
+            max_mag_threshold = float(maxMag)
         except Exception:
-            from_date_obj = None
-        for snDto in supernovaeList:
-            
-            # numeric comparison (ensure maxMag param is numeric)
-            try:
-                max_mag_threshold = float(maxMag)
-            except Exception:
-                max_mag_threshold = float(str(maxMag))
+            max_mag_threshold = float(str(maxMag))
 
-            if snDto.mag > max_mag_threshold:
-                continue
+        # Use filter service to apply all filters and get results
+        filtered_results = self.filter_service.apply_all_filters(
+            supernovae=supernovaeList,
+            max_magnitude=max_mag_threshold,
+            from_date=fromDate,
+            exclusion_list=set(old) if old else set(),
+            site=site,
+            observation_start=time1,
+            observation_end=time2,
+            min_altitude=minAlt,
+            max_altitude=maxAlt,
+            min_azimuth=minAz,
+            max_azimuth=maxAz,
+            visibility_factory=self.visibility_factory
+        )
 
-            # if parsed date failed to parse, skip
-            if snDto.date is None:
-                continue
-
-            if from_date_obj is not None and snDto.date_obj <= from_date_obj:
-                continue
-
-            visibility = self.visibility_factory(minAlt, maxAlt, minAz, maxAz).getVisibility(
-                site, snDto.coordinates, time1, time2)
-
-            if visibility.visible and snDto.name not in old:
-                data = Supernova(
-                    snDto.name,
-                    snDto.date,
-                    str(snDto.mag),
-                    snDto.host,
-                    snDto.ra,
-                    snDto.decl,
-                    snDto.link or "",
-                    snDto.coordinates.get_constellation(),
-                    snDto.coordinates,
-                    snDto.firstObserved,
-                    snDto.maxMagnitude,
-                    snDto.maxMagnitudeDate,
-                    snDto.type,
-                    visibility,
-                    snDto.maxMagnitudeDate_obj,
-                    snDto.firstObserved_obj,
-                )
-                supernovas.append(data)
+        # Convert to domain models
+        supernovas = self.filter_service.convert_to_domain_models(filtered_results)
 
         return supernovas
 
