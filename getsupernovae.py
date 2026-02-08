@@ -27,6 +27,7 @@ from app.utils.snparser import parse_date
 from app.ui.snvisibility import VisibilityWindow
 from app.ui.results_presenter import ResultsPresenter
 from app.ui.filter_panel_manager import FilterPanelManager, FilterPanelCallbacks
+from app.ui.results_panel_manager import ResultsPanelManager, ResultsPanelCallbacks
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.reports.report_text import createText, createTextAsString
@@ -747,14 +748,28 @@ class SupernovasApp(tk.Tk):
             self.end_progress_bar()
 
     def start_progress_bar(self):
-        # place progress bar under the Results textbox (results column)
-        # and above the toolbar so it remains visible and doesn't overlap
-        self.progressBar.grid(column=3, row=10, columnspan=2, sticky="ew")
-        self.progressBar.start()
+        # Use results panel manager if available
+        if hasattr(self, 'results_panel_manager'):
+            self.results_panel_manager.start_progress_bar()
+        else:
+            # Fallback to direct access
+            try:
+                self.progressBar.grid(column=3, row=10, columnspan=2, sticky="ew")
+                self.progressBar.start()
+            except Exception:
+                pass
 
     def end_progress_bar(self):
-        self.progressBar.stop()
-        self.progressBar.grid_forget()
+        # Use results panel manager if available
+        if hasattr(self, 'results_panel_manager'):
+            self.results_panel_manager.stop_progress_bar()
+        else:
+            # Fallback to direct access
+            try:
+                self.progressBar.stop()
+                self.progressBar.grid_forget()
+            except Exception:
+                pass
 
 
     def callbackClearResults(self, var, index, mode):
@@ -1161,139 +1176,66 @@ class SupernovasApp(tk.Tk):
             pass
 
     def build_results_panel(self):
-        """Build the results label, treeview and associated bindings."""
+        """Build the results panel using ResultsPanelManager."""
         try:
-            self.labelResults = ttk.Label(self, text=_("Results: "))
-            self.labelResults.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
-            results_frame = ttk.Frame(self)
-            results_frame.grid(column=3, row=1, rowspan=9, sticky="nsew", padx=5, pady=5)
-            results_frame.grid_rowconfigure(0, weight=1)
-            results_frame.grid_columnconfigure(0, weight=1)
-
-            columns = ("name", "type", "magnitude", "date", "observation_time", "host", "constellation", "ra", "dec", "rochester", "tns")
-            self.resultsTree = ttk.Treeview(results_frame, columns=columns, show="headings", selectmode="browse", style="ResultsTreeview.Treeview")
-
-            # Configure column headings and widths with sort commands
-            self.resultsTree.heading("name", text=_("Name"), command=lambda: self._sort_column("name", False))
-            self.resultsTree.heading("type", text=_("Type"), command=lambda: self._sort_column("type", False))
-            self.resultsTree.heading("magnitude", text=_("Mag"), command=lambda: self._sort_column("magnitude", True))
-            self.resultsTree.heading("date", text=_("Date"), command=lambda: self._sort_column("date", False))
-            self.resultsTree.heading("observation_time", text=_("Observation time"), command=lambda: self._sort_column("observation_time", False))
-            self.resultsTree.heading("host", text=_("Host"), command=lambda: self._sort_column("host", False))
-            self.resultsTree.heading("constellation", text=_("Constellation"), command=lambda: self._sort_column("constellation", False))
-            self.resultsTree.heading("ra", text=_("RA"), command=lambda: self._sort_column("ra", False))
-            self.resultsTree.heading("dec", text=_("Dec"), command=lambda: self._sort_column("dec", False))
-            self.resultsTree.heading("rochester", text=_("Rochester"), command=lambda: self._sort_column("rochester", False))
-            self.resultsTree.heading("tns", text=_("TNS"), command=lambda: self._sort_column("tns", False))
-
-            # Track sort state
-            self.sort_column = None
-            self.sort_reverse = False
-
-            self.resultsTree.column("name", width=UI_CONSTANTS.COL_WIDTH_NAME, anchor=tk.W)
-            self.resultsTree.column("type", width=UI_CONSTANTS.COL_WIDTH_TYPE, anchor=tk.W)
-            self.resultsTree.column("magnitude", width=UI_CONSTANTS.COL_WIDTH_MAGNITUDE, anchor=tk.E)
-            self.resultsTree.column("date", width=UI_CONSTANTS.COL_WIDTH_DATE, anchor=tk.E)
-            self.resultsTree.column("observation_time", width=UI_CONSTANTS.COL_WIDTH_OBS_TIME, anchor=tk.E)
-            self.resultsTree.column("host", width=UI_CONSTANTS.COL_WIDTH_HOST, anchor=tk.W)
-            self.resultsTree.column("constellation", width=UI_CONSTANTS.COL_WIDTH_CONSTELLATION, anchor=tk.W)
-            self.resultsTree.column("ra", width=UI_CONSTANTS.COL_WIDTH_RA, anchor=tk.E)
-            self.resultsTree.column("dec", width=UI_CONSTANTS.COL_WIDTH_DEC, anchor=tk.E)
-            self.resultsTree.column("rochester", width=UI_CONSTANTS.COL_WIDTH_ROCHESTER, anchor=tk.CENTER)
-            self.resultsTree.column("tns", width=UI_CONSTANTS.COL_WIDTH_TNS, anchor=tk.CENTER)
-
-            vsb = ttk.Scrollbar(results_frame, orient="vertical", command=self.resultsTree.yview)
-            hsb = ttk.Scrollbar(results_frame, orient="horizontal", command=self.resultsTree.xview)
-            self.resultsTree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-            self.resultsTree.grid(column=0, row=0, sticky="nsew")
-            vsb.grid(column=1, row=0, sticky="ns")
-            hsb.grid(column=0, row=1, sticky="ew")
-
-            # Bind double-click to open links and motion/leave for tooltip
-            self.resultsTree.bind("<Double-Button-1>", self._on_results_double_click)
-            self.resultsTree.bind("<Motion>", self._on_results_motion)
-            self.resultsTree.bind("<Leave>", self._on_results_leave)
-            self.resultsTree.bind("<<TreeviewSelect>>", self._on_selection_change)
-
-            self.supernova_data = {}
-            self.tooltip_window = None
-            self.tooltip_item = None
-
+            # Create callbacks for the results panel
+            callbacks = ResultsPanelCallbacks(
+                on_sort_column=self._sort_column,
+                on_double_click=self._on_results_double_click,
+                on_motion=self._on_results_motion,
+                on_leave=self._on_results_leave,
+                on_selection_change=self._on_selection_change,
+                on_find_stars=self._find_stars_in_simbad,
+                on_ignore_selected=self.callbackIgnoreSelectedSN,
+                on_edit_old=self.callbackEditOldSupernovae,
+                on_dark_mode_toggle=self.apply_theme,
+                on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
+                on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
+                on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
+                on_exit=self.quit,
+            )
+            
+            # Create and build the results panel manager
+            self.results_panel_manager = ResultsPanelManager(
+                parent=self,
+                callbacks=callbacks,
+                dark_mode=self.dark_mode
+            )
+            
+            self.results_panel_manager.build()
+            
+            # Store references to commonly accessed widgets for backward compatibility
+            self.resultsTree = self.results_panel_manager.get_tree()
+            self.labelResults = self.results_panel_manager.widgets.get('label_results')
+            self.findStarsButton = self.results_panel_manager.widgets.get('button_find_stars')
+            self.ignoreSelectedButton = self.results_panel_manager.widgets.get('button_ignore_selected')
+            self.editOldButton = self.results_panel_manager.widgets.get('button_edit_old')
+            self.darkToggle = self.results_panel_manager.widgets.get('toggle_dark_mode')
+            self.pdfButton = self.results_panel_manager.widgets.get('button_pdf')
+            self.txtButton = self.results_panel_manager.widgets.get('button_txt')
+            self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
+            self.exitButton = self.results_panel_manager.widgets.get('button_exit')
+            self.progressBar = self.results_panel_manager.widgets.get('progress_bar')
+            
+            # Use manager's data storage
+            self.supernova_data = self.results_panel_manager.supernova_data
+            self.tooltip_window = self.results_panel_manager.tooltip_window
+            self.tooltip_item = self.results_panel_manager.tooltip_item
+            
+            # Use manager's sort state
+            self.sort_column = self.results_panel_manager.sort_column
+            self.sort_reverse = self.results_panel_manager.sort_reverse
+            
+            # Configure results tree styling
             self._configure_results_tree_styling()
-
-            try:
-                self.grid_columnconfigure(3, weight=1)
-                self.grid_rowconfigure(1, weight=1)
-            except Exception:
-                pass
         except Exception:
             pass
 
     def build_toolbar(self):
-        """Build toolbar area including action buttons and progress bar."""
-        try:
-            toolbar = ttk.Frame(self)
-            toolbar.grid(column=3, row=11, columnspan=2, padx=5, pady=5, sticky="ew")
-            try:
-                toolbar.grid_columnconfigure(0, weight=1)
-            except Exception:
-                pass
-
-            self.findStarsButton = ttk.Button(
-                toolbar, text=_("Find stars"), command=self._find_stars_in_simbad, state=tk.DISABLED
-            )
-            self.findStarsButton.grid(column=0, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-
-            self.ignoreSelectedButton = ttk.Button(
-                toolbar, text=_("Ignore selected SN"), command=lambda: self.callbackIgnoreSelectedSN()
-            )
-            self.ignoreSelectedButton.grid(column=1, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-
-            self.editOldButton = ttk.Button(
-                toolbar, text=_("Edit Ignored SN"), command=lambda: self.callbackEditOldSupernovae()
-            )
-            self.editOldButton.grid(column=2, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-
-            try:
-                self.darkToggle = ttk.Checkbutton(toolbar, text=_("Dark mode"), variable=self.dark_mode, command=self.apply_theme)
-                self.darkToggle.grid(column=3, row=0, sticky=tk.E, padx=UI_CONSTANTS.BUTTON_PADX)
-            except Exception:
-                pass
-
-            # Bottom action buttons
-            self.pdfButton = ttk.Button(
-                self,
-                text=_("PDF"),
-                command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
-            )
-            self.pdfButton.grid(column=0, row=12, sticky=tk.E)
-
-            self.txtButton = ttk.Button(
-                self,
-                text=_("TXT"),
-                command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
-            )
-            self.txtButton.grid(column=1, row=12, sticky=tk.W)
-
-            self.searchButton = ttk.Button(
-                self,
-                text=_("Refresh Search"),
-                command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
-            )
-            self.searchButton.grid(column=2, row=12, sticky=tk.W)
-
-            self.exitButton = ttk.Button(self, text=_("Exit"), command=lambda: self.quit())
-            try:
-                self.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
-                self.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
-            except Exception:
-                pass
-            self.exitButton.grid(column=3, row=15, padx=UI_CONSTANTS.DEFAULT_PADX, pady=UI_CONSTANTS.DEFAULT_PADY, sticky=tk.E)
-
-            self.progressBar = ttk.Progressbar(self, mode='indeterminate', length=UI_CONSTANTS.PROGRESS_BAR_LENGTH)
-        except Exception:
-            pass
+        """Build toolbar - now handled by ResultsPanelManager."""
+        # This method is kept for backward compatibility but does nothing
+        # as the toolbar is now built by ResultsPanelManager in build_results_panel
+        pass
 
     def refilter_from_cache(self, source="REFRESH"):
         """Re-run selection/filtering on the cached HTML rows (if available).
@@ -1904,11 +1846,19 @@ class SupernovasApp(tk.Tk):
                 if hasattr(self, 'labelVisibility'):
                     self.labelVisibility.config(text=_("Visibility window:"))
             self.labelLatitud.config(text=_("Min latitude: "))
-            self.labelResults.config(text=_("Results: "))
-            try:
-                self.darkToggle.config(text=_("Dark mode"))
-            except Exception:
-                pass
+            
+            # Use results panel manager if available
+            if hasattr(self, 'results_panel_manager'):
+                self.results_panel_manager.refresh_labels()
+            else:
+                # Fallback to direct updates
+                if hasattr(self, 'labelResults'):
+                    self.labelResults.config(text=_("Results: "))
+                try:
+                    if hasattr(self, 'darkToggle'):
+                        self.darkToggle.config(text=_("Dark mode"))
+                except Exception:
+                    pass
             try:
                 self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
                 self.editOldButton.config(text=_("Edit Ignored SN"))
