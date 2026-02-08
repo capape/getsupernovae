@@ -42,6 +42,14 @@ from app.config.snconfig import (
 from app.i18n import _, set_language, get_language
 from app.services.provider import NetworkRochesterProvider
 from app import __version__
+from app.config.ui_constants import (
+    THEME_COLORS,
+    UI_CONSTANTS,
+    DEFAULT_VALUES,
+    NETWORK_CONSTANTS,
+    FILE_CONSTANTS,
+    UI_STRINGS,
+)
 
 bootstrap_config()
 old = load_old_supernovae()
@@ -287,20 +295,20 @@ class SupernovasApp(tk.Tk):
             
             # Configure row height - must use self as the first argument
             style = ttk.Style(self)
-            style.configure("ResultsTreeview.Treeview", rowheight=28)
+            style.configure(UI_STRINGS.RESULTS_TREE_STYLE, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
             
             # Configure alternating row colors based on current theme
             dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
             if dark:
-                self.resultsTree.tag_configure('evenrow', background="#393838")
-                self.resultsTree.tag_configure('oddrow', background="#262525")
-                self.resultsTree.tag_configure('evenrow_bright', background="#393838", foreground="#ff4444")
-                self.resultsTree.tag_configure('oddrow_bright', background="#262525", foreground="#ff4444")
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.DARK_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.DARK_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
             else:
-                self.resultsTree.tag_configure('evenrow', background="#f0f0f0")
-                self.resultsTree.tag_configure('oddrow', background="#ffffff")
-                self.resultsTree.tag_configure('evenrow_bright', background="#f0f0f0", foreground="#cc0000")
-                self.resultsTree.tag_configure('oddrow_bright', background="#ffffff", foreground="#cc0000")
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.LIGHT_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
+                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.LIGHT_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
             
             # Reapply tags to all existing items to preserve bright highlighting
             self._reapply_tree_tags()
@@ -348,19 +356,19 @@ class SupernovasApp(tk.Tk):
 
         dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
         if dark:
-            bg = "#2e2e2e"
-            fg = "#eaeaea"
-            entry_bg = "#3a3a3a"
-            btn_bg = "#444444"
-            tree_bg = "#2b2b2b"
+            bg = THEME_COLORS.DARK_BG
+            fg = THEME_COLORS.DARK_FG
+            entry_bg = THEME_COLORS.DARK_ENTRY_BG
+            btn_bg = THEME_COLORS.DARK_BUTTON_BG
+            tree_bg = THEME_COLORS.DARK_TREE_BG
         else:
             # Explicitly set light-mode colors so previously-applied dark
             # styling is cleared when toggling off.
-            bg = "#9f9f9f"
-            fg = "#000000"
-            entry_bg = "#eeeeee"
-            btn_bg = "#9f9f9f"
-            tree_bg = "#9f9f9f"
+            bg = THEME_COLORS.LIGHT_BG
+            fg = THEME_COLORS.LIGHT_FG
+            entry_bg = THEME_COLORS.LIGHT_ENTRY_BG
+            btn_bg = THEME_COLORS.LIGHT_BUTTON_BG
+            tree_bg = THEME_COLORS.LIGHT_TREE_BG
 
         try:
             if style is not None:
@@ -368,13 +376,13 @@ class SupernovasApp(tk.Tk):
                 style.configure("TButton", background=btn_bg, foreground=fg)
                 style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
                 style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
-                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=28)
-                style.configure("ResultsTreeview.Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=28)
+                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
+                style.configure(UI_STRINGS.RESULTS_TREE_STYLE, background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
                 style.configure("TFrame", background=bg)
                 style.configure("TCheckbutton", background=bg, foreground=fg)
                 # selection highlight for treeview — choose a subtle color per theme
                 try:
-                    sel_color = '#5a5a5a' if dark else '#cde'
+                    sel_color = THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
                     style.map('Treeview', background=[('selected', sel_color)])
                 except Exception:
                     pass
@@ -820,8 +828,8 @@ class SupernovasApp(tk.Tk):
                     except Exception:
                         mag_val = None
 
-                    is_bright = mag_val is not None and mag_val < 15
-                    tag = ('evenrow_bright' if idx % 2 == 0 else 'oddrow_bright') if is_bright else ('evenrow' if idx % 2 == 0 else 'oddrow')
+                    is_bright = mag_val is not None and mag_val < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
+                    tag = (UI_STRINGS.TAG_EVEN_ROW_BRIGHT if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW_BRIGHT) if is_bright else (UI_STRINGS.TAG_EVEN_ROW if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW)
 
                     item_id = self.resultsTree.insert("", "end", values=row, tags=(tag,))
                     self.supernova_data[item_id] = sn
@@ -920,14 +928,14 @@ class SupernovasApp(tk.Tk):
             else:
                ra_str = dec_str = ""
              
-            # SIMBAD coordinate query URL (searches within 10 arcmin radius)
-            # Filter for stellar objects (maintype '*') with Vmag < 17
+            # SIMBAD coordinate query URL (searches within configured box radius)
+            # Filter for stellar objects (maintype '*') with Vmag < configured threshold
             # URL-encode the region parameter to handle colons/spaces in RA/Dec
             try:
                 criteria_str = ( 
-                    f"region(box,{ra_str} {dec_str},30m 30m) & "       
-                    f"Vmag<17 & "
-                    f"maintype='*'"       
+                    f"region(box,{ra_str} {dec_str},{NETWORK_CONSTANTS.SIMBAD_SEARCH_RADIUS}) & "       
+                    f"Vmag<{NETWORK_CONSTANTS.SIMBAD_MAX_VMAG} & "
+                    f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"       
                 )
                 criteria_enc=urllib.parse.quote(criteria_str)
                 
@@ -935,10 +943,10 @@ class SupernovasApp(tk.Tk):
                 criteria_enc = ""
 
             simbad_url = (
-                f"https://simbad.cds.unistra.fr/simbad/sim-sam?"
+                f"{NETWORK_CONSTANTS.SIMBAD_QUERY_URL}?"
                 f"Criteria={criteria_enc}&"
                 f"OutputMode=LIST&"
-                f"maxObjectect=100&"
+                f"maxObjectect={NETWORK_CONSTANTS.SIMBAD_MAX_OBJECTS}&"
                 f"submit=submit+query"
             )
 
@@ -975,7 +983,7 @@ class SupernovasApp(tk.Tk):
                 url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
                 self._open_url(url)
             elif column == "#11":  # TNS
-                url = getattr(sn, 'tnsUrl', None) or f"https://www.wis-tns.org/object/{getattr(sn, 'name', '')}"
+                url = getattr(sn, 'tnsUrl', None) or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
                 self._open_url(url)
         except Exception:
             pass
@@ -1065,12 +1073,12 @@ class SupernovasApp(tk.Tk):
             
             self.tooltip_window = tk.Toplevel(self)
             self.tooltip_window.wm_overrideredirect(True)
-            self.tooltip_window.wm_geometry(f"+{x+10}+{y+10}")
+            self.tooltip_window.wm_geometry(f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}")
             
             # Style tooltip based on dark mode
             dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
-            bg_color = "#3a3a3a" if dark else "#ffffe0"
-            fg_color = "#eaeaea" if dark else "#000000"
+            bg_color = THEME_COLORS.DARK_TOOLTIP_BG if dark else THEME_COLORS.LIGHT_TOOLTIP_BG
+            fg_color = THEME_COLORS.DARK_TOOLTIP_FG if dark else THEME_COLORS.LIGHT_TOOLTIP_FG
             
             label = tk.Label(
                 self.tooltip_window,
@@ -1080,8 +1088,8 @@ class SupernovasApp(tk.Tk):
                 foreground=fg_color,
                 relief=tk.SOLID,
                 borderwidth=1,
-                padx=8,
-                pady=6,
+                padx=UI_CONSTANTS.TOOLTIP_PADX,
+                pady=UI_CONSTANTS.TOOLTIP_PADY,
                 font=("TkDefaultFont", 9)
             )
             label.pack()
@@ -1144,7 +1152,7 @@ class SupernovasApp(tk.Tk):
             self.cbSite.grid(column=1, row=5, padx=5, pady=5, sticky=tk.W)
 
             # Add Site button next to combobox (pencil icon)
-            self.addSiteButton = ttk.Button(left_frame, text="✎", width=3, command=lambda: self.callbackAddSite())
+            self.addSiteButton = ttk.Button(left_frame, text=UI_STRINGS.EDIT_ICON, width=UI_CONSTANTS.EDIT_BUTTON_WIDTH, command=lambda: self.callbackAddSite())
             self.addSiteButton.grid(column=2, row=5, padx=(2, 10), pady=5, sticky=tk.W)
 
             # Language selector
@@ -1185,9 +1193,9 @@ class SupernovasApp(tk.Tk):
             # Rochester attribution: use readonly Text for better wrapping and selectable text
             try:
                 rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
-                self.rochesterText = tk.Text(left_frame, wrap='word', height=3, width=60, borderwidth=0, relief=tk.FLAT)                
+                self.rochesterText = tk.Text(left_frame, wrap='word', height=UI_CONSTANTS.ROCHESTER_TEXT_HEIGHT, width=UI_CONSTANTS.ROCHESTER_TEXT_WIDTH, borderwidth=0, relief=tk.FLAT)                
                 self.rochesterText.insert('1.0', rochester_text)
-                self.rochesterText.config(state='disabled', background='darkgray')
+                self.rochesterText.config(state='disabled', background=THEME_COLORS.DARK_ROCHESTER_BG if getattr(self, 'dark_mode', None) and self.dark_mode.get() else THEME_COLORS.LIGHT_ROCHESTER_BG)
                 self.rochesterText.grid(column=0, row=10, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
             except Exception:
                 pass
@@ -1202,7 +1210,7 @@ class SupernovasApp(tk.Tk):
                 self.cbVisibility = ttk.Combobox(left_frame, values=visValues)
             self.cbVisibility.grid(column=1, row=6, padx=5, pady=5, sticky=tk.W)
 
-            self.addVisibilityButton = ttk.Button(left_frame, text="✎", width=3, command=lambda: self.callbackAddVisibilityWindow())
+            self.addVisibilityButton = ttk.Button(left_frame, text=UI_STRINGS.EDIT_ICON, width=UI_CONSTANTS.EDIT_BUTTON_WIDTH, command=lambda: self.callbackAddVisibilityWindow())
             self.addVisibilityButton.grid(column=2, row=6, padx=(2, 10), pady=5, sticky=tk.W)
 
             self.visibilityValuesLabel = ttk.Label(left_frame, text="", justify=tk.LEFT)
@@ -1280,17 +1288,17 @@ class SupernovasApp(tk.Tk):
             self.sort_column = None
             self.sort_reverse = False
 
-            self.resultsTree.column("name", width=120, anchor=tk.W)
-            self.resultsTree.column("type", width=60, anchor=tk.W)
-            self.resultsTree.column("magnitude", width=60, anchor=tk.E)
-            self.resultsTree.column("date", width=100, anchor=tk.E)
-            self.resultsTree.column("observation_time", width=180, anchor=tk.E)
-            self.resultsTree.column("host", width=150, anchor=tk.W)
-            self.resultsTree.column("constellation", width=80, anchor=tk.W)
-            self.resultsTree.column("ra", width=90, anchor=tk.E)
-            self.resultsTree.column("dec", width=90, anchor=tk.E)
-            self.resultsTree.column("rochester", width=80, anchor=tk.CENTER)
-            self.resultsTree.column("tns", width=60, anchor=tk.CENTER)
+            self.resultsTree.column("name", width=UI_CONSTANTS.COL_WIDTH_NAME, anchor=tk.W)
+            self.resultsTree.column("type", width=UI_CONSTANTS.COL_WIDTH_TYPE, anchor=tk.W)
+            self.resultsTree.column("magnitude", width=UI_CONSTANTS.COL_WIDTH_MAGNITUDE, anchor=tk.E)
+            self.resultsTree.column("date", width=UI_CONSTANTS.COL_WIDTH_DATE, anchor=tk.E)
+            self.resultsTree.column("observation_time", width=UI_CONSTANTS.COL_WIDTH_OBS_TIME, anchor=tk.E)
+            self.resultsTree.column("host", width=UI_CONSTANTS.COL_WIDTH_HOST, anchor=tk.W)
+            self.resultsTree.column("constellation", width=UI_CONSTANTS.COL_WIDTH_CONSTELLATION, anchor=tk.W)
+            self.resultsTree.column("ra", width=UI_CONSTANTS.COL_WIDTH_RA, anchor=tk.E)
+            self.resultsTree.column("dec", width=UI_CONSTANTS.COL_WIDTH_DEC, anchor=tk.E)
+            self.resultsTree.column("rochester", width=UI_CONSTANTS.COL_WIDTH_ROCHESTER, anchor=tk.CENTER)
+            self.resultsTree.column("tns", width=UI_CONSTANTS.COL_WIDTH_TNS, anchor=tk.CENTER)
 
             vsb = ttk.Scrollbar(results_frame, orient="vertical", command=self.resultsTree.yview)
             hsb = ttk.Scrollbar(results_frame, orient="horizontal", command=self.resultsTree.xview)
@@ -1333,21 +1341,21 @@ class SupernovasApp(tk.Tk):
             self.findStarsButton = ttk.Button(
                 toolbar, text=_("Find stars"), command=self._find_stars_in_simbad, state=tk.DISABLED
             )
-            self.findStarsButton.grid(column=0, row=0, sticky=tk.W, padx=6)
+            self.findStarsButton.grid(column=0, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
 
             self.ignoreSelectedButton = ttk.Button(
                 toolbar, text=_("Ignore selected SN"), command=lambda: self.callbackIgnoreSelectedSN()
             )
-            self.ignoreSelectedButton.grid(column=1, row=0, sticky=tk.W, padx=6)
+            self.ignoreSelectedButton.grid(column=1, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
 
             self.editOldButton = ttk.Button(
                 toolbar, text=_("Edit Ignored SN"), command=lambda: self.callbackEditOldSupernovae()
             )
-            self.editOldButton.grid(column=2, row=0, sticky=tk.W, padx=6)
+            self.editOldButton.grid(column=2, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
 
             try:
                 self.darkToggle = ttk.Checkbutton(toolbar, text=_("Dark mode"), variable=self.dark_mode, command=self.apply_theme)
-                self.darkToggle.grid(column=3, row=0, sticky=tk.E, padx=6)
+                self.darkToggle.grid(column=3, row=0, sticky=tk.E, padx=UI_CONSTANTS.BUTTON_PADX)
             except Exception:
                 pass
 
@@ -1375,13 +1383,13 @@ class SupernovasApp(tk.Tk):
 
             self.exitButton = ttk.Button(self, text=_("Exit"), command=lambda: self.quit())
             try:
-                self.grid_rowconfigure(15, minsize=30)
-                self.grid_rowconfigure(16, minsize=30)
+                self.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
+                self.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
             except Exception:
                 pass
-            self.exitButton.grid(column=3, row=15, padx=5, pady=5, sticky=tk.E)
+            self.exitButton.grid(column=3, row=15, padx=UI_CONSTANTS.DEFAULT_PADX, pady=UI_CONSTANTS.DEFAULT_PADY, sticky=tk.E)
 
-            self.progressBar = ttk.Progressbar(self, mode='indeterminate', length = 400 )
+            self.progressBar = ttk.Progressbar(self, mode='indeterminate', length=UI_CONSTANTS.PROGRESS_BAR_LENGTH)
         except Exception:
             pass
 
@@ -1800,10 +1808,10 @@ class SupernovasApp(tk.Tk):
         # Load application icon if available. Prefer app_icon.ico (Windows),
         # then app_icon.png. If present, set the window icon; fallback is silent.
         try:
-            icon_dir = os.path.join(os.path.dirnammoree(__file__), "assets", "icons")
-            ico = os.path.join(icon_dir, "app_icon.ico")
-            png = os.path.join(icon_dir, "icon-256.png")
-            svg = os.path.join(icon_dir, "app_icon.svg")
+            icon_dir = os.path.join(os.path.dirname(__file__), FILE_CONSTANTS.ICONS_DIR)
+            ico = os.path.join(icon_dir, FILE_CONSTANTS.ICON_ICO)
+            png = os.path.join(icon_dir, FILE_CONSTANTS.ICON_PNG)
+            svg = os.path.join(icon_dir, FILE_CONSTANTS.ICON_SVG)
             if os.path.exists(ico):
                 try:
                     self.iconbitmap(ico)
@@ -1825,8 +1833,8 @@ class SupernovasApp(tk.Tk):
         except Exception:
             pass
 
-        window_width = 1400
-        window_height = 1200
+        window_width = UI_CONSTANTS.WINDOW_WIDTH
+        window_height = UI_CONSTANTS.WINDOW_HEIGHT
 
         # get the screen dimension
         screen_width = self.winfo_screenwidth()
@@ -1920,16 +1928,16 @@ class SupernovasApp(tk.Tk):
         # ensure there is visible separation above the Exit button by
         # reserving two empty grid rows (13 and 14) with a minimum size
         try:
-            self.grid_rowconfigure(15, minsize=30)
-            self.grid_rowconfigure(16, minsize=30)
+            self.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
+            self.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
         except Exception:
             pass
         # place Exit at the right-bottom of the window under the Results column
-        self.exitButton.grid(column=3, row=15, padx=5, pady=5, sticky=tk.E)
+        self.exitButton.grid(column=3, row=15, padx=UI_CONSTANTS.DEFAULT_PADX, pady=UI_CONSTANTS.DEFAULT_PADY, sticky=tk.E)
 
         # legacy placement removed; button moved next to the Results controls
 
-        self.progressBar = ttk.Progressbar(self, mode='indeterminate', length = 400 );
+        self.progressBar = ttk.Progressbar(self, mode='indeterminate', length=UI_CONSTANTS.PROGRESS_BAR_LENGTH)
 
     def _on_language_change(self):
         """Handler when UI language selection changes: apply and refresh labels."""
@@ -2030,8 +2038,8 @@ def main():
     if len(sys.argv) > 3:
         raise ValueError(_("Usage: getsupernovae.py maxMag lastDays"))
 
-    mag = "17"
-    daysToSearch = 21
+    mag = DEFAULT_VALUES.MAGNITUDE
+    daysToSearch = DEFAULT_VALUES.DAYS_TO_SEARCH
 
     if len(sys.argv) == 3:
         if representsInt(sys.argv[2]):
@@ -2046,7 +2054,7 @@ def main():
     site = list(sites.keys())[0]
     
 
-    filters = SearchFilters(mag, daysToSearch, datetime.now(), "21:00", 5, site, 25)
+    filters = SearchFilters(mag, daysToSearch, datetime.now(), DEFAULT_VALUES.OBSERVATION_TIME, DEFAULT_VALUES.OBSERVATION_HOURS, site, DEFAULT_VALUES.MIN_LATITUDE)
     app = SupernovasApp(filters)
     app.mainloop()
 
