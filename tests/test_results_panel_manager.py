@@ -32,10 +32,6 @@ class TestResultsPanelManager(unittest.TestCase):
             on_motion=Mock(),
             on_leave=Mock(),
             on_selection_change=Mock(),
-            on_find_stars=Mock(),
-            on_ignore_selected=Mock(),
-            on_edit_old=Mock(),
-            on_dark_mode_toggle=Mock(),
             on_pdf=Mock(),
             on_txt=Mock(),
             on_refresh=Mock(),
@@ -88,11 +84,6 @@ class TestResultsPanelManager(unittest.TestCase):
             'results_tree',
             'scrollbar_vertical',
             'scrollbar_horizontal',
-            'toolbar',
-            'button_find_stars',
-            'button_ignore_selected',
-            'button_edit_old',
-            'toggle_dark_mode',
             'button_pdf',
             'button_txt',
             'button_refresh',
@@ -152,22 +143,6 @@ class TestResultsPanelManager(unittest.TestCase):
         self.assertIn('scrollbar_vertical', manager.widgets)
         self.assertIn('scrollbar_horizontal', manager.widgets)
 
-    def test_toolbar_buttons_created(self):
-        """Test that all toolbar buttons are created."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        # Check toolbar buttons
-        self.assertIn('button_find_stars', manager.widgets)
-        self.assertIn('button_ignore_selected', manager.widgets)
-        self.assertIn('button_edit_old', manager.widgets)
-        self.assertIn('toggle_dark_mode', manager.widgets)
-
     def test_action_buttons_created(self):
         """Test that all action buttons are created."""
         manager = ResultsPanelManager(
@@ -197,54 +172,6 @@ class TestResultsPanelManager(unittest.TestCase):
         self.assertIn('progress_bar', manager.widgets)
         progress = manager.widgets['progress_bar']
         self.assertIsInstance(progress, ttk.Progressbar)
-
-    def test_find_stars_button_calls_callback(self):
-        """Test that find stars button triggers the callback."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        # Enable button first (it's disabled by default)
-        manager.set_button_state('button_find_stars', 'normal')
-        
-        button = manager.widgets['button_find_stars']
-        button.invoke()
-        
-        self.callbacks.on_find_stars.assert_called_once()
-
-    def test_ignore_selected_button_calls_callback(self):
-        """Test that ignore selected button triggers the callback."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        button = manager.widgets['button_ignore_selected']
-        button.invoke()
-        
-        self.callbacks.on_ignore_selected.assert_called_once()
-
-    def test_edit_old_button_calls_callback(self):
-        """Test that edit old button triggers the callback."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        button = manager.widgets['button_edit_old']
-        button.invoke()
-        
-        self.callbacks.on_edit_old.assert_called_once()
 
     def test_pdf_button_calls_callback(self):
         """Test that PDF button triggers the callback."""
@@ -376,12 +303,13 @@ class TestResultsPanelManager(unittest.TestCase):
         
         manager.build()
         
-        # Find stars button is disabled by default
-        button = manager.widgets['button_find_stars']
+        # PDF button is normal by default, let's disable then enable it
+        button = manager.widgets['button_pdf']
+        manager.set_button_state('button_pdf', 'disabled')
         self.assertEqual(str(button['state']), 'disabled')
         
         # Enable it
-        manager.set_button_state('button_find_stars', 'normal')
+        manager.set_button_state('button_pdf', 'normal')
         self.assertEqual(str(button['state']), 'normal')
 
     def test_set_button_state_disables_button(self):
@@ -566,34 +494,6 @@ class TestResultsPanelManager(unittest.TestCase):
         self.assertIn('<Motion>', bindings)
         self.assertIn('<Leave>', bindings)
         self.assertIn('<<TreeviewSelect>>', bindings)
-
-    def test_find_stars_button_initially_disabled(self):
-        """Test that find stars button is initially disabled."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        button = manager.widgets['button_find_stars']
-        self.assertEqual(str(button['state']), 'disabled')
-
-    def test_dark_mode_toggle_uses_variable(self):
-        """Test that dark mode toggle uses the provided variable."""
-        manager = ResultsPanelManager(
-            parent=self.root,
-            callbacks=self.callbacks,
-            dark_mode=self.dark_mode
-        )
-        
-        manager.build()
-        
-        toggle = manager.widgets['toggle_dark_mode']
-        # Get the variable from the checkbutton
-        var = toggle.cget('variable')
-        self.assertIsNotNone(var)
 
     def test_supernova_data_storage(self):
         """Test that supernova data can be stored and retrieved."""

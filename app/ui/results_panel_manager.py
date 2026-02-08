@@ -25,10 +25,6 @@ class ResultsPanelCallbacks:
     on_motion: Callable[[Any], None]
     on_leave: Callable[[Any], None]
     on_selection_change: Callable[[Any], None]
-    on_find_stars: Callable[[], None]
-    on_ignore_selected: Callable[[], None]
-    on_edit_old: Callable[[], None]
-    on_dark_mode_toggle: Callable[[], None]
     on_pdf: Callable[[], None]
     on_txt: Callable[[], None]
     on_refresh: Callable[[], None]
@@ -40,11 +36,12 @@ class ResultsPanelManager:
     
     This class is responsible for:
     - Creating the results label and treeview
-    - Creating toolbar with action buttons
     - Creating bottom action buttons (PDF, TXT, Refresh, Exit)
     - Setting up event bindings for tree interactions
     - Managing widget state (enable/disable)
     - Coordinating with callbacks for business logic
+    
+    Note: Toolbar (Find Stars, Ignore SN, Edit Old, Dark Mode) is managed by ToolbarManager.
     
     Follows Single Responsibility Principle by focusing only on UI management.
     """
@@ -82,7 +79,6 @@ class ResultsPanelManager:
         """Build all results panel components."""
         self._build_results_label()
         self._build_results_tree()
-        self._build_toolbar()
         self._build_action_buttons()
         self._build_progress_bar()
         
@@ -184,61 +180,6 @@ class ResultsPanelManager:
             tree.bind("<Leave>", self.callbacks.on_leave)
             tree.bind("<<TreeviewSelect>>", self.callbacks.on_selection_change)
             
-        except Exception:
-            pass
-    
-    def _build_toolbar(self) -> None:
-        """Build toolbar with action buttons."""
-        try:
-            toolbar = ttk.Frame(self.parent)
-            toolbar.grid(column=3, row=11, columnspan=2, padx=5, pady=5, sticky="ew")
-            try:
-                toolbar.grid_columnconfigure(0, weight=1)
-            except Exception:
-                pass
-            self.widgets['toolbar'] = toolbar
-            
-            # Find Stars button
-            find_stars_btn = ttk.Button(
-                toolbar,
-                text=_("Find stars"),
-                command=self.callbacks.on_find_stars,
-                state=tk.DISABLED
-            )
-            find_stars_btn.grid(column=0, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-            self.widgets['button_find_stars'] = find_stars_btn
-            
-            # Ignore Selected SN button
-            ignore_btn = ttk.Button(
-                toolbar,
-                text=_("Ignore selected SN"),
-                command=self.callbacks.on_ignore_selected
-            )
-            ignore_btn.grid(column=1, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-            self.widgets['button_ignore_selected'] = ignore_btn
-            
-            # Edit Ignored SN button
-            edit_old_btn = ttk.Button(
-                toolbar,
-                text=_("Edit Ignored SN"),
-                command=self.callbacks.on_edit_old
-            )
-            edit_old_btn.grid(column=2, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
-            self.widgets['button_edit_old'] = edit_old_btn
-            
-            # Dark mode toggle
-            try:
-                dark_toggle = ttk.Checkbutton(
-                    toolbar,
-                    text=_("Dark mode"),
-                    variable=self.dark_mode,
-                    command=self.callbacks.on_dark_mode_toggle
-                )
-                dark_toggle.grid(column=3, row=0, sticky=tk.E, padx=UI_CONSTANTS.BUTTON_PADX)
-                self.widgets['toggle_dark_mode'] = dark_toggle
-            except Exception:
-                pass
-                
         except Exception:
             pass
     
@@ -413,16 +354,6 @@ class ResultsPanelManager:
         try:
             if 'label_results' in self.widgets:
                 self.widgets['label_results'].config(text=_("Results: "))
-            
-            # Toolbar buttons
-            if 'button_find_stars' in self.widgets:
-                self.widgets['button_find_stars'].config(text=_("Find stars"))
-            if 'button_ignore_selected' in self.widgets:
-                self.widgets['button_ignore_selected'].config(text=_("Ignore selected SN"))
-            if 'button_edit_old' in self.widgets:
-                self.widgets['button_edit_old'].config(text=_("Edit Ignored SN"))
-            if 'toggle_dark_mode' in self.widgets:
-                self.widgets['toggle_dark_mode'].config(text=_("Dark mode"))
             
             # Action buttons
             if 'button_pdf' in self.widgets:

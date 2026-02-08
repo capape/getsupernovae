@@ -28,6 +28,7 @@ from app.ui.snvisibility import VisibilityWindow
 from app.ui.results_presenter import ResultsPresenter
 from app.ui.filter_panel_manager import FilterPanelManager, FilterPanelCallbacks
 from app.ui.results_panel_manager import ResultsPanelManager, ResultsPanelCallbacks
+from app.ui.toolbar_manager import ToolbarManager, ToolbarCallbacks
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.reports.report_text import createText, createTextAsString
@@ -1185,10 +1186,6 @@ class SupernovasApp(tk.Tk):
                 on_motion=self._on_results_motion,
                 on_leave=self._on_results_leave,
                 on_selection_change=self._on_selection_change,
-                on_find_stars=self._find_stars_in_simbad,
-                on_ignore_selected=self.callbackIgnoreSelectedSN,
-                on_edit_old=self.callbackEditOldSupernovae,
-                on_dark_mode_toggle=self.apply_theme,
                 on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
                 on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
                 on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
@@ -1204,13 +1201,33 @@ class SupernovasApp(tk.Tk):
             
             self.results_panel_manager.build()
             
+            # Create toolbar manager callbacks
+            toolbar_callbacks = ToolbarCallbacks(
+                on_find_stars=self._find_stars_in_simbad,
+                on_ignore_selected=self.callbackIgnoreSelectedSN,
+                on_edit_old=self.callbackEditOldSupernovae,
+                on_dark_mode_toggle=self.apply_theme,
+            )
+            
+            # Create and build toolbar manager
+            self.toolbar_manager = ToolbarManager(
+                parent=self,
+                callbacks=toolbar_callbacks,
+                dark_mode=self.dark_mode,
+                grid_column=3,
+                grid_row=11,
+                columnspan=2
+            )
+            
+            self.toolbar_manager.build()
+            
             # Store references to commonly accessed widgets for backward compatibility
             self.resultsTree = self.results_panel_manager.get_tree()
             self.labelResults = self.results_panel_manager.widgets.get('label_results')
-            self.findStarsButton = self.results_panel_manager.widgets.get('button_find_stars')
-            self.ignoreSelectedButton = self.results_panel_manager.widgets.get('button_ignore_selected')
-            self.editOldButton = self.results_panel_manager.widgets.get('button_edit_old')
-            self.darkToggle = self.results_panel_manager.widgets.get('toggle_dark_mode')
+            self.findStarsButton = self.toolbar_manager.get_widget('button_find_stars')
+            self.ignoreSelectedButton = self.toolbar_manager.get_widget('button_ignore_selected')
+            self.editOldButton = self.toolbar_manager.get_widget('button_edit_old')
+            self.darkToggle = self.toolbar_manager.get_widget('toggle_dark_mode')
             self.pdfButton = self.results_panel_manager.widgets.get('button_pdf')
             self.txtButton = self.results_panel_manager.widgets.get('button_txt')
             self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
@@ -1850,6 +1867,10 @@ class SupernovasApp(tk.Tk):
             # Use results panel manager if available
             if hasattr(self, 'results_panel_manager'):
                 self.results_panel_manager.refresh_labels()
+            
+            # Use toolbar manager if available
+            if hasattr(self, 'toolbar_manager'):
+                self.toolbar_manager.refresh_labels()
             else:
                 # Fallback to direct updates
                 if hasattr(self, 'labelResults'):
