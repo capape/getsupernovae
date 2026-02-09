@@ -109,7 +109,7 @@ class RochesterSupernova:
         self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]
     ):
         """Select and sort supernovae using the selection service.
-        
+
         This method now delegates to SupernovaSelectionService for all
         selection, filtering, and sorting logic.
         """
@@ -118,7 +118,7 @@ class RochesterSupernova:
             max_magnitude = float(e.magnitude)
         except (ValueError, TypeError):
             max_magnitude = float(str(e.magnitude))
-        
+
         # Use selection service to coordinate the entire selection process
         supernovas = self.selection_service.select_and_sort_supernovae(
             supernova_list=supernovaeList,
@@ -150,7 +150,7 @@ class RochesterSupernova:
         maxAz: float = 360,
     ):
         """Select supernovae using the filter service.
-        
+
         Legacy method kept for backward compatibility. Delegates to filter service.
         For new code, prefer using selectAndSortSupernovas with SupernovaCallBackData.
         """
@@ -198,7 +198,7 @@ class AsyncRochesterDownload(Thread):
 
         # Don't reset language - respect the user's current language setting
         self.result = None
-        self.error = None        
+        self.error = None
         self.config = e
         self.visibility_factory = visibility_factory
         # provider_factory may be a class or callable that accepts timeout kwarg
@@ -267,11 +267,11 @@ class SupernovasApp(tk.Tk):
         try:
             if not hasattr(self, 'resultsTree') or self.resultsTree is None:
                 return
-            
+
             # Configure row height - must use self as the first argument
             style = ttk.Style(self)
             style.configure(UI_STRINGS.RESULTS_TREE_STYLE, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-            
+
             # Configure alternating row colors based on current theme
             dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
             if dark:
@@ -284,18 +284,18 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
                 self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.LIGHT_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
                 self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.LIGHT_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
-            
+
             # Reapply tags to all existing items to preserve bright highlighting
             self._reapply_tree_tags()
         except Exception:
             pass
-    
+
     def _reapply_tree_tags(self):
         """Reapply tags to all tree items based on magnitude and position."""
         try:
             if not hasattr(self, 'resultsTree') or self.resultsTree is None:
                 return
-            
+
             items = self.resultsTree.get_children('')
             for index, item in enumerate(items):
                 try:
@@ -306,18 +306,18 @@ class SupernovasApp(tk.Tk):
                             is_bright = mag is not None and float(mag) < 15
                         except (ValueError, TypeError):
                             is_bright = False
-                        
+
                         if is_bright:
                             tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
                         else:
                             tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-                        
+
                         self.resultsTree.item(item, tags=(tag,))
                 except Exception:
                     pass
         except Exception:
             pass
-    
+
     def apply_theme(self):
         """Apply light/dark theme to ttk widgets and some native widgets."""
         try:
@@ -377,7 +377,7 @@ class SupernovasApp(tk.Tk):
                     pass
         except Exception:
             pass
-        
+
         # Reapply results tree styling after theme change
         try:
             self._configure_results_tree_styling()
@@ -440,13 +440,13 @@ class SupernovasApp(tk.Tk):
                 minAz = cfg.get("minAz", 0.0)
                 maxAz = cfg.get("maxAz", 360.0)
                 txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
-                
+
                 self.filter_panel_manager.update_visibility_values_label(txt)
                 self.filter_panel_manager.set_min_latitude_state("disabled")
             else:
                 self.filter_panel_manager.update_visibility_values_label("")
                 self.filter_panel_manager.set_min_latitude_state("normal")
-                    
+
         except Exception:
             pass
 
@@ -525,7 +525,7 @@ class SupernovasApp(tk.Tk):
             pass
 
     def getDataToSearch(self):
-        
+
         callbackData = SupernovaCallBackData(
             self.magnitude.get(),
             self.observationDate.get(),
@@ -546,9 +546,9 @@ class SupernovasApp(tk.Tk):
         if self.supernovasFound == None:
             return False
         return True
-    
-    
-    #    
+
+
+    #
     # PDF button callback
     #
     def callbackPdfSupernovas(self, e: SupernovaCallBackData):
@@ -572,7 +572,7 @@ class SupernovasApp(tk.Tk):
                 float(e.minLatitude),
                 getattr(e, 'visibilityWindowName', None),
             )
-            
+
             # Show success message with PDF location
             import os
             import subprocess
@@ -586,7 +586,7 @@ class SupernovasApp(tk.Tk):
                 except Exception as ex:
                     messagebox.showwarning(_("Cannot open file"), _("File saved but could not be opened automatically: {error}").format(error=str(ex)))
 
-    #    
+    #
     # TXT button callback
     #
     def callbackTextSupernovas(self, e: SupernovaCallBackData):
@@ -610,7 +610,7 @@ class SupernovasApp(tk.Tk):
                 float(e.minLatitude),
                 getattr(e, 'visibilityWindowName', None),
             )
-    #    
+    #
     #  Refresh button callback
     #
     def callbackRefreshSearchSupernovas(self, e: SupernovaCallBackData):
@@ -630,8 +630,8 @@ class SupernovasApp(tk.Tk):
         else:
             # Already refreshing: do nothing (avoid using None results).
             return
-        
-            
+
+
     #
     # Do a async search
     #
@@ -640,7 +640,7 @@ class SupernovasApp(tk.Tk):
         self.txtButton["state"] = tk.DISABLED
         self.pdfButton["state"] = tk.DISABLED
         self.searchButton["state"] = tk.DISABLED
-        
+
         self.start_progress_bar()
 
         download_thread = AsyncRochesterDownload(
@@ -717,7 +717,7 @@ class SupernovasApp(tk.Tk):
                 self.refreshing = False
                 self.txtButton["state"] = tk.NORMAL
                 self.pdfButton["state"] = tk.NORMAL
-                self.searchButton["state"] = tk.NORMAL            
+                self.searchButton["state"] = tk.NORMAL
                 # cache raw rows if available for later re-filtering
                 try:
                     self.last_rows = getattr(thread, "dto_list", None)
@@ -746,7 +746,7 @@ class SupernovasApp(tk.Tk):
             self.supernova_data.clear()
         except Exception:
             pass
-        
+
         # If datatxt is an error message, show it
         if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
             try:
@@ -755,7 +755,7 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 pass
             return
-        
+
         # Populate tree from self.supernovasFound
         try:
             if self.supernovasFound:
@@ -797,7 +797,7 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", ""))
             except Exception:
                 pass
-    
+
     def _sort_column(self, col, is_numeric):
         """Sort treeview by column."""
         try:
@@ -807,13 +807,13 @@ class SupernovasApp(tk.Tk):
             else:
                 self.sort_column = col
                 self.sort_reverse = False
-            
+
             # Get column index
             col_idx = self.resultsTree['columns'].index(col)
-            
+
             # Get all items with their values
             items = [(self.resultsTree.set(item, col), item) for item in self.resultsTree.get_children('')]
-            
+
             # Sort items
             if is_numeric:
                 # Numeric sort - handle empty values
@@ -826,11 +826,11 @@ class SupernovasApp(tk.Tk):
             else:
                 # Alphabetic sort
                 items.sort(key=lambda x: x[0].lower() if x[0] else '', reverse=self.sort_reverse)
-            
+
             # Rearrange items in sorted order
             for index, (val, item) in enumerate(items):
                 self.resultsTree.move(item, '', index)
-                
+
                 # Reapply alternating row colors and brightness after sorting
                 try:
                     if item in self.supernova_data:
@@ -840,18 +840,18 @@ class SupernovasApp(tk.Tk):
                             is_bright = mag is not None and float(mag) < 15
                         except (ValueError, TypeError):
                             is_bright = False
-                        
+
                         if is_bright:
                             tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
                         else:
                             tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-                        
+
                         self.resultsTree.item(item, tags=(tag,))
                 except Exception:
                     pass
         except Exception:
             pass
-    
+
     def _on_selection_change(self, event):
         """Enable or disable Find stars button based on tree selection."""
         try:
@@ -862,41 +862,41 @@ class SupernovasApp(tk.Tk):
                 self.findStarsButton.config(state=tk.DISABLED)
         except Exception:
             pass
-    
+
     def _find_stars_in_simbad(self):
         """Query SIMBAD for objects near the selected supernova."""
         try:
             selection = self.resultsTree.selection()
             if not selection or len(selection) == 0:
                 return
-            
+
             item = selection[0]
             if item not in self.supernova_data:
                 return
-            
+
             sn = self.supernova_data[item]
-            
-            
+
+
             # Build SIMBAD query URL for the region around the supernova
             # Using the web interface format
             coord = getattr(sn, 'coordinates', None)
             if coord:
-                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)                
+                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
                 dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1, alwayssign=True)
             else:
                ra_str = dec_str = ""
-             
+
             # SIMBAD coordinate query URL (searches within configured box radius)
             # Filter for stellar objects (maintype '*') with Vmag < configured threshold
             # URL-encode the region parameter to handle colons/spaces in RA/Dec
             try:
-                criteria_str = ( 
-                    f"region(box,{ra_str} {dec_str},{NETWORK_CONSTANTS.SIMBAD_SEARCH_RADIUS}) & "       
+                criteria_str = (
+                    f"region(box,{ra_str} {dec_str},{NETWORK_CONSTANTS.SIMBAD_SEARCH_RADIUS}) & "
                     f"Vmag<{NETWORK_CONSTANTS.SIMBAD_MAX_VMAG} & "
-                    f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"       
+                    f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"
                 )
                 criteria_enc=urllib.parse.quote(criteria_str)
-                
+
             except Exception:
                 criteria_enc = ""
 
@@ -911,7 +911,7 @@ class SupernovasApp(tk.Tk):
             # Open in browser
             import webbrowser
             webbrowser.open(simbad_url)
-            
+
         except Exception as e:
             try:
                 messagebox.showerror(
@@ -920,22 +920,22 @@ class SupernovasApp(tk.Tk):
                 )
             except Exception:
                 pass
-    
+
     def _on_results_double_click(self, event):
         """Handle double-click on results table to open links."""
         try:
             region = self.resultsTree.identify("region", event.x, event.y)
             if region != "cell":
                 return
-            
+
             column = self.resultsTree.identify_column(event.x)
             item = self.resultsTree.identify_row(event.y)
-            
+
             if not item or item not in self.supernova_data:
                 return
-            
+
             sn = self.supernova_data[item]
-            
+
             # Column #10 is rochester, #11 is tns (1-indexed)
             if column == "#10":  # Rochester
                 url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
@@ -945,7 +945,7 @@ class SupernovasApp(tk.Tk):
                 self._open_url(url)
         except Exception:
             pass
-    
+
     def _open_url(self, url):
         """Open URL in default browser."""
         import webbrowser
@@ -953,28 +953,28 @@ class SupernovasApp(tk.Tk):
             webbrowser.open(url)
         except Exception:
             pass
-    
+
     def _on_results_motion(self, event):
         """Show tooltip with visibility and discovery info on hover."""
         try:
             item = self.resultsTree.identify_row(event.y)
-            
+
             # If we're over a different item or no item, update tooltip
             if item != self.tooltip_item:
                 self._hide_tooltip()
-                
+
                 if item and item in self.supernova_data:
                     self.tooltip_item = item
                     sn = self.supernova_data[item]
-                    
+
                     # Build tooltip text with visibility and discovery info
                     tooltip_lines = []
-                    
+
                     # Discovery information
                     first_obs = getattr(sn, 'firstObserved', None)
                     if first_obs:
                         tooltip_lines.append(f"First observed: {first_obs}")
-                    
+
                     max_mag = getattr(sn, 'maxMagnitude', None)
                     max_mag_date = getattr(sn, 'maxMagnitudeDate', None)
                     if max_mag:
@@ -982,13 +982,13 @@ class SupernovasApp(tk.Tk):
                         if max_mag_date:
                             mag_line += f" on {max_mag_date}"
                         tooltip_lines.append(mag_line)
-                    
+
                     # Visibility information
                     visibility = getattr(sn, 'visibility', None)
                     if visibility:
                         is_visible = getattr(visibility, 'visible', False)
                         tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
-                        
+
                         # Get altitude/azimuth coordinates if available
                         az_coords = getattr(visibility, 'azCords', None)
                         if az_coords and len(az_coords) > 0:
@@ -996,48 +996,48 @@ class SupernovasApp(tk.Tk):
                             try:
                                 first_coord = az_coords[0]
                                 last_coord = az_coords[-1]
-                                
+
                                 first_time = getattr(first_coord, 'time', None)
                                 first_alt = getattr(first_coord, 'coord', None)
                                 last_time = getattr(last_coord, 'time', None)
                                 last_alt = getattr(last_coord, 'coord', None)
-                                
+
                                 if first_alt and hasattr(first_alt, 'alt'):
                                     tooltip_lines.append(f"Start altitude: {first_alt.alt.degree:.1f}°")
                                 if last_alt and hasattr(last_alt, 'alt'):
                                     tooltip_lines.append(f"End altitude: {last_alt.alt.degree:.1f}°")
-                                
+
                                 # Find max altitude
-                                max_alt = max((getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')), 
+                                max_alt = max((getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')),
                                              default=None, key=lambda a: a.degree if a else -999)
                                 if max_alt:
                                     tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
                             except Exception:
                                 pass
-                    
+
                     if tooltip_lines:
                         self._show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
         except Exception:
             pass
-    
+
     def _on_results_leave(self, event):
         """Hide tooltip when mouse leaves the tree."""
         self._hide_tooltip()
-    
+
     def _show_tooltip(self, x, y, text):
         """Display tooltip at specified position."""
         try:
             self._hide_tooltip()
-            
+
             self.tooltip_window = tk.Toplevel(self)
             self.tooltip_window.wm_overrideredirect(True)
             self.tooltip_window.wm_geometry(f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}")
-            
+
             # Style tooltip based on dark mode
             dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
             bg_color = THEME_COLORS.DARK_TOOLTIP_BG if dark else THEME_COLORS.LIGHT_TOOLTIP_BG
             fg_color = THEME_COLORS.DARK_TOOLTIP_FG if dark else THEME_COLORS.LIGHT_TOOLTIP_FG
-            
+
             label = tk.Label(
                 self.tooltip_window,
                 text=text,
@@ -1053,7 +1053,7 @@ class SupernovasApp(tk.Tk):
             label.pack()
         except Exception:
             pass
-    
+
     def _hide_tooltip(self):
         """Hide and destroy tooltip window."""
         try:
@@ -1078,7 +1078,7 @@ class SupernovasApp(tk.Tk):
                 'visibility_window': self.visibilityWindow,
                 'min_latitude': self.minLatitud,
             }
-            
+
             # Create callbacks for the filter panel
             callbacks = FilterPanelCallbacks(
                 on_clear_results=self.callbackClearResults,
@@ -1088,7 +1088,7 @@ class SupernovasApp(tk.Tk):
                 on_add_site=self.callbackAddSite,
                 on_add_visibility_window=self.callbackAddVisibilityWindow,
             )
-            
+
             # Create and build the filter panel manager
             self.filter_panel_manager = FilterPanelManager(
                 parent=self,
@@ -1098,15 +1098,15 @@ class SupernovasApp(tk.Tk):
                 callbacks=callbacks,
                 dark_mode=self.dark_mode
             )
-            
+
             self.filter_panel_manager.build()
-            
+
             # Store references to commonly accessed widgets for backward compatibility
             self.cbSite = self.filter_panel_manager.widgets.get('combobox_site')
             self.cbVisibility = self.filter_panel_manager.widgets.get('combobox_visibility')
             self.entryLatitud = self.filter_panel_manager.widgets.get('entry_min_latitude')
             self.visibilityValuesLabel = self.filter_panel_manager.widgets.get('label_visibility_values')
-            
+
             # Store widget references for language change updates
             self.labelMagnitude = self.filter_panel_manager.widgets.get('label_magnitude')
             self.labelDaysToSearch = self.filter_panel_manager.widgets.get('label_days_to_search')
@@ -1119,11 +1119,11 @@ class SupernovasApp(tk.Tk):
             self.labelLatitud = self.filter_panel_manager.widgets.get('label_min_latitude')
             self.rochesterText = self.filter_panel_manager.widgets.get('text_rochester')
             self.cbLang = self.filter_panel_manager.widgets.get('combobox_language')
-            
+
             # Get langVar from filter panel manager
             if 'language' in filter_variables:
                 self.langVar = filter_variables['language']
-            
+
             # Apply persisted prefs if present (best-effort)
             try:
                 self._load_and_apply_prefs()
@@ -1147,16 +1147,16 @@ class SupernovasApp(tk.Tk):
                 on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
                 on_exit=self.quit,
             )
-            
+
             # Create and build the results panel manager
             self.results_panel_manager = ResultsPanelManager(
                 parent=self,
                 callbacks=callbacks,
                 dark_mode=self.dark_mode
             )
-            
+
             self.results_panel_manager.build()
-            
+
             # Create toolbar manager callbacks
             toolbar_callbacks = ToolbarCallbacks(
                 on_find_stars=self._find_stars_in_simbad,
@@ -1164,7 +1164,7 @@ class SupernovasApp(tk.Tk):
                 on_edit_old=self.callbackEditOldSupernovae,
                 on_dark_mode_toggle=self.apply_theme,
             )
-            
+
             # Create and build toolbar manager
             self.toolbar_manager = ToolbarManager(
                 parent=self,
@@ -1174,9 +1174,9 @@ class SupernovasApp(tk.Tk):
                 grid_row=11,
                 columnspan=2
             )
-            
+
             self.toolbar_manager.build()
-            
+
             # Store references to commonly accessed widgets for backward compatibility
             self.resultsTree = self.results_panel_manager.get_tree()
             self.labelResults = self.results_panel_manager.widgets.get('label_results')
@@ -1189,16 +1189,16 @@ class SupernovasApp(tk.Tk):
             self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
             self.exitButton = self.results_panel_manager.widgets.get('button_exit')
             self.progressBar = self.results_panel_manager.widgets.get('progress_bar')
-            
+
             # Use manager's data storage
             self.supernova_data = self.results_panel_manager.supernova_data
             self.tooltip_window = self.results_panel_manager.tooltip_window
             self.tooltip_item = self.results_panel_manager.tooltip_item
-            
+
             # Use manager's sort state
             self.sort_column = self.results_panel_manager.sort_column
             self.sort_reverse = self.results_panel_manager.sort_reverse
-            
+
             # Configure results tree styling
             self._configure_results_tree_styling()
         except Exception:
@@ -1276,12 +1276,12 @@ class SupernovasApp(tk.Tk):
             if not selection:
                 messagebox.showinfo(_("No selection"), _("No supernova selected in the Results table."))
                 return
-            
+
             item = selection[0]
             if item not in self.supernova_data:
                 messagebox.showinfo(_("No selection"), _("No supernova data found for selection."))
                 return
-            
+
             sn = self.supernova_data[item]
             name = getattr(sn, 'name', '').strip()
         except Exception:
@@ -1451,7 +1451,7 @@ class SupernovasApp(tk.Tk):
                 try:
                     vals = sorted(list(sites.keys())) if isinstance(sites, dict) or hasattr(sites, 'keys') else []
                     self.filter_panel_manager.update_site_values(vals)
-                    
+
                     # prefer selecting a newly added site (difference between
                     # previous and new), otherwise preserve previous selection.
                     sel_name = None
@@ -1562,37 +1562,37 @@ class SupernovasApp(tk.Tk):
 
         self.supernovasFound = None
         self.refreshing = False
-        
+
         # Create dark_mode variable first (required by apply_theme)
         self.dark_mode = tk.BooleanVar(value=True)
-        
+
         # Force default UI language to English on startup
         try:
             set_language("en")
         except Exception:
             pass
-        
+
         # Apply theme early so initial widgets pick up dark mode colors
         try:
             self.apply_theme()
         except Exception:
             pass
-        
+
         self.magnitude = tk.StringVar()
         self.magnitude.trace_add(["write", "unset"], self.callbackClearResults)
-        
+
         self.daysToSearch = tk.StringVar()
         self.daysToSearch.trace_add(["write", "unset"], self.callbackClearResults)
-        
+
         self.observationDate = tk.StringVar()
         self.observationDate.trace_add(["write", "unset"], self.callbackClearResults)
-        
+
         self.observationDuration = tk.StringVar()
         self.observationDuration.trace_add(["write", "unset"], self.callbackClearResults)
-        
+
         self.minLatitud = tk.StringVar()
         self.minLatitud.trace_add(["write", "unset"], self.callbackClearResults)
-        
+
         self.observationTime = tk.StringVar()
         self.observationTime.trace_add(["write", "unset"], self.callbackClearResults)
 
@@ -1607,7 +1607,7 @@ class SupernovasApp(tk.Tk):
         self.results.trace_add(["write", "unset"], self.callbackClearResults)
         # Dark mode variable already created earlier (before apply_theme call)
         self.dark_mode.trace_add(["write", "unset"], lambda *a: None)
-        
+
 
         # injectable presenter and optional visibility factory (for testing)
         self.presenter = presenter if presenter is not None else ResultsPresenter()
@@ -1705,7 +1705,7 @@ class SupernovasApp(tk.Tk):
             self.build_toolbar()
         except Exception:
             pass
-        
+
         callbackData = SupernovaCallBackData(
             self.magnitude.get(),
             self.observationDate.get(),
@@ -1762,12 +1762,12 @@ class SupernovasApp(tk.Tk):
                 set_language(lang)
         except Exception:
             pass
-        
+
         # Update visible widget texts to the new language
         try:
             self.filter_panel_manager.refresh_labels()
             self.labelLatitud.config(text=_("Min latitude: "))
-            
+
             # Refresh UI manager labels
             self.results_panel_manager.refresh_labels()
             self.toolbar_manager.refresh_labels()
@@ -1790,7 +1790,7 @@ class SupernovasApp(tk.Tk):
                 pass
         except Exception:
             pass
-        
+
         # Reapply results tree styling after language change
         try:
             self._configure_results_tree_styling()
@@ -1841,7 +1841,7 @@ def main():
     site = EarthLocation(lat=41.55 * u.deg, lon=2.09 * u.deg, height=224 * u.m)
 
     site = list(sites.keys())[0]
-    
+
 
     filters = SearchFilters(mag, daysToSearch, datetime.now(), DEFAULT_VALUES.OBSERVATION_TIME, DEFAULT_VALUES.OBSERVATION_HOURS, site, DEFAULT_VALUES.MIN_LATITUDE)
     app = SupernovasApp(filters)
