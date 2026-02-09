@@ -1204,12 +1204,6 @@ class SupernovasApp(tk.Tk):
         except Exception:
             pass
 
-    def build_toolbar(self):
-        """Build toolbar - now handled by ResultsPanelManager."""
-        # This method is kept for backward compatibility but does nothing
-        # as the toolbar is now built by ResultsPanelManager in build_results_panel
-        pass
-
     def refilter_from_cache(self, source="REFRESH"):
         """Re-run selection/filtering on the cached HTML rows (if available).
 
@@ -1456,13 +1450,8 @@ class SupernovasApp(tk.Tk):
 
                 try:
                     vals = sorted(list(sites.keys())) if isinstance(sites, dict) or hasattr(sites, 'keys') else []
+                    self.filter_panel_manager.update_site_values(vals)
                     
-                    # Use filter panel manager if available
-                    if hasattr(self, 'filter_panel_manager'):
-                        self.filter_panel_manager.update_site_values(vals)
-                    elif self.cbSite:
-                        self.cbSite["values"] = vals
-
                     # prefer selecting a newly added site (difference between
                     # previous and new), otherwise preserve previous selection.
                     sel_name = None
@@ -1530,12 +1519,7 @@ class SupernovasApp(tk.Tk):
 
                 try:
                     vals = [""] + sorted(list(visibility_windows.keys()))
-                    
-                    # Use filter panel manager if available
-                    if hasattr(self, 'filter_panel_manager'):
-                        self.filter_panel_manager.update_visibility_window_values(vals)
-                    elif self.cbVisibility:
-                        self.cbVisibility["values"] = vals
+                    self.filter_panel_manager.update_visibility_window_values(vals)
 
                     # Prefer newly added selection when possible
                     sel_name = None
