@@ -1778,46 +1778,10 @@ class SupernovasApp(tk.Tk):
                 set_language(lang)
         except Exception:
             pass
-
-        # Import _ to use for updating UI labels
         
         # Update visible widget texts to the new language
         try:
-            # Use filter panel manager if available
-            if hasattr(self, 'filter_panel_manager'):
-                self.filter_panel_manager.refresh_labels()
-            else:
-                # Fallback to direct widget updates
-                # Update form labels
-                if hasattr(self, 'labelMagnitude'):
-                    self.labelMagnitude.config(text=_("Max. magnitude: "))
-                if hasattr(self, 'labelDaysToSearch'):
-                    self.labelDaysToSearch.config(text=_("Find the n previous days: "))
-                if hasattr(self, 'labelObservationDate'):
-                    self.labelObservationDate.config(text=_("Observation date: "))
-                if hasattr(self, 'labelInitTime'):
-                    self.labelInitTime.config(text=_("Init time in observation date: "))
-                if hasattr(self, 'labelDuration'):
-                    self.labelDuration.config(text=_("Hours of observation: "))
-                if hasattr(self, 'labelSite'):
-                    self.labelSite.config(text=_("Site: "))
-                if hasattr(self, 'labelLang'):
-                    self.labelLang.config(text=_("Language:"))
-                try:
-                    # refresh readonly text widget content
-                    rochester_text = _("All data is obtained from https://www.rochesterastronomy.org/snimages/ . Please collaborate with Latest Supernovae Site.")
-                    if getattr(self, 'rochesterText', None):
-                        try:
-                            self.rochesterText.config(state='normal')
-                            self.rochesterText.delete('1.0', 'end')
-                            self.rochesterText.insert('1.0', rochester_text)
-                            self.rochesterText.config(state='disabled')
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
-                if hasattr(self, 'labelVisibility'):
-                    self.labelVisibility.config(text=_("Visibility window:"))
+            self.filter_panel_manager.refresh_labels()
             self.labelLatitud.config(text=_("Min latitude: "))
             
             # Refresh UI manager labels
