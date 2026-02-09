@@ -19,17 +19,20 @@ Write-Host "Upgrading pip and installing requirements..."
 & $pip install pyinstaller
 
 Write-Host "Running PyInstaller to build one-file exe (this may take a few minutes)..."
-# Use semicolon separator for --add-data on Windows
+ # Use semicolon separator for --add-data on Windows
 $addData = @(
     "locales;locales",
     "fonts;fonts",
     "sites.json;."
 )
 
-$addDataArgs = $addData | ForEach-Object { "--add-data `"$_`"" } | Out-String
-$addDataArgs = $addDataArgs -replace "\r?\n"," "
+# Build argument array for PyInstaller
+$pyinstallerArgs = @('--noconfirm', '--clean', '--onefile', '--windowed')
+$addDataArgs = $addData | ForEach-Object { '--add-data', $_ }
+$pyinstallerArgs += $addDataArgs
+$pyinstallerArgs += 'getsupernovae.py'
 
 # Build onefile, windowed (no console). Remove --windowed if you want a console.
-& $pythonExe -m PyInstaller --noconfirm --clean --onefile --windowed $addDataArgs getsupernovae.py
+& $pythonExe -m PyInstaller @pyinstallerArgs
 
 Write-Host "Build finished. Check dist\getsupernovae.exe for the built executable."
