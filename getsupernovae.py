@@ -441,35 +441,12 @@ class SupernovasApp(tk.Tk):
                 maxAz = cfg.get("maxAz", 360.0)
                 txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
                 
-                # Use filter panel manager if available
-                if hasattr(self, 'filter_panel_manager'):
-                    self.filter_panel_manager.update_visibility_values_label(txt)
-                    self.filter_panel_manager.set_min_latitude_state("disabled")
-                else:
-                    # Fallback to direct widget access
-                    try:
-                        self.visibilityValuesLabel.config(text=txt)
-                    except Exception:
-                        pass
-                    try:
-                        self.entryLatitud.config(state="disabled")
-                    except Exception:
-                        pass
+                self.filter_panel_manager.update_visibility_values_label(txt)
+                self.filter_panel_manager.set_min_latitude_state("disabled")
             else:
-                # Use filter panel manager if available
-                if hasattr(self, 'filter_panel_manager'):
-                    self.filter_panel_manager.update_visibility_values_label("")
-                    self.filter_panel_manager.set_min_latitude_state("normal")
-                else:
-                    # Fallback to direct widget access
-                    try:
-                        self.visibilityValuesLabel.config(text="")
-                    except Exception:
-                        pass
-                    try:
-                        self.entryLatitud.config(state="normal")
-                    except Exception:
-                        pass
+                self.filter_panel_manager.update_visibility_values_label("")
+                self.filter_panel_manager.set_min_latitude_state("normal")
+                    
         except Exception:
             pass
 
@@ -749,28 +726,12 @@ class SupernovasApp(tk.Tk):
             self.end_progress_bar()
 
     def start_progress_bar(self):
-        # Use results panel manager if available
-        if hasattr(self, 'results_panel_manager'):
-            self.results_panel_manager.start_progress_bar()
-        else:
-            # Fallback to direct access
-            try:
-                self.progressBar.grid(column=3, row=10, columnspan=2, sticky="ew")
-                self.progressBar.start()
-            except Exception:
-                pass
+        """Start the progress bar animation."""
+        self.results_panel_manager.start_progress_bar()
 
     def end_progress_bar(self):
-        # Use results panel manager if available
-        if hasattr(self, 'results_panel_manager'):
-            self.results_panel_manager.stop_progress_bar()
-        else:
-            # Fallback to direct access
-            try:
-                self.progressBar.stop()
-                self.progressBar.grid_forget()
-            except Exception:
-                pass
+        """Stop the progress bar animation."""
+        self.results_panel_manager.stop_progress_bar()
 
 
     def callbackClearResults(self, var, index, mode):
@@ -796,11 +757,6 @@ class SupernovasApp(tk.Tk):
             return
         
         # Populate tree from self.supernovasFound
-        try:
-            pass
-        except Exception:
-            pass
-
         try:
             if self.supernovasFound:
                 for idx, sn in enumerate(self.supernovasFound):
@@ -1864,22 +1820,9 @@ class SupernovasApp(tk.Tk):
                     self.labelVisibility.config(text=_("Visibility window:"))
             self.labelLatitud.config(text=_("Min latitude: "))
             
-            # Use results panel manager if available
-            if hasattr(self, 'results_panel_manager'):
-                self.results_panel_manager.refresh_labels()
-            
-            # Use toolbar manager if available
-            if hasattr(self, 'toolbar_manager'):
-                self.toolbar_manager.refresh_labels()
-            else:
-                # Fallback to direct updates
-                if hasattr(self, 'labelResults'):
-                    self.labelResults.config(text=_("Results: "))
-                try:
-                    if hasattr(self, 'darkToggle'):
-                        self.darkToggle.config(text=_("Dark mode"))
-                except Exception:
-                    pass
+            # Refresh UI manager labels
+            self.results_panel_manager.refresh_labels()
+            self.toolbar_manager.refresh_labels()
             try:
                 self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
                 self.editOldButton.config(text=_("Edit Ignored SN"))
