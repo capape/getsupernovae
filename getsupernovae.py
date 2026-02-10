@@ -327,7 +327,7 @@ class SupernovasApp(tk.Tk):
                 self._persist_prefs()
             except Exception:
                 pass
-            
+
             style = ttk.Style()
             try:
                 style.theme_use("clam")
@@ -462,7 +462,7 @@ class SupernovasApp(tk.Tk):
         # Don't persist during initialization (before prefs are loaded)
         if getattr(self, '_initializing', False):
             return
-            
+
         try:
             # Update state manager with current UI values (store names, not computed values)
             self.state_manager.update_search_state(
@@ -475,12 +475,12 @@ class SupernovasApp(tk.Tk):
                 visibility_window=(getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or None,
                 min_latitude=(getattr(self, "minLatitud", None) and self.minLatitud.get()) or "",
             )
-            
+
             self.state_manager.update_ui_state(
                 language=(getattr(self, "langVar", None) and self.langVar.get()) or "en",
                 dark_mode=(getattr(self, "dark_mode", None) and self.dark_mode.get()) or False,
             )
-            
+
             # Save to disk using preferences manager
             try:
                 self.preferences_manager.save_preferences(self.state_manager.state)
@@ -494,7 +494,7 @@ class SupernovasApp(tk.Tk):
         try:
             # Try to load new format first
             loaded_state = self.preferences_manager.load_preferences()
-            
+
             # If no new format exists, try to migrate from old format
             if loaded_state is None:
                 try:
@@ -503,7 +503,7 @@ class SupernovasApp(tk.Tk):
                         # Migrate old flat dict format to new state structure
                         from app.state.app_state import SearchState, UIState, AppState
                         loaded_state = AppState()
-                        
+
                         # Map old keys to new state
                         if 'magnitude' in old_prefs:
                             loaded_state.search.magnitude = old_prefs['magnitude']
@@ -521,69 +521,69 @@ class SupernovasApp(tk.Tk):
                             loaded_state.search.visibility_window = old_prefs['visibilityWindow']
                         if 'language' in old_prefs:
                             loaded_state.ui.language = old_prefs['language']
-                        
+
                         # Save in new format for next time
                         self.preferences_manager.save_preferences(loaded_state)
                 except Exception:
                     pass
-            
+
             if loaded_state is None:
                 return
-            
+
             # Update state manager with loaded state
             self.state_manager.state = loaded_state
-            
+
             # Apply search state to UI
             try:
                 if loaded_state.search.magnitude:
                     self.magnitude.set(str(loaded_state.search.magnitude))
             except Exception:
                 pass
-            
+
             try:
                 if loaded_state.search.days_to_search:
                     self.daysToSearch.set(str(loaded_state.search.days_to_search))
             except Exception:
                 pass
-            
+
             try:
                 if loaded_state.search.observation_date:
                     self.observationDate.set(str(loaded_state.search.observation_date))
             except Exception:
                 pass
-            
+
             try:
                 if loaded_state.search.observation_time:
                     self.observationTime.set(str(loaded_state.search.observation_time))
             except Exception:
                 pass
-            
+
             try:
                 if loaded_state.search.observation_duration:
                     self.observationDuration.set(str(loaded_state.search.observation_duration))
             except Exception:
                 pass
-            
+
             try:
                 if loaded_state.search.min_latitude:
                     self.minLatitud.set(str(loaded_state.search.min_latitude))
             except Exception:
                 pass
-            
+
             try:
                 site = loaded_state.search.site
                 if site and site in list(sites.keys()):
                     self.site.set(site)
             except Exception:
                 pass
-            
+
             try:
                 vw = loaded_state.search.visibility_window
                 if vw and vw in visibility_windows:
                     self.visibilityWindow.set(vw)
             except Exception:
                 pass
-            
+
             # Apply UI state
             try:
                 lang = loaded_state.ui.language
@@ -600,7 +600,7 @@ class SupernovasApp(tk.Tk):
                         pass
             except Exception:
                 pass
-            
+
             try:
                 dark_mode = loaded_state.ui.dark_mode
                 if dark_mode is not None and getattr(self, "dark_mode", None):
@@ -611,7 +611,7 @@ class SupernovasApp(tk.Tk):
                         pass
             except Exception:
                 pass
-            
+
             try:
                 self._update_visibility_ui()
             except Exception:
@@ -1224,7 +1224,7 @@ class SupernovasApp(tk.Tk):
                 self._load_and_apply_prefs()
             except Exception:
                 pass
-            
+
             # Initialization complete, enable preference persistence
             self._initializing = False
         except Exception:
@@ -1661,7 +1661,7 @@ class SupernovasApp(tk.Tk):
         # Initialize state management (parallel infrastructure, existing code unchanged)
         self.state_manager = AppStateManager()
         self.preferences_manager = PreferencesManager()
-        
+
         # Flag to prevent persisting preferences before they're loaded
         self._initializing = True
 
