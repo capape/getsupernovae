@@ -33,6 +33,7 @@ from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
+from app.state import AppStateManager, PreferencesManager
 from app.config.snconfig import (
     load_old_supernovae,
     load_sites,
@@ -1559,6 +1560,10 @@ class SupernovasApp(tk.Tk):
     def __init__(self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
 
         super().__init__()
+
+        # Initialize state management (parallel infrastructure, existing code unchanged)
+        self.state_manager = AppStateManager()
+        self.preferences_manager = PreferencesManager()
 
         self.supernovasFound = None
         self.refreshing = False
