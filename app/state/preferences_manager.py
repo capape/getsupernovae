@@ -13,13 +13,13 @@ from app.state.app_state import AppState, SearchState, UIState
 
 class PreferencesManager:
     """Manages application preferences persistence."""
-    
+
     DEFAULT_PREFS_DIR = Path.home() / '.getsupernovae'
     DEFAULT_PREFS_FILE = 'preferences.json'
-    
+
     def __init__(self, prefs_dir: Optional[Path] = None, prefs_file: str = DEFAULT_PREFS_FILE):
         """Initialize preferences manager.
-        
+
         Args:
             prefs_dir: Directory for preferences file (default: ~/.getsupernovae)
             prefs_file: Preferences filename (default: preferences.json)
@@ -27,16 +27,16 @@ class PreferencesManager:
         self.prefs_dir = prefs_dir or self.DEFAULT_PREFS_DIR
         self.prefs_file = prefs_file
         self.prefs_path = self.prefs_dir / self.prefs_file
-        
+
         # Ensure preferences directory exists
         self.prefs_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def save_preferences(self, state: AppState) -> bool:
         """Save application state to preferences file.
-        
+
         Args:
             state: Application state to save
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -48,16 +48,16 @@ class PreferencesManager:
         except Exception as e:
             print(f"Error saving preferences: {e}")
             return False
-    
+
     def load_preferences(self) -> Optional[AppState]:
         """Load application state from preferences file.
-        
+
         Returns:
             AppState if successful, None if file doesn't exist or error
         """
         if not self.prefs_path.exists():
             return None
-        
+
         try:
             with open(self.prefs_path, 'r', encoding='utf-8') as f:
                 prefs_data = json.load(f)
@@ -65,21 +65,21 @@ class PreferencesManager:
         except Exception as e:
             print(f"Error loading preferences: {e}")
             return None
-    
+
     def get_preference(self, key: str, default: Any = None) -> Any:
         """Get a single preference value.
-        
+
         Args:
             key: Dot-separated key path (e.g., 'search.magnitude', 'ui.language')
             default: Default value if key not found
-            
+
         Returns:
             Preference value or default
         """
         state = self.load_preferences()
         if state is None:
             return default
-        
+
         try:
             keys = key.split('.')
             obj = state
@@ -91,24 +91,24 @@ class PreferencesManager:
             return obj
         except Exception:
             return default
-    
+
     def set_preference(self, key: str, value: Any) -> bool:
         """Set a single preference value.
-        
+
         Args:
             key: Dot-separated key path (e.g., 'search.magnitude', 'ui.language')
             value: Value to set
-            
+
         Returns:
             True if successful, False otherwise
         """
         state = self.load_preferences() or AppState()
-        
+
         try:
             keys = key.split('.')
             if len(keys) != 2:
                 return False
-            
+
             category, attr = keys
             if category == 'search' and hasattr(state.search, attr):
                 setattr(state.search, attr, value)
@@ -118,15 +118,15 @@ class PreferencesManager:
                 setattr(state.results, attr, value)
             else:
                 return False
-            
+
             return self.save_preferences(state)
         except Exception as e:
             print(f"Error setting preference: {e}")
             return False
-    
+
     def clear_preferences(self) -> bool:
         """Delete preferences file.
-        
+
         Returns:
             True if successful, False otherwise
         """
@@ -137,10 +137,10 @@ class PreferencesManager:
         except Exception as e:
             print(f"Error clearing preferences: {e}")
             return False
-    
+
     def preferences_exist(self) -> bool:
         """Check if preferences file exists.
-        
+
         Returns:
             True if preferences file exists
         """
@@ -160,7 +160,7 @@ def save_user_prefs(
     min_latitude: str = ""
 ) -> bool:
     """Save user preferences (legacy compatibility function).
-    
+
     Args:
         site: Observatory site name
         latitude: Site latitude (ignored - kept for backward compatibility)
@@ -170,40 +170,40 @@ def save_user_prefs(
         duration: Observation duration
         language: UI language
         min_latitude: Minimum latitude filter
-        
+
     Returns:
         True if successful, False otherwise
     """
     manager = PreferencesManager()
-    
+
     # Load existing state or create new one
     state = manager.load_preferences() or AppState()
-    
+
     # Update search state (latitude/longitude ignored - site name is sufficient)
     state.search.site = site
     state.search.magnitude = magnitude
     state.search.days_to_search = days
     state.search.observation_duration = duration
     state.search.min_latitude = min_latitude
-    
+
     # Update UI state
     state.ui.language = language
-    
+
     return manager.save_preferences(state)
 
 
 def load_user_prefs() -> Optional[Dict[str, Any]]:
     """Load user preferences (legacy compatibility function).
-    
+
     Returns:
         Dictionary with preferences in legacy format, or None if not found
     """
     manager = PreferencesManager()
     state = manager.load_preferences()
-    
+
     if state is None:
         return None
-    
+
     # Convert to legacy format (latitude/longitude always None now)
     return {
         'site': state.search.site,
@@ -219,26 +219,26 @@ def load_user_prefs() -> Optional[Dict[str, Any]]:
 
 def migrate_legacy_prefs(legacy_path: Optional[Path] = None) -> bool:
     """Migrate preferences from old format to new format.
-    
+
     Args:
         legacy_path: Path to legacy preferences file (if different from default)
-        
+
     Returns:
         True if migration successful or not needed, False on error
     """
     if legacy_path is None:
         legacy_path = PreferencesManager.DEFAULT_PREFS_DIR / 'config.json'
-    
+
     if not legacy_path.exists():
         return True  # No legacy file to migrate
-    
+
     try:
         with open(legacy_path, 'r', encoding='utf-8') as f:
             legacy_data = json.load(f)
-        
+
         # Create new state from legacy data
         state = AppState()
-        
+
         # Map legacy fields to new state
         if 'site' in legacy_data:
             state.search.site = legacy_data['site']
@@ -253,11 +253,11 @@ def migrate_legacy_prefs(legacy_path: Optional[Path] = None) -> bool:
             state.search.min_latitude = legacy_data['min_latitude']
         if 'language' in legacy_data:
             state.ui.language = legacy_data['language']
-        
+
         # Save to new format
         manager = PreferencesManager()
         return manager.save_preferences(state)
-        
+
     except Exception as e:
         print(f"Error migrating legacy preferences: {e}")
         return False
