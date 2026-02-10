@@ -326,9 +326,12 @@ class FilterPanelManager:
             
             # Trace key variables
             self._safe_trace_add(self.variables['magnitude'], clear_and_persist)
+            self._safe_trace_add(self.variables['days_to_search'], clear_and_persist)
+            self._safe_trace_add(self.variables['observation_date'], clear_and_persist)
             self._safe_trace_add(self.variables['observation_time'], clear_and_persist)
             self._safe_trace_add(self.variables['observation_duration'], clear_and_persist)
             self._safe_trace_add(self.variables['site'], clear_and_persist)
+            self._safe_trace_add(self.variables['min_latitude'], clear_and_persist)
             
             # Visibility window needs extra update
             vis_callback = lambda *a: (

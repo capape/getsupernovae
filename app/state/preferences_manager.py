@@ -163,8 +163,8 @@ def save_user_prefs(
     
     Args:
         site: Observatory site name
-        latitude: Site latitude
-        longitude: Site longitude
+        latitude: Site latitude (ignored - kept for backward compatibility)
+        longitude: Site longitude (ignored - kept for backward compatibility)
         magnitude: Magnitude limit
         days: Days to search
         duration: Observation duration
@@ -179,9 +179,8 @@ def save_user_prefs(
     # Load existing state or create new one
     state = manager.load_preferences() or AppState()
     
-    # Update search state
+    # Update search state (latitude/longitude ignored - site name is sufficient)
     state.search.site = site
-    state.search.site_location = (latitude, longitude) if latitude and longitude else None
     state.search.magnitude = magnitude
     state.search.days_to_search = days
     state.search.observation_duration = duration
@@ -205,12 +204,11 @@ def load_user_prefs() -> Optional[Dict[str, Any]]:
     if state is None:
         return None
     
-    # Convert to legacy format
-    site_location = state.search.site_location
+    # Convert to legacy format (latitude/longitude always None now)
     return {
         'site': state.search.site,
-        'latitude': site_location[0] if site_location else None,
-        'longitude': site_location[1] if site_location else None,
+        'latitude': None,
+        'longitude': None,
         'magnitude': state.search.magnitude,
         'days': state.search.days_to_search,
         'duration': state.search.observation_duration,
@@ -244,11 +242,7 @@ def migrate_legacy_prefs(legacy_path: Optional[Path] = None) -> bool:
         # Map legacy fields to new state
         if 'site' in legacy_data:
             state.search.site = legacy_data['site']
-        if 'latitude' in legacy_data and 'longitude' in legacy_data:
-            lat = legacy_data['latitude']
-            lon = legacy_data['longitude']
-            if lat is not None and lon is not None:
-                state.search.site_location = (lat, lon)
+        # latitude/longitude ignored - site name is sufficient
         if 'magnitude' in legacy_data:
             state.search.magnitude = legacy_data['magnitude']
         if 'days' in legacy_data:

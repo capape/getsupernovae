@@ -23,8 +23,7 @@ class TestSearchState(unittest.TestCase):
         self.assertEqual(state.observation_time, "")
         self.assertEqual(state.observation_duration, "6")
         self.assertIsNone(state.site)
-        self.assertIsNone(state.site_location)
-        self.assertEqual(state.visibility_window, (0, 0))
+        self.assertIsNone(state.visibility_window)
         self.assertEqual(state.min_latitude, "")
     
     def test_custom_values(self):
@@ -36,8 +35,7 @@ class TestSearchState(unittest.TestCase):
             observation_time="22:00",
             observation_duration="8",
             site="My Observatory",
-            site_location=(40.0, -3.0),
-            visibility_window=(18, 6),
+            visibility_window="Evening",
             min_latitude="20"
         )
         self.assertEqual(state.magnitude, "16.0")
@@ -46,23 +44,24 @@ class TestSearchState(unittest.TestCase):
         self.assertEqual(state.observation_time, "22:00")
         self.assertEqual(state.observation_duration, "8")
         self.assertEqual(state.site, "My Observatory")
-        self.assertEqual(state.site_location, (40.0, -3.0))
-        self.assertEqual(state.visibility_window, (18, 6))
+        self.assertEqual(state.visibility_window, "Evening")
         self.assertEqual(state.min_latitude, "20")
     
+    def test_to_dict(self):
+        """Test serialization to dictionary."""
     def test_to_dict(self):
         """Test serialization to dictionary."""
         state = SearchState(
             magnitude="16.0",
             site="Test Site",
-            site_location=(45.0, -5.0)
+            visibility_window="Evening"
         )
         result = state.to_dict()
         
         self.assertIsInstance(result, dict)
         self.assertEqual(result['magnitude'], "16.0")
         self.assertEqual(result['site'], "Test Site")
-        self.assertEqual(result['site_location'], [45.0, -5.0])
+        self.assertEqual(result['visibility_window'], "Evening")
     
     def test_from_dict(self):
         """Test deserialization from dictionary."""
@@ -70,7 +69,7 @@ class TestSearchState(unittest.TestCase):
             'magnitude': "15.5",
             'days_to_search': "45",
             'site': "Observatory",
-            'site_location': [42.0, -8.0],
+            'visibility_window': "Default",
             'observation_date': "2024-02-01"
         }
         state = SearchState.from_dict(data)
@@ -78,7 +77,7 @@ class TestSearchState(unittest.TestCase):
         self.assertEqual(state.magnitude, "15.5")
         self.assertEqual(state.days_to_search, "45")
         self.assertEqual(state.site, "Observatory")
-        self.assertEqual(state.site_location, (42.0, -8.0))
+        self.assertEqual(state.visibility_window, "Default")
         self.assertEqual(state.observation_date, "2024-02-01")
     
     def test_from_dict_handles_missing_keys(self):

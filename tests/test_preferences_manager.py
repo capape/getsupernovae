@@ -54,7 +54,7 @@ class TestPreferencesManager(unittest.TestCase):
             search=SearchState(
                 magnitude="15.5",
                 site="Observatory",
-                site_location=(42.0, -8.0)
+                visibility_window="Evening"
             ),
             ui=UIState(language="ca", dark_mode=True)
         )
@@ -67,6 +67,7 @@ class TestPreferencesManager(unittest.TestCase):
         
         self.assertEqual(data['search']['magnitude'], "15.5")
         self.assertEqual(data['search']['site'], "Observatory")
+        self.assertEqual(data['search']['visibility_window'], "Evening")
         self.assertEqual(data['ui']['language'], "ca")
         self.assertTrue(data['ui']['dark_mode'])
     
@@ -212,7 +213,7 @@ class TestLegacyFunctions(unittest.TestCase):
         state = manager.load_preferences()
         
         self.assertEqual(state.search.site, "Test Site")
-        self.assertEqual(state.search.site_location, (40.0, -3.0))
+        # latitude/longitude are no longer stored
         self.assertEqual(state.search.magnitude, "16.0")
         self.assertEqual(state.search.days_to_search, "30")
         self.assertEqual(state.search.observation_duration, "6")
@@ -235,7 +236,7 @@ class TestLegacyFunctions(unittest.TestCase):
         
         manager = PreferencesManager(prefs_dir=self.temp_path)
         state = manager.load_preferences()
-        self.assertIsNone(state.search.site_location)
+        self.assertEqual(state.search.site, "Test")  # Site name still saved
     
     def test_load_user_prefs(self):
         """Test legacy load function."""
@@ -244,7 +245,6 @@ class TestLegacyFunctions(unittest.TestCase):
         state = AppState(
             search=SearchState(
                 site="Observatory",
-                site_location=(42.0, -8.0),
                 magnitude="15.5",
                 days_to_search="45",
                 observation_duration="8",
@@ -259,8 +259,8 @@ class TestLegacyFunctions(unittest.TestCase):
         
         self.assertIsNotNone(prefs)
         self.assertEqual(prefs['site'], "Observatory")
-        self.assertEqual(prefs['latitude'], 42.0)
-        self.assertEqual(prefs['longitude'], -8.0)
+        self.assertIsNone(prefs['latitude'])  # No longer stored
+        self.assertIsNone(prefs['longitude'])  # No longer stored
         self.assertEqual(prefs['magnitude'], "15.5")
         self.assertEqual(prefs['days'], "45")
         self.assertEqual(prefs['duration'], "8")
@@ -326,7 +326,7 @@ class TestLegacyMigration(unittest.TestCase):
         state = manager.load_preferences()
         
         self.assertEqual(state.search.site, 'Old Site')
-        self.assertEqual(state.search.site_location, (40.5, -3.5))
+        # latitude/longitude no longer migrated
         self.assertEqual(state.search.magnitude, '16.5')
         self.assertEqual(state.search.days_to_search, '60')
         self.assertEqual(state.search.observation_duration, '7')

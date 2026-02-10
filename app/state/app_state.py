@@ -18,20 +18,13 @@ class SearchState:
     observation_date: str = ""
     observation_time: str = ""
     observation_duration: str = "6"
-    site: Optional[str] = None
-    site_location: Optional[tuple] = None  # (latitude, longitude) tuple
-    visibility_window: tuple = (0, 0)  # (start_hour, end_hour) tuple
+    site: Optional[str] = None  # Site name (e.g., "Home", "Sabadell")
+    visibility_window: Optional[str] = None  # Visibility window name (e.g., "Default", "Evening")
     min_latitude: str = ""
     
     def to_dict(self) -> dict:
         """Convert to dictionary."""
-        data = asdict(self)
-        # Convert tuple to list for JSON serialization
-        if self.site_location is not None:
-            data['site_location'] = list(self.site_location)
-        if self.visibility_window is not None:
-            data['visibility_window'] = list(self.visibility_window)
-        return data
+        return asdict(self)
     
     @classmethod
     def from_dict(cls, data: dict) -> 'SearchState':
@@ -39,13 +32,6 @@ class SearchState:
         # Filter out unknown keys to handle missing/extra fields gracefully
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}
         filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        
-        # Convert lists back to tuples
-        if 'site_location' in filtered_data and filtered_data['site_location'] is not None:
-            filtered_data['site_location'] = tuple(filtered_data['site_location'])
-        if 'visibility_window' in filtered_data and filtered_data['visibility_window'] is not None:
-            filtered_data['visibility_window'] = tuple(filtered_data['visibility_window'])
-        
         return cls(**filtered_data)
 
 
