@@ -29,8 +29,18 @@ class PreferencesManager:
         self.prefs_file = prefs_file
         self.prefs_path = self.prefs_dir / self.prefs_file
 
-        # Ensure preferences directory exists
-        self.prefs_dir.mkdir(parents=True, exist_ok=True)
+    def _ensure_prefs_dir(self) -> bool:
+        """Ensure preferences directory exists.
+
+        Returns:
+            True if directory exists or was created successfully, False otherwise
+        """
+        try:
+            self.prefs_dir.mkdir(parents=True, exist_ok=True)
+            return True
+        except OSError as e:
+            print(f"Error creating preferences directory: {e}")
+            return False
 
     def save_preferences(self, state: AppState) -> bool:
         """Save application state to preferences file.
@@ -41,6 +51,10 @@ class PreferencesManager:
         Returns:
             True if successful, False otherwise
         """
+        # Ensure preferences directory exists before saving
+        if not self._ensure_prefs_dir():
+            return False
+
         try:
             prefs_data = state.to_dict()
             with open(self.prefs_path, 'w', encoding='utf-8') as f:

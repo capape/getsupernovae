@@ -29,11 +29,21 @@ class TestPreferencesManager(unittest.TestCase):
                 file.unlink()
             self.temp_path.rmdir()
 
-    def test_init_creates_directory(self):
-        """Test that initialization creates preferences directory."""
+    def test_init_does_not_create_directory(self):
+        """Test that initialization does not create preferences directory."""
         new_dir = self.temp_path / 'new_prefs'
         manager = PreferencesManager(prefs_dir=new_dir)
+        # Directory should not exist yet
+        self.assertFalse(new_dir.exists())
+        
+        # But saving should create it
+        state = AppState()
+        result = manager.save_preferences(state)
+        self.assertTrue(result)
         self.assertTrue(new_dir.exists())
+        
+        # Clean up
+        manager.prefs_path.unlink()
         new_dir.rmdir()
 
     def test_save_preferences(self):
@@ -174,6 +184,34 @@ class TestPreferencesManager(unittest.TestCase):
         self.manager.save_preferences(state)
 
         self.assertTrue(self.manager.preferences_exist())
+
+    def test_save_with_permission_error(self):
+        """Test that save handles directory creation errors gracefully."""
+        import os
+        import stat
+        
+        # Create a read-only directory
+        readonly_dir = self.temp_path / 'readonly'
+        readonly_dir.mkdir()
+        readonly_subdir = readonly_dir / 'prefs'
+        
+        # Make parent directory read-only to prevent subdirectory creation
+        os.chmod(readonly_dir, stat.S_IRUSR | stat.S_IXUSR)
+        
+        try:
+            manager = PreferencesManager(prefs_dir=readonly_subdir)
+            state = AppState()
+            
+            # Save should return False instead of crashing
+            result = manager.save_preferences(state)
+            self.assertFalse(result)
+            
+        finally:
+            # Restore permissions for cleanup
+            os.chmod(readonly_dir, stat.S_IRWXU)
+            if readonly_subdir.exists():
+                readonly_subdir.rmdir()
+            readonly_dir.rmdir()
 
 
 class TestLegacyFunctions(unittest.TestCase):
