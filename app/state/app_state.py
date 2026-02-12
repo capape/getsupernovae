@@ -123,9 +123,9 @@ class AppStateManager:
     Usage:
         state_mgr = AppStateManager()
 
-        # Listen to state changes
-        def on_search_changed(category):
-            print(f"Search state changed: {category}")
+        # Listen to search state changes
+        def on_search_changed(search_state):
+            print(f"Search state changed: {search_state}")
 
         state_mgr.add_listener('search', on_search_changed)
 
