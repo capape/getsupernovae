@@ -15,6 +15,10 @@ from app.config.ui_constants import (
     UI_CONSTANTS,
     UI_STRINGS,
 )
+from app.utils.logger import get_logger, log_exception
+
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -87,7 +91,7 @@ class ResultsPanelManager:
             self.parent.grid_columnconfigure(3, weight=1)
             self.parent.grid_rowconfigure(1, weight=1)
         except Exception:
-            pass
+            log_exception(logger, "Failed to configure results panel grid weights")
     
     def _build_results_label(self) -> None:
         """Build the results label."""
@@ -96,7 +100,7 @@ class ResultsPanelManager:
             label.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
             self.widgets['label_results'] = label
         except Exception:
-            pass
+            log_exception(logger, "Failed to build results label")
     
     def _build_results_tree(self) -> None:
         """Build the results treeview with scrollbars."""
@@ -181,7 +185,7 @@ class ResultsPanelManager:
             tree.bind("<<TreeviewSelect>>", self.callbacks.on_selection_change)
             
         except Exception:
-            pass
+            log_exception(logger, "Failed to build results tree")
     
     def _build_action_buttons(self) -> None:
         """Build bottom action buttons (PDF, TXT, Refresh, Exit)."""
@@ -225,7 +229,7 @@ class ResultsPanelManager:
                 self.parent.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
                 self.parent.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
             except Exception:
-                pass
+                log_exception(logger, "Failed to configure exit button spacing rows")
             
             exit_btn.grid(
                 column=3,
@@ -237,7 +241,7 @@ class ResultsPanelManager:
             self.widgets['button_exit'] = exit_btn
             
         except Exception:
-            pass
+            log_exception(logger, "Failed to build results action buttons")
     
     def _build_progress_bar(self) -> None:
         """Build progress bar (initially hidden)."""
@@ -249,7 +253,7 @@ class ResultsPanelManager:
             )
             self.widgets['progress_bar'] = progress
         except Exception:
-            pass
+            log_exception(logger, "Failed to build progress bar")
     
     def get_tree(self) -> Optional[ttk.Treeview]:
         """Get the results treeview widget.
@@ -268,7 +272,7 @@ class ResultsPanelManager:
                     tree.delete(item)
             self.supernova_data.clear()
         except Exception:
-            pass
+            log_exception(logger, "Failed to clear results tree")
     
     def add_tree_item(self, values: tuple, tags: tuple = ()) -> Optional[str]:
         """Add an item to the results tree.
@@ -285,7 +289,7 @@ class ResultsPanelManager:
             if tree:
                 return tree.insert('', 'end', values=values, tags=tags)
         except Exception:
-            pass
+            log_exception(logger, "Failed to add item to results tree")
         return None
     
     def set_button_state(self, button_name: str, state: str) -> None:
@@ -299,7 +303,7 @@ class ResultsPanelManager:
             if button_name in self.widgets:
                 self.widgets[button_name]['state'] = state
         except Exception:
-            pass
+            log_exception(logger, f"Failed to set button state: {button_name}")
     
     def start_progress_bar(self) -> None:
         """Show and start the progress bar animation."""
@@ -309,7 +313,7 @@ class ResultsPanelManager:
                 progress.grid(column=3, row=10, columnspan=2, sticky="ew")
                 progress.start()
         except Exception:
-            pass
+            log_exception(logger, "Failed to start progress bar")
     
     def stop_progress_bar(self) -> None:
         """Stop and hide the progress bar."""
@@ -319,7 +323,7 @@ class ResultsPanelManager:
                 progress.stop()
                 progress.grid_forget()
         except Exception:
-            pass
+            log_exception(logger, "Failed to stop progress bar")
     
     def get_selection(self) -> list:
         """Get the currently selected items in the tree.
@@ -332,7 +336,7 @@ class ResultsPanelManager:
             if tree:
                 return tree.selection()
         except Exception:
-            pass
+            log_exception(logger, "Failed to get tree selection")
         return []
     
     def get_tree_children(self) -> tuple:
@@ -346,7 +350,7 @@ class ResultsPanelManager:
             if tree:
                 return tree.get_children('')
         except Exception:
-            pass
+            log_exception(logger, "Failed to get tree children")
         return ()
     
     def refresh_labels(self) -> None:
@@ -381,7 +385,7 @@ class ResultsPanelManager:
                 tree.heading("tns", text=_("TNS"))
                 
         except Exception:
-            pass
+            log_exception(logger, "Failed to refresh results panel labels")
     
     def update_idletasks(self) -> None:
         """Update widget idletasks."""
@@ -390,4 +394,4 @@ class ResultsPanelManager:
                 if hasattr(widget, 'update_idletasks'):
                     widget.update_idletasks()
         except Exception:
-            pass
+            log_exception(logger, "Failed to update results panel idletasks")

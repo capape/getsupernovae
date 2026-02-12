@@ -56,11 +56,13 @@ from app.config.ui_constants import (
     FILE_CONSTANTS,
     UI_STRINGS,
 )
+from app.utils.logger import get_logger, log_exception
 
 bootstrap_config()
 old = load_old_supernovae()
 sites = load_sites()
 visibility_windows = load_visibility_windows()
+logger = get_logger(__name__)
 
 class SupernovaCallBackData:
     def __init__(
@@ -289,7 +291,7 @@ class SupernovasApp(tk.Tk):
             # Reapply tags to all existing items to preserve bright highlighting
             self._reapply_tree_tags()
         except Exception:
-            pass
+            log_exception(logger, "Failed to configure results tree styling")
 
     def _reapply_tree_tags(self):
         """Reapply tags to all tree items based on magnitude and position."""
@@ -315,9 +317,9 @@ class SupernovasApp(tk.Tk):
 
                         self.resultsTree.item(item, tags=(tag,))
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to reapply tree tag for item")
         except Exception:
-            pass
+            log_exception(logger, "Failed to reapply tree tags")
 
     def apply_theme(self):
         """Apply light/dark theme to ttk widgets and some native widgets."""
@@ -326,13 +328,13 @@ class SupernovasApp(tk.Tk):
             try:
                 self._persist_prefs()
             except Exception:
-                pass
+                log_exception(logger, "Failed to persist preferences during theme apply")
 
             style = ttk.Style()
             try:
                 style.theme_use("clam")
             except Exception:
-                pass
+                log_exception(logger, "Failed to apply ttk theme 'clam'")
         except Exception:
             style = None
 
@@ -367,45 +369,49 @@ class SupernovasApp(tk.Tk):
                     sel_color = THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
                     style.map('Treeview', background=[('selected', sel_color)])
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to map Treeview selection color")
                 try:
                     # also set the main window background for non-ttk widgets
                     try:
                         self.configure(background=bg)
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to configure root window background")
                     # Treeview styling
                     try:
                         if hasattr(self, 'resultsTree') and self.resultsTree is not None:
                             self.resultsTree.configure(style="Treeview")
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to configure results tree style")
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed while applying non-ttk theme updates")
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply ttk theme configuration")
 
         # Reapply results tree styling after theme change
         try:
             self._configure_results_tree_styling()
         except Exception:
-            pass
+            log_exception(logger, "Failed to reconfigure results tree after theme change")
 
         try:
             if bg:
                 self.configure(bg=bg)
         except Exception:
-            pass
+            log_exception(logger, "Failed to set root background color")
 
         # Update some known frames/widgets that are not styled by ttk
         try:
             for child in self.winfo_children():
                 try:
                     child.configure(background=bg)
+                except tk.TclError:
+                    # Many ttk/native widgets do not expose a `background` option.
+                    # This is expected and should not be logged as an error.
+                    continue
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to configure child widget background")
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply theme to child widgets")
 
     def _safe_trace_add(self, var, callback):
         """Add a trace callback to a Tk variable, with fallbacks for
@@ -415,16 +421,16 @@ class SupernovasApp(tk.Tk):
             var.trace_add(["write", "unset"], callback)
             return
         except Exception:
-            pass
+            log_exception(logger, "Failed to add combined trace callback")
         try:
             var.trace_add("write", callback)
             return
         except Exception:
-            pass
+            log_exception(logger, "Failed to add write trace callback")
         try:
             var.trace_add("unset", callback)
         except Exception:
-            pass
+            log_exception(logger, "Failed to add unset trace callback")
 
     def _update_visibility_ui(self):
         """Enable/disable minLatitude entry depending on visibility window selection
@@ -437,6 +443,7 @@ class SupernovasApp(tk.Tk):
         try:
             sel = (getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or ""
         except Exception:
+            log_exception(logger, "Failed to read selected visibility window")
             sel = ""
 
         try:
@@ -455,7 +462,7 @@ class SupernovasApp(tk.Tk):
                 self.filter_panel_manager.set_min_latitude_state("normal")
 
         except Exception:
-            pass
+            log_exception(logger, "Failed to update visibility UI")
 
     def _persist_prefs(self, *args):
         """Collect current tracked UI values and persist them to disk."""
@@ -485,9 +492,9 @@ class SupernovasApp(tk.Tk):
             try:
                 self.preferences_manager.save_preferences(self.state_manager.state)
             except Exception:
-                pass
+                log_exception(logger, "Failed to save preferences to disk")
         except Exception:
-            pass
+            log_exception(logger, "Failed to persist preferences")
 
     def _load_and_apply_prefs(self):
         """Load persisted prefs and apply to UI variables where valid."""
@@ -525,7 +532,7 @@ class SupernovasApp(tk.Tk):
                         # Save in new format for next time
                         self.preferences_manager.save_preferences(loaded_state)
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to migrate legacy preferences")
 
             if loaded_state is None:
                 return
@@ -538,51 +545,51 @@ class SupernovasApp(tk.Tk):
                 if loaded_state.search.magnitude:
                     self.magnitude.set(str(loaded_state.search.magnitude))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore magnitude preference")
 
             try:
                 if loaded_state.search.days_to_search:
                     self.daysToSearch.set(str(loaded_state.search.days_to_search))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore days_to_search preference")
 
             try:
                 if loaded_state.search.observation_date:
                     self.observationDate.set(str(loaded_state.search.observation_date))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore observation_date preference")
 
             try:
                 if loaded_state.search.observation_time:
                     self.observationTime.set(str(loaded_state.search.observation_time))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore observation_time preference")
 
             try:
                 if loaded_state.search.observation_duration:
                     self.observationDuration.set(str(loaded_state.search.observation_duration))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore observation_duration preference")
 
             try:
                 if loaded_state.search.min_latitude:
                     self.minLatitud.set(str(loaded_state.search.min_latitude))
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore min_latitude preference")
 
             try:
                 site = loaded_state.search.site
                 if site and site in list(sites.keys()):
                     self.site.set(site)
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore site preference")
 
             try:
                 vw = loaded_state.search.visibility_window
                 if vw and vw in visibility_windows:
                     self.visibilityWindow.set(vw)
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore visibility window preference")
 
             # Apply UI state
             try:
@@ -595,11 +602,11 @@ class SupernovasApp(tk.Tk):
                         try:
                             self._on_language_change()
                         except Exception:
-                            pass
+                            log_exception(logger, "Failed to refresh UI after language restoration")
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to apply restored language")
             except Exception:
-                pass
+                log_exception(logger, "Failed while restoring language preference")
 
             try:
                 dark_mode = loaded_state.ui.dark_mode
@@ -608,16 +615,16 @@ class SupernovasApp(tk.Tk):
                     try:
                         self.apply_theme()
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to apply restored dark mode theme")
             except Exception:
-                pass
+                log_exception(logger, "Failed to restore dark mode preference")
 
             try:
                 self._update_visibility_ui()
             except Exception:
-                pass
+                log_exception(logger, "Failed to refresh visibility UI after restoring preferences")
         except Exception:
-            pass
+            log_exception(logger, "Failed to load and apply preferences")
 
     def getDataToSearch(self):
 
