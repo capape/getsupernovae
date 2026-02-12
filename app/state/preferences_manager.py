@@ -37,7 +37,7 @@ class PreferencesManager:
         try:
             self.prefs_dir.mkdir(parents=True, exist_ok=True)
             return True
-        except (OSError, PermissionError) as e:
+        except OSError as e:
             print(f"Error creating preferences directory: {e}")
             return False
 
