@@ -9,19 +9,20 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 from app.state.app_state import AppState, SearchState, UIState
+from app.config.snconfig import get_user_config_dir
 
 
 class PreferencesManager:
     """Manages application preferences persistence."""
 
-    DEFAULT_PREFS_DIR = Path.home() / '.getsupernovae'
+    DEFAULT_PREFS_DIR = Path(get_user_config_dir())
     DEFAULT_PREFS_FILE = 'preferences.json'
 
     def __init__(self, prefs_dir: Optional[Path] = None, prefs_file: str = DEFAULT_PREFS_FILE):
         """Initialize preferences manager.
 
         Args:
-            prefs_dir: Directory for preferences file (default: ~/.getsupernovae)
+            prefs_dir: Directory for preferences file (default: from get_user_config_dir())
             prefs_file: Preferences filename (default: preferences.json)
         """
         self.prefs_dir = prefs_dir or self.DEFAULT_PREFS_DIR
