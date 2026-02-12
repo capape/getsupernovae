@@ -501,7 +501,7 @@ class SupernovasApp(tk.Tk):
                     old_prefs = load_user_prefs()
                     if old_prefs and isinstance(old_prefs, dict):
                         # Migrate old flat dict format to new state structure
-                        from app.state.app_state import SearchState, UIState, AppState
+                        from app.state.app_state import AppState
                         loaded_state = AppState()
 
                         # Map old keys to new state
