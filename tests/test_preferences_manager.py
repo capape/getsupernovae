@@ -291,14 +291,18 @@ class TestLegacyMigration(unittest.TestCase):
         """Set up test fixtures with temporary directory."""
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
+        # Save original default preferences directory and override for tests
+        self._orig_default_prefs_dir = PreferencesManager.DEFAULT_PREFS_DIR
         PreferencesManager.DEFAULT_PREFS_DIR = self.temp_path
 
     def tearDown(self):
-        """Clean up temporary files."""
+        """Clean up temporary files and restore global defaults."""
         if self.temp_path.exists():
             for file in self.temp_path.glob('*'):
                 file.unlink()
             self.temp_path.rmdir()
+        # Restore original default preferences directory to avoid test leakage
+        PreferencesManager.DEFAULT_PREFS_DIR = self._orig_default_prefs_dir
 
     def test_migrate_legacy_prefs(self):
         """Test migrating from legacy format."""
