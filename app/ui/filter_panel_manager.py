@@ -17,6 +17,10 @@ from app.config.ui_constants import (
     UI_CONSTANTS,
     UI_STRINGS,
 )
+from app.utils.logger import get_logger, log_exception
+
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -87,7 +91,7 @@ class FilterPanelManager:
             self.frame.grid_columnconfigure(1, weight=0)
             self.frame.grid_columnconfigure(2, weight=0)
         except Exception:
-            pass
+            log_exception(logger, "Failed to configure filter panel grid columns")
         
         # Build all filter controls
         self._build_magnitude_control(row=0)
@@ -207,7 +211,7 @@ class FilterPanelManager:
                     lambda *a: self.callbacks.on_update_visibility_ui()
                 )
             except Exception:
-                pass
+                log_exception(logger, "Failed to bind visibility window updates")
         
         button = ttk.Button(
             self.frame,
@@ -278,13 +282,13 @@ class FilterPanelManager:
         try:
             combobox.set(lang_var.get() or "en")
         except Exception:
-            pass
+            log_exception(logger, "Failed to set language combobox initial value")
         
         try:
             combobox.bind('<<ComboboxSelected>>', 
                          lambda ev: self.callbacks.on_language_change())
         except Exception:
-            pass
+            log_exception(logger, "Failed to bind language change callback")
     
     def _build_rochester_attribution(self, row: int) -> None:
         """Build Rochester attribution text."""
@@ -312,7 +316,7 @@ class FilterPanelManager:
             text_widget.grid(column=0, row=row, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
             self.widgets['text_rochester'] = text_widget
         except Exception:
-            pass
+            log_exception(logger, "Failed to build Rochester attribution text")
     
     def _setup_variable_traces(self) -> None:
         """Set up traces on variables to trigger callbacks."""
@@ -349,16 +353,16 @@ class FilterPanelManager:
                         lambda *a: self.callbacks.on_persist_prefs(*a)
                     )
             except Exception:
-                pass
+                log_exception(logger, "Failed to add language trace callback")
         except Exception:
-            pass
+            log_exception(logger, "Failed to setup filter panel variable traces")
     
     def _safe_trace_add(self, var: tk.StringVar, callback: Callable) -> None:
         """Safely add a trace to a variable, handling exceptions."""
         try:
             var.trace_add('write', callback)
         except Exception:
-            pass
+            log_exception(logger, "Failed to add variable trace callback")
     
     def update_visibility_values_label(self, text: str) -> None:
         """Update the visibility values label text.
@@ -370,7 +374,7 @@ class FilterPanelManager:
             if 'label_visibility_values' in self.widgets:
                 self.widgets['label_visibility_values'].config(text=text)
         except Exception:
-            pass
+            log_exception(logger, "Failed to update visibility values label")
     
     def set_min_latitude_state(self, state: str) -> None:
         """Enable or disable the min latitude entry.
@@ -382,7 +386,7 @@ class FilterPanelManager:
             if 'entry_min_latitude' in self.widgets:
                 self.widgets['entry_min_latitude'].config(state=state)
         except Exception:
-            pass
+            log_exception(logger, "Failed to update min latitude entry state")
     
     def update_site_values(self, site_values: list) -> None:
         """Update the site combobox values.
@@ -394,7 +398,7 @@ class FilterPanelManager:
             if 'combobox_site' in self.widgets:
                 self.widgets['combobox_site']['values'] = site_values
         except Exception:
-            pass
+            log_exception(logger, "Failed to update site combobox values")
     
     def update_visibility_window_values(self, vis_values: list) -> None:
         """Update the visibility window combobox values.
@@ -406,7 +410,7 @@ class FilterPanelManager:
             if 'combobox_visibility' in self.widgets:
                 self.widgets['combobox_visibility']['values'] = vis_values
         except Exception:
-            pass
+            log_exception(logger, "Failed to update visibility combobox values")
     
     def refresh_labels(self) -> None:
         """Refresh all label texts after language change."""
@@ -442,7 +446,7 @@ class FilterPanelManager:
                 text_widget.insert('1.0', rochester_text)
                 text_widget.config(state='disabled')
         except Exception:
-            pass
+            log_exception(logger, "Failed to refresh filter panel labels")
     
     def apply_theme(self, dark_mode: bool) -> None:
         """Apply theme to widgets.
@@ -457,4 +461,4 @@ class FilterPanelManager:
                            else THEME_COLORS.LIGHT_ROCHESTER_BG)
                 self.widgets['text_rochester'].config(background=bg_color)
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply filter panel theme")
