@@ -31,6 +31,7 @@ from app.ui.results_panel_manager import ResultsPanelManager, ResultsPanelCallba
 from app.ui.toolbar_manager import ToolbarManager, ToolbarCallbacks
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
+from app.services.observation_time_service import ObservationTimeService
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -65,6 +66,12 @@ visibility_windows = load_visibility_windows()
 logger = get_logger(__name__)
 
 class SupernovaCallBackData:
+    """Data container for supernova observation search parameters.
+
+    This class holds the search criteria and observation parameters
+    needed for supernova queries and visibility calculations.
+    """
+
     def __init__(
         self,
         magnitude,
@@ -76,10 +83,9 @@ class SupernovaCallBackData:
         minLatitude,
         visibilityWindowName=None,
     ):
-
         self.magnitude = magnitude
         self.observationDate = observationDate
-        self.observationTime = self._normalize_observation_time(observationTime)
+        self.observationTime = ObservationTimeService.normalize_time(observationTime)
         self.observationHours = observationHours
         self.daysToSearch = daysToSearch
         self.site = site
@@ -88,36 +94,6 @@ class SupernovaCallBackData:
         self.fromDateTime = self.observationStart - timedelta(days=int(daysToSearch))
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
         self.visibilityWindowName = visibilityWindowName
-
-    @staticmethod
-    def _normalize_observation_time(observation_time: str) -> str:
-        """Normalize observation time to HH:MM or HH:MM:SS format."""
-        text = str(observation_time).strip()
-        if not text:
-            raise ValueError("Observation time is required")
-
-        parts = text.split(":")
-        if len(parts) not in (1, 2, 3):
-            raise ValueError("Observation time must be HH, HH:MM or HH:MM:SS")
-
-        try:
-            hour = int(parts[0])
-            minute = int(parts[1]) if len(parts) >= 2 else 0
-            second = int(parts[2]) if len(parts) == 3 else None
-        except (TypeError, ValueError):
-            raise ValueError("Observation time must contain numeric values")
-
-        if hour < 0 or hour > 23:
-            raise ValueError("Hour must be between 0 and 23")
-        if minute < 0 or minute > 59:
-            raise ValueError("Minute must be between 0 and 59")
-
-        if second is None:
-            return f"{hour:02d}:{minute:02d}"
-
-        if second < 0 or second > 59:
-            raise ValueError("Second must be between 0 and 59")
-        return f"{hour:02d}:{minute:02d}:{second:02d}"
 
 class RochesterSupernova:
 
