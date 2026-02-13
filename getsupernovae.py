@@ -34,6 +34,7 @@ from app.services.observation_time_service import ObservationTimeService
 from app.coordinators.search_coordinator import SearchCoordinator
 from app.coordinators.report_coordinator import ReportCoordinator
 from app.coordinators.dialog_coordinator import DialogCoordinator
+from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -783,6 +784,30 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to update visibility windows combobox")
 
+    def _enable_find_stars_button(self, button_name: str):
+        """Enable the find stars button.
+        
+        Args:
+            button_name: Button name (not used, kept for interface compatibility)
+        """
+        try:
+            if hasattr(self, 'findStarsButton') and self.findStarsButton:
+                self.findStarsButton.config(state=tk.NORMAL)
+        except Exception:
+            log_exception(logger, "Failed to enable find stars button")
+
+    def _disable_find_stars_button(self, button_name: str):
+        """Disable the find stars button.
+        
+        Args:
+            button_name: Button name (not used, kept for interface compatibility)
+        """
+        try:
+            if hasattr(self, 'findStarsButton') and self.findStarsButton:
+                self.findStarsButton.config(state=tk.DISABLED)
+        except Exception:
+            log_exception(logger, "Failed to disable find stars button")
+
     def callbackClearResults(self, var, index, mode):
         self.supernovasFound = None
 
@@ -846,273 +871,6 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", ""))
             except Exception:
                 log_exception(logger, "Failed to render exception row in results tree")
-
-    def _sort_column(self, col, is_numeric):
-        """Sort treeview by column."""
-        try:
-            # Toggle sort direction if same column clicked
-            if self.sort_column == col:
-                self.sort_reverse = not self.sort_reverse
-            else:
-                self.sort_column = col
-                self.sort_reverse = False
-
-            # Get column index
-            col_idx = self.resultsTree['columns'].index(col)
-
-            # Get all items with their values
-            items = [(self.resultsTree.set(item, col), item) for item in self.resultsTree.get_children('')]
-
-            # Sort items
-            if is_numeric:
-                # Numeric sort - handle empty values
-                def sort_key(x):
-                    try:
-                        return float(x[0]) if x[0] else float('inf')
-                    except (ValueError, TypeError):
-                        return float('inf')
-                items.sort(key=sort_key, reverse=self.sort_reverse)
-            else:
-                # Alphabetic sort
-                items.sort(key=lambda x: x[0].lower() if x[0] else '', reverse=self.sort_reverse)
-
-            # Rearrange items in sorted order
-            for index, (val, item) in enumerate(items):
-                self.resultsTree.move(item, '', index)
-
-                # Reapply alternating row colors and brightness after sorting
-                try:
-                    if item in self.supernova_data:
-                        sn = self.supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
-                        try:
-                            is_bright = mag is not None and float(mag) < 15
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
-                        else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-
-                        self.resultsTree.item(item, tags=(tag,))
-                except Exception:
-                    log_exception(logger, "Failed to re-tag sorted tree row")
-        except Exception:
-            log_exception(logger, "Failed to sort results tree column")
-
-    def _on_selection_change(self, event):
-        """Enable or disable Find stars button based on tree selection."""
-        try:
-            selection = self.resultsTree.selection()
-            if selection and len(selection) > 0:
-                self.findStarsButton.config(state=tk.NORMAL)
-            else:
-                self.findStarsButton.config(state=tk.DISABLED)
-        except Exception:
-            log_exception(logger, "Failed to update Find Stars button state on selection change")
-
-    def _find_stars_in_simbad(self):
-        """Query SIMBAD for objects near the selected supernova."""
-        try:
-            selection = self.resultsTree.selection()
-            if not selection or len(selection) == 0:
-                return
-
-            item = selection[0]
-            if item not in self.supernova_data:
-                return
-
-            sn = self.supernova_data[item]
-
-
-            # Build SIMBAD query URL for the region around the supernova
-            # Using the web interface format
-            coord = getattr(sn, 'coordinates', None)
-            if coord:
-                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
-                dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1, alwayssign=True)
-            else:
-               ra_str = dec_str = ""
-
-            # SIMBAD coordinate query URL (searches within configured box radius)
-            # Filter for stellar objects (maintype '*') with Vmag < configured threshold
-            # URL-encode the region parameter to handle colons/spaces in RA/Dec
-            try:
-                criteria_str = (
-                    f"region(box,{ra_str} {dec_str},{NETWORK_CONSTANTS.SIMBAD_SEARCH_RADIUS}) & "
-                    f"Vmag<{NETWORK_CONSTANTS.SIMBAD_MAX_VMAG} & "
-                    f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"
-                )
-                criteria_enc=urllib.parse.quote(criteria_str)
-
-            except Exception:
-                log_exception(logger, "Failed to build SIMBAD criteria query")
-                criteria_enc = ""
-
-            simbad_url = (
-                f"{NETWORK_CONSTANTS.SIMBAD_QUERY_URL}?"
-                f"Criteria={criteria_enc}&"
-                f"OutputMode=LIST&"
-                f"maxObjectect={NETWORK_CONSTANTS.SIMBAD_MAX_OBJECTS}&"
-                f"submit=submit+query"
-            )
-
-            # Open in browser
-            import webbrowser
-            webbrowser.open(simbad_url)
-
-        except Exception as e:
-            try:
-                messagebox.showerror(
-                    _("Error"),
-                    _("Failed to query SIMBAD: ") + str(e)
-                )
-            except Exception:
-                log_exception(logger, "Failed to show SIMBAD error message")
-
-    def _on_results_double_click(self, event):
-        """Handle double-click on results table to open links."""
-        try:
-            region = self.resultsTree.identify("region", event.x, event.y)
-            if region != "cell":
-                return
-
-            column = self.resultsTree.identify_column(event.x)
-            item = self.resultsTree.identify_row(event.y)
-
-            if not item or item not in self.supernova_data:
-                return
-
-            sn = self.supernova_data[item]
-
-            # Column #10 is rochester, #11 is tns (1-indexed)
-            if column == "#10":  # Rochester
-                url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
-                self._open_url(url)
-            elif column == "#11":  # TNS
-                url = getattr(sn, 'tnsUrl', None) or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
-                self._open_url(url)
-        except Exception:
-            log_exception(logger, "Failed to process results table double click")
-
-    def _open_url(self, url):
-        """Open URL in default browser."""
-        import webbrowser
-        try:
-            webbrowser.open(url)
-        except Exception:
-            log_exception(logger, "Failed to open URL")
-
-    def _on_results_motion(self, event):
-        """Show tooltip with visibility and discovery info on hover."""
-        try:
-            item = self.resultsTree.identify_row(event.y)
-
-            # If we're over a different item or no item, update tooltip
-            if item != self.tooltip_item:
-                self._hide_tooltip()
-
-                if item and item in self.supernova_data:
-                    self.tooltip_item = item
-                    sn = self.supernova_data[item]
-
-                    # Build tooltip text with visibility and discovery info
-                    tooltip_lines = []
-
-                    # Discovery information
-                    first_obs = getattr(sn, 'firstObserved', None)
-                    if first_obs:
-                        tooltip_lines.append(f"First observed: {first_obs}")
-
-                    max_mag = getattr(sn, 'maxMagnitude', None)
-                    max_mag_date = getattr(sn, 'maxMagnitudeDate', None)
-                    if max_mag:
-                        mag_line = f"Max magnitude: {max_mag}"
-                        if max_mag_date:
-                            mag_line += f" on {max_mag_date}"
-                        tooltip_lines.append(mag_line)
-
-                    # Visibility information
-                    visibility = getattr(sn, 'visibility', None)
-                    if visibility:
-                        is_visible = getattr(visibility, 'visible', False)
-                        tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
-
-                        # Get altitude/azimuth coordinates if available
-                        az_coords = getattr(visibility, 'azCords', None)
-                        if az_coords and len(az_coords) > 0:
-                            # Show first and last altitudes
-                            try:
-                                first_coord = az_coords[0]
-                                last_coord = az_coords[-1]
-
-                                first_time = getattr(first_coord, 'time', None)
-                                first_alt = getattr(first_coord, 'coord', None)
-                                last_time = getattr(last_coord, 'time', None)
-                                last_alt = getattr(last_coord, 'coord', None)
-
-                                if first_alt and hasattr(first_alt, 'alt'):
-                                    tooltip_lines.append(f"Start altitude: {first_alt.alt.degree:.1f}°")
-                                if last_alt and hasattr(last_alt, 'alt'):
-                                    tooltip_lines.append(f"End altitude: {last_alt.alt.degree:.1f}°")
-
-                                # Find max altitude
-                                max_alt = max((getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')),
-                                             default=None, key=lambda a: a.degree if a else -999)
-                                if max_alt:
-                                    tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
-                            except Exception:
-                                log_exception(logger, "Failed to compute tooltip altitude values")
-
-                    if tooltip_lines:
-                        self._show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
-        except Exception:
-            log_exception(logger, "Failed to process results hover tooltip")
-
-    def _on_results_leave(self, event):
-        """Hide tooltip when mouse leaves the tree."""
-        self._hide_tooltip()
-
-    def _show_tooltip(self, x, y, text):
-        """Display tooltip at specified position."""
-        try:
-            self._hide_tooltip()
-
-            self.tooltip_window = tk.Toplevel(self)
-            self.tooltip_window.wm_overrideredirect(True)
-            self.tooltip_window.wm_geometry(f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}")
-
-            # Style tooltip based on dark mode
-            dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
-            bg_color = THEME_COLORS.DARK_TOOLTIP_BG if dark else THEME_COLORS.LIGHT_TOOLTIP_BG
-            fg_color = THEME_COLORS.DARK_TOOLTIP_FG if dark else THEME_COLORS.LIGHT_TOOLTIP_FG
-
-            label = tk.Label(
-                self.tooltip_window,
-                text=text,
-                justify=tk.LEFT,
-                background=bg_color,
-                foreground=fg_color,
-                relief=tk.SOLID,
-                borderwidth=1,
-                padx=UI_CONSTANTS.TOOLTIP_PADX,
-                pady=UI_CONSTANTS.TOOLTIP_PADY,
-                font=("TkDefaultFont", 9)
-            )
-            label.pack()
-        except Exception:
-            log_exception(logger, "Failed to show tooltip")
-
-    def _hide_tooltip(self):
-        """Hide and destroy tooltip window."""
-        try:
-            if self.tooltip_window:
-                self.tooltip_window.destroy()
-                self.tooltip_window = None
-            self.tooltip_item = None
-        except Exception:
-            log_exception(logger, "Failed to hide tooltip")
 
     def build_left_panel(self):
         """Build the left-side filter controls using FilterPanelManager."""
@@ -1188,13 +946,17 @@ class SupernovasApp(tk.Tk):
     def build_results_panel(self):
         """Build the results panel using ResultsPanelManager."""
         try:
-            # Create callbacks for the results panel
+            # Store references first (needed for coordinator initialization)
+            # These will be properly set after building the panel
+            self.supernova_data = {}
+            
+            # Placeholder callbacks - will be replaced with coordinator methods
             callbacks = ResultsPanelCallbacks(
-                on_sort_column=self._sort_column,
-                on_double_click=self._on_results_double_click,
-                on_motion=self._on_results_motion,
-                on_leave=self._on_results_leave,
-                on_selection_change=self._on_selection_change,
+                on_sort_column=lambda col, is_numeric: None,
+                on_double_click=lambda e: None,
+                on_motion=lambda e: None,
+                on_leave=lambda e: None,
+                on_selection_change=lambda e: None,
                 on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
                 on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
                 on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
@@ -1210,9 +972,66 @@ class SupernovasApp(tk.Tk):
 
             self.results_panel_manager.build()
 
+            # Store references to commonly accessed widgets for backward compatibility
+            self.resultsTree = self.results_panel_manager.get_tree()
+            self.labelResults = self.results_panel_manager.widgets.get('label_results')
+            self.pdfButton = self.results_panel_manager.widgets.get('button_pdf')
+            self.txtButton = self.results_panel_manager.widgets.get('button_txt')
+            self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
+            self.exitButton = self.results_panel_manager.widgets.get('button_exit')
+            self.progressBar = self.results_panel_manager.widgets.get('progress_bar')
+
+            # Use manager's data storage
+            self.supernova_data = self.results_panel_manager.supernova_data
+
+            # Initialize ResultsTreeCoordinator to handle all tree interactions
+            self.tree_coordinator = ResultsTreeCoordinator(
+                tree_widget=self.resultsTree,
+                supernova_data=self.supernova_data,
+                get_dark_mode=lambda: self.dark_mode.get() if hasattr(self, 'dark_mode') else False,
+                on_enable_button=self._enable_find_stars_button,
+                on_disable_button=self._disable_find_stars_button,
+                on_show_error=self._show_error_dialog,
+            )
+
+            # Update callbacks to use coordinator
+            updated_callbacks = ResultsPanelCallbacks(
+                on_sort_column=self.tree_coordinator.sort_column,
+                on_double_click=self.tree_coordinator.on_double_click,
+                on_motion=self.tree_coordinator.on_motion,
+                on_leave=self.tree_coordinator.on_leave,
+                on_selection_change=self.tree_coordinator.on_selection_change,
+                on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
+                on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
+                on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
+                on_exit=self.quit,
+            )
+            
+            # Update callbacks and manually rebind tree events
+            self.results_panel_manager.callbacks = updated_callbacks
+            
+            # Rebind tree events with coordinator methods
+            try:
+                self.resultsTree.bind("<Double-Button-1>", self.tree_coordinator.on_double_click)
+                self.resultsTree.bind("<Motion>", self.tree_coordinator.on_motion)
+                self.resultsTree.bind("<Leave>", self.tree_coordinator.on_leave)
+                self.resultsTree.bind("<<TreeviewSelect>>", self.tree_coordinator.on_selection_change)
+            except Exception:
+                log_exception(logger, "Failed to rebind tree events with coordinator")
+            
+            # Update column sort commands to use coordinator
+            try:
+                for col, is_numeric in [("name", False), ("type", False), ("magnitude", True), 
+                                       ("date", False), ("observation_time", False), ("host", False),
+                                       ("constellation", False), ("ra", False), ("dec", False),
+                                       ("rochester", False), ("tns", False)]:
+                    self.resultsTree.heading(col, command=lambda c=col, n=is_numeric: self.tree_coordinator.sort_column(c, n))
+            except Exception:
+                log_exception(logger, "Failed to update column sort commands")
+
             # Create toolbar manager callbacks
             toolbar_callbacks = ToolbarCallbacks(
-                on_find_stars=self._find_stars_in_simbad,
+                on_find_stars=self.tree_coordinator.find_stars_in_simbad,
                 on_ignore_selected=self.callbackIgnoreSelectedSN,
                 on_edit_old=self.callbackEditOldSupernovae,
                 on_dark_mode_toggle=self.apply_theme,
@@ -1230,27 +1049,11 @@ class SupernovasApp(tk.Tk):
 
             self.toolbar_manager.build()
 
-            # Store references to commonly accessed widgets for backward compatibility
-            self.resultsTree = self.results_panel_manager.get_tree()
-            self.labelResults = self.results_panel_manager.widgets.get('label_results')
+            # Store toolbar widget references
             self.findStarsButton = self.toolbar_manager.get_widget('button_find_stars')
             self.ignoreSelectedButton = self.toolbar_manager.get_widget('button_ignore_selected')
             self.editOldButton = self.toolbar_manager.get_widget('button_edit_old')
             self.darkToggle = self.toolbar_manager.get_widget('toggle_dark_mode')
-            self.pdfButton = self.results_panel_manager.widgets.get('button_pdf')
-            self.txtButton = self.results_panel_manager.widgets.get('button_txt')
-            self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
-            self.exitButton = self.results_panel_manager.widgets.get('button_exit')
-            self.progressBar = self.results_panel_manager.widgets.get('progress_bar')
-
-            # Use manager's data storage
-            self.supernova_data = self.results_panel_manager.supernova_data
-            self.tooltip_window = self.results_panel_manager.tooltip_window
-            self.tooltip_item = self.results_panel_manager.tooltip_item
-
-            # Use manager's sort state
-            self.sort_column = self.results_panel_manager.sort_column
-            self.sort_reverse = self.results_panel_manager.sort_reverse
 
             # Configure results tree styling
             self._configure_results_tree_styling()
