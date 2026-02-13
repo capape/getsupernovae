@@ -1856,42 +1856,6 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to build results panel during startup")
 
-        self.pdfButton = ttk.Button(
-            self,
-            text=_("PDF"),
-            command=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
-        )
-        self.pdfButton.grid(column=0, row=12, sticky=tk.E)
-
-        self.txtButton = ttk.Button(
-            self,
-            text=_("TXT"),
-            command=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
-        )
-        self.txtButton.grid(column=1, row=12, sticky=tk.W)
-
-        self.searchButton = ttk.Button(
-            self,
-            text=_("Refresh Search"),
-            command=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
-        )
-        self.searchButton.grid(column=2, row=12, sticky=tk.W)
-
-        self.exitButton = ttk.Button(self, text=_("Exit"), command=lambda: self.quit())
-        # ensure there is visible separation above the Exit button by
-        # reserving two empty grid rows (13 and 14) with a minimum size
-        try:
-            self.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
-            self.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
-        except Exception:
-            log_exception(logger, "Failed to configure exit button spacing rows")
-        # place Exit at the right-bottom of the window under the Results column
-        self.exitButton.grid(column=3, row=15, padx=UI_CONSTANTS.DEFAULT_PADX, pady=UI_CONSTANTS.DEFAULT_PADY, sticky=tk.E)
-
-        # legacy placement removed; button moved next to the Results controls
-
-        self.progressBar = ttk.Progressbar(self, mode='indeterminate', length=UI_CONSTANTS.PROGRESS_BAR_LENGTH)
-
     def _on_language_change(self):
         """Handler when UI language selection changes: apply and refresh labels."""
         try:
@@ -1953,11 +1917,6 @@ class SupernovasApp(tk.Tk):
             self.apply_theme()
         except Exception:
             log_exception(logger, "Failed to reapply theme after language change")
-        try:
-            # apply theme after widgets are created
-            self.apply_theme()
-        except Exception:
-            log_exception(logger, "Failed to apply theme on language-change final pass")
         try:
             # ensure visibility UI reflects current selection at startup
             self._update_visibility_ui()
