@@ -727,7 +727,7 @@ class SupernovasApp(tk.Tk):
             try:
                 self.searchButton["state"] = tk.DISABLED
             except Exception:
-                pass
+                log_exception(logger, "Failed to disable refresh button during refresh start")
             self.callbackSearchSupernovasAsync(e, "REFRESH")
         else:
             # Already refreshing: do nothing (avoid using None results).
@@ -770,9 +770,9 @@ class SupernovasApp(tk.Tk):
                     try:
                         self.set_results_text("")
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to populate results text after async search")
             except Exception:
-                pass
+                log_exception(logger, "Failed while processing async search results")
 
             # If download/parsing failed, show an error banner in the results
             if self.supernovasFound is None:
@@ -787,31 +787,31 @@ class SupernovasApp(tk.Tk):
                     self.pdfButton["state"] = tk.NORMAL
                     self.pdfButton.invoke()
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to invoke PDF generation after search")
                 # ensure other controls are re-enabled after PDF generation
                 try:
                     self.txtButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable TXT button after PDF flow")
                 try:
                     self.searchButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable refresh button after PDF flow")
             elif source == "TXT":
                 try:
                     self.txtButton["state"] = tk.NORMAL
                     self.txtButton.invoke()
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to invoke TXT generation after search")
                 # ensure other controls are re-enabled after text output
                 try:
                     self.pdfButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable PDF button after TXT flow")
                 try:
                     self.searchButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable refresh button after TXT flow")
             elif source == "REFRESH":
                 self.txtButton["state"] = tk.NORMAL
                 self.txtButton.invoke()
@@ -824,6 +824,7 @@ class SupernovasApp(tk.Tk):
                 try:
                     self.last_rows = getattr(thread, "dto_list", None)
                 except Exception:
+                    log_exception(logger, "Failed to cache downloaded rows after refresh")
                     self.last_rows = None
             self.end_progress_bar()
 
@@ -847,7 +848,7 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.delete(item)
             self.supernova_data.clear()
         except Exception:
-            pass
+            log_exception(logger, "Failed to clear existing results tree entries")
 
         # If datatxt is an error message, show it
         if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
@@ -855,7 +856,7 @@ class SupernovasApp(tk.Tk):
                 # Insert error as a single row
                 self.resultsTree.insert("", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", ""))
             except Exception:
-                pass
+                log_exception(logger, "Failed to render error row in results tree")
             return
 
         # Populate tree from self.supernovasFound
@@ -898,7 +899,7 @@ class SupernovasApp(tk.Tk):
             try:
                 self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", ""))
             except Exception:
-                pass
+                log_exception(logger, "Failed to render exception row in results tree")
 
     def _sort_column(self, col, is_numeric):
         """Sort treeview by column."""
@@ -950,9 +951,9 @@ class SupernovasApp(tk.Tk):
 
                         self.resultsTree.item(item, tags=(tag,))
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-tag sorted tree row")
         except Exception:
-            pass
+            log_exception(logger, "Failed to sort results tree column")
 
     def _on_selection_change(self, event):
         """Enable or disable Find stars button based on tree selection."""
@@ -963,7 +964,7 @@ class SupernovasApp(tk.Tk):
             else:
                 self.findStarsButton.config(state=tk.DISABLED)
         except Exception:
-            pass
+            log_exception(logger, "Failed to update Find Stars button state on selection change")
 
     def _find_stars_in_simbad(self):
         """Query SIMBAD for objects near the selected supernova."""
@@ -1000,6 +1001,7 @@ class SupernovasApp(tk.Tk):
                 criteria_enc=urllib.parse.quote(criteria_str)
 
             except Exception:
+                log_exception(logger, "Failed to build SIMBAD criteria query")
                 criteria_enc = ""
 
             simbad_url = (
@@ -1021,7 +1023,7 @@ class SupernovasApp(tk.Tk):
                     _("Failed to query SIMBAD: ") + str(e)
                 )
             except Exception:
-                pass
+                log_exception(logger, "Failed to show SIMBAD error message")
 
     def _on_results_double_click(self, event):
         """Handle double-click on results table to open links."""
@@ -1046,7 +1048,7 @@ class SupernovasApp(tk.Tk):
                 url = getattr(sn, 'tnsUrl', None) or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
                 self._open_url(url)
         except Exception:
-            pass
+            log_exception(logger, "Failed to process results table double click")
 
     def _open_url(self, url):
         """Open URL in default browser."""
@@ -1054,7 +1056,7 @@ class SupernovasApp(tk.Tk):
         try:
             webbrowser.open(url)
         except Exception:
-            pass
+            log_exception(logger, "Failed to open URL")
 
     def _on_results_motion(self, event):
         """Show tooltip with visibility and discovery info on hover."""
@@ -1115,12 +1117,12 @@ class SupernovasApp(tk.Tk):
                                 if max_alt:
                                     tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
                             except Exception:
-                                pass
+                                log_exception(logger, "Failed to compute tooltip altitude values")
 
                     if tooltip_lines:
                         self._show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
         except Exception:
-            pass
+            log_exception(logger, "Failed to process results hover tooltip")
 
     def _on_results_leave(self, event):
         """Hide tooltip when mouse leaves the tree."""
@@ -1154,7 +1156,7 @@ class SupernovasApp(tk.Tk):
             )
             label.pack()
         except Exception:
-            pass
+            log_exception(logger, "Failed to show tooltip")
 
     def _hide_tooltip(self):
         """Hide and destroy tooltip window."""
@@ -1164,7 +1166,7 @@ class SupernovasApp(tk.Tk):
                 self.tooltip_window = None
             self.tooltip_item = None
         except Exception:
-            pass
+            log_exception(logger, "Failed to hide tooltip")
 
     def build_left_panel(self):
         """Build the left-side filter controls using FilterPanelManager."""
@@ -1230,12 +1232,12 @@ class SupernovasApp(tk.Tk):
             try:
                 self._load_and_apply_prefs()
             except Exception:
-                pass
+                log_exception(logger, "Failed to load and apply preferences while building left panel")
 
             # Initialization complete, enable preference persistence
             self._initializing = False
         except Exception:
-            pass
+            log_exception(logger, "Failed to build left panel")
 
     def build_results_panel(self):
         """Build the results panel using ResultsPanelManager."""
@@ -1307,7 +1309,7 @@ class SupernovasApp(tk.Tk):
             # Configure results tree styling
             self._configure_results_tree_styling()
         except Exception:
-            pass
+            log_exception(logger, "Failed to build results panel")
 
     def refilter_from_cache(self, source="REFRESH"):
         """Re-run selection/filtering on the cached HTML rows (if available).
@@ -1320,7 +1322,7 @@ class SupernovasApp(tk.Tk):
                 self.refreshing = True
                 self.callbackSearchSupernovasAsync(self.getDataToSearch(), source)
             except Exception:
-                pass
+                log_exception(logger, "Failed to fallback to async search without cached rows")
             return
 
         try:
@@ -1339,37 +1341,37 @@ class SupernovasApp(tk.Tk):
                     self.pdfButton["state"] = tk.NORMAL
                     self.pdfButton.invoke()
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to invoke PDF in refilter flow")
                 try:
                     self.txtButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable TXT button in refilter PDF flow")
                 try:
                     self.searchButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable refresh button in refilter PDF flow")
             else:
                 # default to text output for SEARCH/TXT/REFRESH
                 try:
                     self.txtButton["state"] = tk.NORMAL
                     self.txtButton.invoke()
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to invoke TXT in refilter flow")
                 try:
                     self.pdfButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable PDF button in refilter flow")
                 try:
                     self.searchButton["state"] = tk.NORMAL
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to re-enable refresh button in refilter flow")
         except Exception:
             # If re-filter fails, fall back to network refresh
             try:
                 self.refreshing = True
                 self.callbackSearchSupernovasAsync(self.getDataToSearch(), source)
             except Exception:
-                pass
+                log_exception(logger, "Failed to fallback to network refresh after refilter error")
 
     def callbackIgnoreSelectedSN(self):
         """Add the currently selected SN from the Results table to the
@@ -1429,7 +1431,7 @@ class SupernovasApp(tk.Tk):
                 global old
                 old = load_old_supernovae(path)
             except Exception:
-                pass
+                log_exception(logger, "Failed to reload ignored supernovae after add")
             messagebox.showinfo(_("Added"), _("Added '{name}' to ignored supernovae.").format(name=name))
             # Auto-reload results using cached rows when possible
             try:
@@ -1440,7 +1442,7 @@ class SupernovasApp(tk.Tk):
                     self.refreshing = True
                     self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to refresh after adding ignored supernova")
         except Exception as ex:
             messagebox.showerror(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
 
@@ -1490,7 +1492,7 @@ class SupernovasApp(tk.Tk):
                     global old
                     old = load_old_supernovae(path)
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to reload ignored supernovae after edit")
                 editor.destroy()
                 # Auto-reload results using cached rows when possible
                 try:
@@ -1500,7 +1502,7 @@ class SupernovasApp(tk.Tk):
                         self.refreshing = True
                         self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
                     except Exception:
-                        pass
+                        log_exception(logger, "Failed to refresh after editing ignored supernovae")
             except Exception as ex:
                 messagebox.showerror(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
 
@@ -1587,11 +1589,11 @@ class SupernovasApp(tk.Tk):
                             if self.cbSite:
                                 self.cbSite.update_idletasks()
                         except Exception:
-                            pass
+                            log_exception(logger, "Failed to apply selected site after site dialog")
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to refresh site values after site dialog")
         except Exception:
-            pass
+            log_exception(logger, "Failed to process site dialog result")
 
     def callbackAddVisibilityWindow(self):
         try:
@@ -1655,11 +1657,11 @@ class SupernovasApp(tk.Tk):
                             if self.cbVisibility:
                                 self.cbVisibility.update_idletasks()
                         except Exception:
-                            pass
+                            log_exception(logger, "Failed to apply selected visibility window after dialog")
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to refresh visibility window values after dialog")
         except Exception:
-            pass
+            log_exception(logger, "Failed to process visibility window dialog result")
 
     def __init__(self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
 
@@ -1682,13 +1684,13 @@ class SupernovasApp(tk.Tk):
         try:
             set_language("en")
         except Exception:
-            pass
+            log_exception(logger, "Failed to set default startup language")
 
         # Apply theme early so initial widgets pick up dark mode colors
         try:
             self.apply_theme()
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply initial theme during startup")
 
         self.magnitude = tk.StringVar()
         self.magnitude.trace_add(["write", "unset"], self.callbackClearResults)
@@ -1741,7 +1743,7 @@ class SupernovasApp(tk.Tk):
                 try:
                     self.iconbitmap(ico)
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to set ICO application icon")
             elif os.path.exists(png):
                 try:
                     img = tk.PhotoImage(file=png)
@@ -1749,14 +1751,14 @@ class SupernovasApp(tk.Tk):
                     # keep reference to avoid GC
                     self._icon_image = img
                 except Exception:
-                    pass
+                    log_exception(logger, "Failed to set PNG application icon")
             else:
                 # If only SVG is present, we don't attempt to parse it here.
                 # Users can convert the SVG to PNG/ICO (see docs).
                 if os.path.exists(svg):
                     pass
         except Exception:
-            pass
+            log_exception(logger, "Failed during application icon setup")
 
         window_width = UI_CONSTANTS.WINDOW_WIDTH
         window_height = UI_CONSTANTS.WINDOW_HEIGHT
@@ -1775,7 +1777,7 @@ class SupernovasApp(tk.Tk):
         try:
             self.minsize(window_width, window_height)
         except Exception:
-            pass
+            log_exception(logger, "Failed to enforce minimum window size")
 
         self.magnitude.set(filters.magnitude)
         self.daysToSearch.set(filters.daysToSearch)
@@ -1799,24 +1801,24 @@ class SupernovasApp(tk.Tk):
             try:
                 self.visibilityWindow.set("Default")
             except Exception:
-                pass
+                log_exception(logger, "Failed to set default visibility window")
         self.results.set("")
 
         # Build UI panels using dedicated builder methods
         try:
             self.build_left_panel()
         except Exception:
-            pass
+            log_exception(logger, "Failed to build left panel during startup")
 
         try:
             self.build_results_panel()
         except Exception:
-            pass
+            log_exception(logger, "Failed to build results panel during startup")
 
         try:
             self.build_toolbar()
         except Exception:
-            pass
+            log_exception(logger, "Failed to build toolbar during startup")
 
         callbackData = SupernovaCallBackData(
             self.magnitude.get(),
@@ -1856,7 +1858,7 @@ class SupernovasApp(tk.Tk):
             self.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
             self.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
         except Exception:
-            pass
+            log_exception(logger, "Failed to configure exit button spacing rows")
         # place Exit at the right-bottom of the window under the Results column
         self.exitButton.grid(column=3, row=15, padx=UI_CONSTANTS.DEFAULT_PADX, pady=UI_CONSTANTS.DEFAULT_PADY, sticky=tk.E)
 
@@ -1873,7 +1875,7 @@ class SupernovasApp(tk.Tk):
             else:
                 set_language(lang)
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply selected language")
 
         # Update visible widget texts to the new language
         try:
@@ -1887,42 +1889,42 @@ class SupernovasApp(tk.Tk):
                 self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
                 self.editOldButton.config(text=_("Edit Ignored SN"))
             except Exception:
-                pass
+                log_exception(logger, "Failed to refresh ignore/edit toolbar labels")
             try:
                 self.pdfButton.config(text=_("PDF"))
                 self.txtButton.config(text=_("TXT"))
                 self.searchButton.config(text=_("Refresh Search"))
                 self.exitButton.config(text=_("Exit"))
             except Exception:
-                pass
+                log_exception(logger, "Failed to refresh action button labels")
             # Update window title
             try:
                 self.title(_("Find latest supernovae"))
             except Exception:
-                pass
+                log_exception(logger, "Failed to refresh window title after language change")
         except Exception:
-            pass
+            log_exception(logger, "Failed to refresh UI labels after language change")
 
         # Reapply results tree styling after language change
         try:
             self._configure_results_tree_styling()
         except Exception:
-            pass
+            log_exception(logger, "Failed to reconfigure results tree after language change")
         try:
             # re-apply theme in case translations affected widget styles
             self.apply_theme()
         except Exception:
-            pass
+            log_exception(logger, "Failed to reapply theme after language change")
         try:
             # apply theme after widgets are created
             self.apply_theme()
         except Exception:
-            pass
+            log_exception(logger, "Failed to apply theme on language-change final pass")
         try:
             # ensure visibility UI reflects current selection at startup
             self._update_visibility_ui()
         except Exception:
-            pass
+            log_exception(logger, "Failed to refresh visibility UI after language change")
 
 
 def representsInt(s):
