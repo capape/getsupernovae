@@ -32,6 +32,7 @@ from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.services.observation_time_service import ObservationTimeService
 from app.coordinators.search_coordinator import SearchCoordinator
+from app.coordinators.report_coordinator import ReportCoordinator
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -623,68 +624,15 @@ class SupernovasApp(tk.Tk):
     # PDF button callback
     #
     def callbackPdfSupernovas(self, e: SupernovaCallBackData):
-        if e is None:
-            return
-
-        if not self.withData():
-            self.callbackSearchSupernovasAsync(e, "PDF")
-        else:
-            datatxt = createTextAsString(self.supernovasFound, e.fromDate,
-                e.observationDate,
-                e.magnitude,
-                e.site,
-                float(e.minLatitude),
-                getattr(e, 'visibilityWindowName', None))
-            self.set_results_text(datatxt)
-            pdf_path = createPdf(
-                self.supernovasFound,
-                e.fromDate,
-                e.observationDate,
-                e.magnitude,
-                e.site,
-                float(e.minLatitude),
-                getattr(e, 'visibilityWindowName', None),
-            )
-
-            # Show success message with PDF location
-            import os
-            import subprocess
-            msg = _("PDF report saved to:\n{path}").format(path=pdf_path)
-            if messagebox.askyesno(_("PDF Created"), msg + "\n\n" + _("Do you want to open it?")):
-                try:
-                    if os.name == 'nt':  # Windows
-                        os.startfile(pdf_path)
-                    elif os.name == 'posix':  # Linux/Mac
-                        subprocess.run(['xdg-open' if 'linux' in os.sys.platform else 'open', pdf_path])
-                except Exception as ex:
-                    messagebox.showwarning(_("Cannot open file"), _("File saved but could not be opened automatically: {error}").format(error=str(ex)))
+        """Generate PDF report using report coordinator."""
+        self.report_coordinator.generate_pdf_report(e)
 
     #
     # TXT button callback
     #
     def callbackTextSupernovas(self, e: SupernovaCallBackData):
-        if e is None:
-            return
-
-        if not self.withData():
-            self.callbackSearchSupernovasAsync(e, "TXT")
-        else:
-            datatxt = createTextAsString(self.supernovasFound, e.fromDate,
-                e.observationDate,
-                e.magnitude,
-                e.site,
-                float(e.minLatitude),
-                getattr(e, 'visibilityWindowName', None))
-            self.set_results_text(datatxt)
-            createText(
-                self.supernovasFound,
-                e.fromDate,
-                e.observationDate,
-                e.magnitude,
-                e.site,
-                float(e.minLatitude),
-                getattr(e, 'visibilityWindowName', None),
-            )
+        """Generate TXT report using report coordinator."""
+        self.report_coordinator.generate_txt_report(e)
     #
     #  Refresh button callback
     #
@@ -747,6 +695,27 @@ class SupernovasApp(tk.Tk):
         """Stop the progress bar animation."""
         self.results_panel_manager.stop_progress_bar()
 
+    def _show_yes_no_dialog(self, title: str, message: str, icon_type: str = "question") -> bool:
+        """Show a yes/no dialog and return the user's choice.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+            icon_type: Icon type for the dialog
+            
+        Returns:
+            True if user clicked Yes, False otherwise
+        """
+        return messagebox.askyesno(title, message, icon=icon_type)
+    
+    def _show_warning_dialog(self, title: str, message: str):
+        """Show a warning dialog.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+        """
+        messagebox.showwarning(title, message)
 
     def callbackClearResults(self, var, index, mode):
         self.supernovasFound = None
@@ -1608,6 +1577,16 @@ class SupernovasApp(tk.Tk):
             on_pdf_invoke=lambda: self.pdfButton.invoke() if hasattr(self, 'pdfButton') else None,
             on_txt_invoke=lambda: self.txtButton.invoke() if hasattr(self, 'txtButton') else None,
             after_callback=self.after,
+        )
+
+        # Initialize ReportCoordinator for managing report generation
+        self.report_coordinator = ReportCoordinator(
+            has_results=self.withData,
+            get_results=lambda: self.supernovasFound,
+            on_search_async=self.callbackSearchSupernovasAsync,
+            on_results_text_update=self.set_results_text,
+            on_show_message=self._show_yes_no_dialog,
+            on_show_warning=self._show_warning_dialog,
         )
 
         self.title(_("Find latest supernovae - {}").format(__version__))
