@@ -79,15 +79,45 @@ class SupernovaCallBackData:
 
         self.magnitude = magnitude
         self.observationDate = observationDate
-        self.observationTime = observationTime
+        self.observationTime = self._normalize_observation_time(observationTime)
         self.observationHours = observationHours
         self.daysToSearch = daysToSearch
         self.site = site
         self.minLatitude = minLatitude
-        self.observationStart = Time(observationDate + "T" + observationTime + "Z")
+        self.observationStart = Time(observationDate + "T" + self.observationTime + "Z")
         self.fromDateTime = self.observationStart - timedelta(days=int(daysToSearch))
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
         self.visibilityWindowName = visibilityWindowName
+
+    @staticmethod
+    def _normalize_observation_time(observation_time: str) -> str:
+        """Normalize observation time to HH:MM or HH:MM:SS format."""
+        text = str(observation_time).strip()
+        if not text:
+            raise ValueError("Observation time is required")
+
+        parts = text.split(":")
+        if len(parts) not in (1, 2, 3):
+            raise ValueError("Observation time must be HH, HH:MM or HH:MM:SS")
+
+        try:
+            hour = int(parts[0])
+            minute = int(parts[1]) if len(parts) >= 2 else 0
+            second = int(parts[2]) if len(parts) == 3 else None
+        except (TypeError, ValueError):
+            raise ValueError("Observation time must contain numeric values")
+
+        if hour < 0 or hour > 23:
+            raise ValueError("Hour must be between 0 and 23")
+        if minute < 0 or minute > 59:
+            raise ValueError("Minute must be between 0 and 59")
+
+        if second is None:
+            return f"{hour:02d}:{minute:02d}"
+
+        if second < 0 or second > 59:
+            raise ValueError("Second must be between 0 and 59")
+        return f"{hour:02d}:{minute:02d}:{second:02d}"
 
 class RochesterSupernova:
 
@@ -627,19 +657,24 @@ class SupernovasApp(tk.Tk):
             log_exception(logger, "Failed to load and apply preferences")
 
     def getDataToSearch(self):
-
-        callbackData = SupernovaCallBackData(
-            self.magnitude.get(),
-            self.observationDate.get(),
-            self.observationTime.get(),
-            self.observationDuration.get(),
-            self.daysToSearch.get(),
-            sites[self.site.get()],
-            self.minLatitud.get(),
-            getattr(self, "visibilityWindow", None) and self.visibilityWindow.get(),
-        )
-
-        return callbackData
+        try:
+            callbackData = SupernovaCallBackData(
+                self.magnitude.get(),
+                self.observationDate.get(),
+                self.observationTime.get(),
+                self.observationDuration.get(),
+                self.daysToSearch.get(),
+                sites[self.site.get()],
+                self.minLatitud.get(),
+                getattr(self, "visibilityWindow", None) and self.visibilityWindow.get(),
+            )
+            return callbackData
+        except Exception as ex:
+            messagebox.showerror(
+                _("Invalid input"),
+                _("Invalid observation time. Use HH, HH:MM or HH:MM:SS.\n\nDetails: {error}").format(error=str(ex)),
+            )
+            return None
 
     #
     # Check if there is already a search done with current filters
@@ -654,6 +689,8 @@ class SupernovasApp(tk.Tk):
     # PDF button callback
     #
     def callbackPdfSupernovas(self, e: SupernovaCallBackData):
+        if e is None:
+            return
 
         if not self.withData():
             self.callbackSearchSupernovasAsync(e, "PDF")
@@ -692,6 +729,8 @@ class SupernovasApp(tk.Tk):
     # TXT button callback
     #
     def callbackTextSupernovas(self, e: SupernovaCallBackData):
+        if e is None:
+            return
 
         if not self.withData():
             self.callbackSearchSupernovasAsync(e, "TXT")
@@ -716,6 +755,8 @@ class SupernovasApp(tk.Tk):
     #  Refresh button callback
     #
     def callbackRefreshSearchSupernovas(self, e: SupernovaCallBackData):
+        if e is None:
+            return
 
         # If a refresh isn't already running, start an async refresh.
         # If we are already refreshing, ignore the extra click. If there
@@ -1739,7 +1780,7 @@ class SupernovasApp(tk.Tk):
             ico = os.path.join(icon_dir, FILE_CONSTANTS.ICON_ICO)
             png = os.path.join(icon_dir, FILE_CONSTANTS.ICON_PNG)
             svg = os.path.join(icon_dir, FILE_CONSTANTS.ICON_SVG)
-            if os.path.exists(ico):
+            if os.path.exists(ico) and os.name == 'nt':
                 try:
                     self.iconbitmap(ico)
                 except Exception:
@@ -1815,21 +1856,6 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to build results panel during startup")
 
-        try:
-            self.build_toolbar()
-        except Exception:
-            log_exception(logger, "Failed to build toolbar during startup")
-
-        callbackData = SupernovaCallBackData(
-            self.magnitude.get(),
-            self.observationDate.get(),
-            self.observationTime.get(),
-            self.observationDuration.get(),
-            self.daysToSearch.get(),
-            self.site.get(),
-            self.minLatitud.get(),
-        )
-
         self.pdfButton = ttk.Button(
             self,
             text=_("PDF"),
@@ -1869,6 +1895,8 @@ class SupernovasApp(tk.Tk):
     def _on_language_change(self):
         """Handler when UI language selection changes: apply and refresh labels."""
         try:
+            if not hasattr(self, 'langVar') or self.langVar is None:
+                return
             lang = self.langVar.get().strip()
             if not lang:
                 set_language(None)
@@ -1879,22 +1907,32 @@ class SupernovasApp(tk.Tk):
 
         # Update visible widget texts to the new language
         try:
-            self.filter_panel_manager.refresh_labels()
-            self.labelLatitud.config(text=_("Min latitude: "))
+            if hasattr(self, 'filter_panel_manager') and self.filter_panel_manager is not None:
+                self.filter_panel_manager.refresh_labels()
+            if hasattr(self, 'labelLatitud') and self.labelLatitud is not None:
+                self.labelLatitud.config(text=_("Min latitude: "))
 
             # Refresh UI manager labels
-            self.results_panel_manager.refresh_labels()
-            self.toolbar_manager.refresh_labels()
+            if hasattr(self, 'results_panel_manager') and self.results_panel_manager is not None:
+                self.results_panel_manager.refresh_labels()
+            if hasattr(self, 'toolbar_manager') and self.toolbar_manager is not None:
+                self.toolbar_manager.refresh_labels()
             try:
-                self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
-                self.editOldButton.config(text=_("Edit Ignored SN"))
+                if hasattr(self, 'ignoreSelectedButton') and self.ignoreSelectedButton is not None:
+                    self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
+                if hasattr(self, 'editOldButton') and self.editOldButton is not None:
+                    self.editOldButton.config(text=_("Edit Ignored SN"))
             except Exception:
                 log_exception(logger, "Failed to refresh ignore/edit toolbar labels")
             try:
-                self.pdfButton.config(text=_("PDF"))
-                self.txtButton.config(text=_("TXT"))
-                self.searchButton.config(text=_("Refresh Search"))
-                self.exitButton.config(text=_("Exit"))
+                if hasattr(self, 'pdfButton') and self.pdfButton is not None:
+                    self.pdfButton.config(text=_("PDF"))
+                if hasattr(self, 'txtButton') and self.txtButton is not None:
+                    self.txtButton.config(text=_("TXT"))
+                if hasattr(self, 'searchButton') and self.searchButton is not None:
+                    self.searchButton.config(text=_("Refresh Search"))
+                if hasattr(self, 'exitButton') and self.exitButton is not None:
+                    self.exitButton.config(text=_("Exit"))
             except Exception:
                 log_exception(logger, "Failed to refresh action button labels")
             # Update window title
