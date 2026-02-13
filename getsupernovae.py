@@ -1918,11 +1918,6 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to reapply theme after language change")
         try:
-            # apply theme after widgets are created
-            self.apply_theme()
-        except Exception:
-            log_exception(logger, "Failed to apply theme on language-change final pass")
-        try:
             # ensure visibility UI reflects current selection at startup
             self._update_visibility_ui()
         except Exception:
