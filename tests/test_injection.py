@@ -4,7 +4,8 @@ import sys
 # Ensure package imports work when running this test standalone
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from getsupernovae import AsyncRochesterDownload, RochesterSupernova, SupernovaCallBackData, sites
+from getsupernovae import RochesterSupernova, SupernovaCallBackData, sites
+from app.coordinators.search_coordinator import AsyncRochesterDownload
 
 class DummyProvider:
     last_instance = None
@@ -13,8 +14,8 @@ class DummyProvider:
         DummyProvider.last_instance = self
 
     def fetch(self):
-        # record that fetch was called and return empty parsed list and rows
-         return [], []
+        # record that fetch was called and return empty parsed list
+        return []
 
 
 class DummyReporter:
@@ -33,8 +34,21 @@ def test_async_uses_injected_provider():
         minLatitude="0",
     )
 
+    # Create RochesterSupernova for the async downloader
+    rochester = RochesterSupernova(
+        visibility_factory=None,
+        provider_factory=DummyProvider,
+        reporter=None
+    )
+
     # run downloader with dummy provider factory
-    downloader = AsyncRochesterDownload(e, visibility_factory=None, provider_factory=DummyProvider, reporter=None)
+    downloader = AsyncRochesterDownload(
+        search_criteria=e,
+        rochester_supernova=rochester,
+        visibility_factory=None,
+        provider_factory=DummyProvider,
+        reporter=None
+    )
     # call run directly to avoid threading in tests
     downloader.run()
 

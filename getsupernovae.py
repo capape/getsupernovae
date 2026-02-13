@@ -2,7 +2,6 @@
 # Check supernova data
 #
 
-from threading import Thread
 from typing import List
 import urllib.parse
 from astropy.coordinates import EarthLocation
@@ -32,6 +31,7 @@ from app.ui.toolbar_manager import ToolbarManager, ToolbarCallbacks
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
 from app.services.observation_time_service import ObservationTimeService
+from app.coordinators.search_coordinator import SearchCoordinator
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -200,48 +200,6 @@ class RochesterSupernova:
 
 # Note: domain model dataclasses live in `app.models.snmodels` and are imported
 # at the top of this module. Do not redefine them here to avoid drift.
-
-class AsyncRochesterDownload(Thread):
-    def __init__(self, e: SupernovaCallBackData, visibility_factory=None, provider_factory=None, reporter=None):
-        super().__init__()
-
-        # Don't reset language - respect the user's current language setting
-        self.result = None
-        self.error = None
-        self.config = e
-        self.visibility_factory = visibility_factory
-        # provider_factory may be a class or callable that accepts timeout kwarg
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
-        # optional reporter object/module for DI
-        self.reporter = reporter
-        self.dto_list = None
-
-    def run(self):
-        try:
-            # Use the injected provider factory to download and parse content.
-            try:
-                provider = self.provider_factory(timeout=20)
-            except TypeError:
-                # provider_factory may be a class that doesn't accept timeout
-                provider = self.provider_factory()
-            supernovaeList = provider.fetch()
-            # propagate injected provider_factory and reporter to selection logic
-            rochesterSupernova = RochesterSupernova(
-                visibility_factory=self.visibility_factory,
-                provider_factory=self.provider_factory,
-                reporter=self.reporter,
-            )
-            # Continue using existing selection/filtering logic which expects raw rows
-            self.result = rochesterSupernova.selectAndSortSupernovas(self.config, supernovaeList)
-            # keep raw rows so the app can re-filter without re-downloading
-            self.dto_list = supernovaeList
-        except Exception as ex:
-            # record the error for the main thread to show
-            try:
-                self.error = str(ex)
-            except Exception:
-                self.error = "unknown error"
-            self.result = None
 
 
 class SearchFilters:
@@ -731,119 +689,55 @@ class SupernovasApp(tk.Tk):
     #  Refresh button callback
     #
     def callbackRefreshSearchSupernovas(self, e: SupernovaCallBackData):
+        """Refresh search results using the search coordinator."""
         if e is None:
             return
-
-        # If a refresh isn't already running, start an async refresh.
-        # If we are already refreshing, ignore the extra click. If there
-        # are cached results, they will be updated once the running
-        # refresh completes and `monitor` finishes.
-        if not self.refreshing:
-            self.refreshing = True
-            # disable the refresh button (searchButton) while refresh is running
-            try:
-                self.searchButton["state"] = tk.DISABLED
-            except Exception:
-                log_exception(logger, "Failed to disable refresh button during refresh start")
-            self.callbackSearchSupernovasAsync(e, "REFRESH")
-        else:
-            # Already refreshing: do nothing (avoid using None results).
-            return
-
+        self.search_coordinator.refresh_search(e)
 
     #
     # Do a async search
     #
     def callbackSearchSupernovasAsync(self, e: SupernovaCallBackData, source="SEARCH"):
+        """Execute async search using the search coordinator."""
+        self.search_coordinator.search_async(e, source)
 
-        self.txtButton["state"] = tk.DISABLED
-        self.pdfButton["state"] = tk.DISABLED
-        self.searchButton["state"] = tk.DISABLED
+    def _handle_search_results(self, results, error_text):
+        """Handle search results from coordinator.
 
-        self.start_progress_bar()
+        Args:
+            results: List of supernovae or None if error
+            error_text: Error message if any, or empty string
+        """
+        try:
+            self.supernovasFound = results
 
-        download_thread = AsyncRochesterDownload(
-            e,
-            visibility_factory=self.visibility_factory,
-            provider_factory=self.provider_factory,
-            reporter=self.reporter,
-        )
-        download_thread.start()
+            # Update results display
+            if error_text:
+                self.set_results_text(error_text)
+            elif results:
+                self.set_results_text("")
+            else:
+                self.set_results_text("ERROR: No results")
+        except Exception:
+            log_exception(logger, "Failed to handle search results")
 
-        self.monitor(download_thread, source)
+    def _set_button_state(self, button_name: str, state: str):
+        """Set button state from coordinator.
 
-    def monitor(self, thread, source="SEARCH"):
-        if thread.is_alive():
-            # check the thread every 100ms
-            self.after(100, lambda: self.monitor(thread, source))
-        else:
-
-            self.supernovasFound = thread.result
-
-            # Populate results grid when data is available (also for PDF path)
-            try:
-                if self.supernovasFound:
-                    # pass empty datatxt to indicate no error message
-                    try:
-                        self.set_results_text("")
-                    except Exception:
-                        log_exception(logger, "Failed to populate results text after async search")
-            except Exception:
-                log_exception(logger, "Failed while processing async search results")
-
-            # If download/parsing failed, show an error banner in the results
-            if self.supernovasFound is None:
-                err = getattr(thread, "error", None)
-                if err:
-                    self.set_results_text(f"ERROR: Failed to fetch/parse data - {err}")
-                else:
-                    self.set_results_text("ERROR: Failed to fetch data (no details)")
-
-            if source == "PDF":
-                try:
-                    self.pdfButton["state"] = tk.NORMAL
-                    self.pdfButton.invoke()
-                except Exception:
-                    log_exception(logger, "Failed to invoke PDF generation after search")
-                # ensure other controls are re-enabled after PDF generation
-                try:
-                    self.txtButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable TXT button after PDF flow")
-                try:
-                    self.searchButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable refresh button after PDF flow")
-            elif source == "TXT":
-                try:
-                    self.txtButton["state"] = tk.NORMAL
-                    self.txtButton.invoke()
-                except Exception:
-                    log_exception(logger, "Failed to invoke TXT generation after search")
-                # ensure other controls are re-enabled after text output
-                try:
-                    self.pdfButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable PDF button after TXT flow")
-                try:
-                    self.searchButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable refresh button after TXT flow")
-            elif source == "REFRESH":
-                self.txtButton["state"] = tk.NORMAL
-                self.txtButton.invoke()
-                # refresh completed
-                self.refreshing = False
-                self.txtButton["state"] = tk.NORMAL
-                self.pdfButton["state"] = tk.NORMAL
-                self.searchButton["state"] = tk.NORMAL
-                # cache raw rows if available for later re-filtering
-                try:
-                    self.last_rows = getattr(thread, "dto_list", None)
-                except Exception:
-                    log_exception(logger, "Failed to cache downloaded rows after refresh")
-                    self.last_rows = None
-            self.end_progress_bar()
+        Args:
+            button_name: Button identifier ("pdf", "txt", "refresh")
+            state: Button state ("normal", "disabled")
+        """
+        try:
+            tk_state = tk.NORMAL if state == "normal" else tk.DISABLED
+            if button_name == "pdf" and hasattr(self, 'pdfButton'):
+                self.pdfButton["state"] = tk_state
+            elif button_name == "txt" and hasattr(self, 'txtButton'):
+                self.txtButton["state"] = tk_state
+            elif button_name == "refresh" and hasattr(self, 'searchButton'):
+                self.searchButton["state"] = tk_state
+        except Exception:
+            log_exception(logger, f"Failed to set {button_name} button state to {state}")
 
     def start_progress_bar(self):
         """Start the progress bar animation."""
@@ -1329,66 +1223,15 @@ class SupernovasApp(tk.Tk):
             log_exception(logger, "Failed to build results panel")
 
     def refilter_from_cache(self, source="REFRESH"):
-        """Re-run selection/filtering on the cached HTML rows (if available).
+        """Re-run selection/filtering on the cached data (if available).
 
-        If no cached rows exist, fall back to performing a normal async download.
+        Uses the search coordinator to refilter without re-downloading.
+        If no cached data exists, falls back to a full network download.
         """
-        if not hasattr(self, "last_rows") or self.last_rows is None:
-            # fallback to full download
-            try:
-                self.refreshing = True
-                self.callbackSearchSupernovasAsync(self.getDataToSearch(), source)
-            except Exception:
-                log_exception(logger, "Failed to fallback to async search without cached rows")
-            return
-
         try:
-            rochester = RochesterSupernova(
-                visibility_factory=self.visibility_factory,
-                provider_factory=self.provider_factory,
-                reporter=self.reporter,
-            )
-            # compute with current filters
-            new_results = rochester.selectAndSortSupernovas(self.getDataToSearch(), self.last_rows)
-            self.supernovasFound = new_results
-
-            # show results according to source
-            if source == "PDF":
-                try:
-                    self.pdfButton["state"] = tk.NORMAL
-                    self.pdfButton.invoke()
-                except Exception:
-                    log_exception(logger, "Failed to invoke PDF in refilter flow")
-                try:
-                    self.txtButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable TXT button in refilter PDF flow")
-                try:
-                    self.searchButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable refresh button in refilter PDF flow")
-            else:
-                # default to text output for SEARCH/TXT/REFRESH
-                try:
-                    self.txtButton["state"] = tk.NORMAL
-                    self.txtButton.invoke()
-                except Exception:
-                    log_exception(logger, "Failed to invoke TXT in refilter flow")
-                try:
-                    self.pdfButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable PDF button in refilter flow")
-                try:
-                    self.searchButton["state"] = tk.NORMAL
-                except Exception:
-                    log_exception(logger, "Failed to re-enable refresh button in refilter flow")
+            self.search_coordinator.refilter_from_cache(self.getDataToSearch(), source)
         except Exception:
-            # If re-filter fails, fall back to network refresh
-            try:
-                self.refreshing = True
-                self.callbackSearchSupernovasAsync(self.getDataToSearch(), source)
-            except Exception:
-                log_exception(logger, "Failed to fallback to network refresh after refilter error")
+            log_exception(logger, f"Failed to refilter from cache for source={source}")
 
     def callbackIgnoreSelectedSN(self):
         """Add the currently selected SN from the Results table to the
@@ -1456,7 +1299,6 @@ class SupernovasApp(tk.Tk):
             except Exception:
                 # fallback to network refresh
                 try:
-                    self.refreshing = True
                     self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
                 except Exception:
                     log_exception(logger, "Failed to refresh after adding ignored supernova")
@@ -1516,7 +1358,6 @@ class SupernovasApp(tk.Tk):
                     self.refilter_from_cache("REFRESH")
                 except Exception:
                     try:
-                        self.refreshing = True
                         self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
                     except Exception:
                         log_exception(logger, "Failed to refresh after editing ignored supernovae")
@@ -1746,6 +1587,28 @@ class SupernovasApp(tk.Tk):
         # provider_factory and reporter DI
         self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
         self.reporter = reporter
+
+        # Initialize RochesterSupernova for data processing
+        self.rochester_supernova = RochesterSupernova(
+            visibility_factory=self.visibility_factory,
+            provider_factory=self.provider_factory,
+            reporter=self.reporter,
+        )
+
+        # Initialize SearchCoordinator for managing async searches
+        self.search_coordinator = SearchCoordinator(
+            rochester_supernova=self.rochester_supernova,
+            visibility_factory=self.visibility_factory,
+            provider_factory=self.provider_factory,
+            reporter=self.reporter,
+            on_results_updated=self._handle_search_results,
+            on_button_state_change=self._set_button_state,
+            on_progress_start=self.start_progress_bar,
+            on_progress_end=self.end_progress_bar,
+            on_pdf_invoke=lambda: self.pdfButton.invoke() if hasattr(self, 'pdfButton') else None,
+            on_txt_invoke=lambda: self.txtButton.invoke() if hasattr(self, 'txtButton') else None,
+            after_callback=self.after,
+        )
 
         self.title(_("Find latest supernovae - {}").format(__version__))
 
