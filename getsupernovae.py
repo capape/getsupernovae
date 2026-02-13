@@ -33,6 +33,7 @@ from app.services.supernova_selection_service import SupernovaSelectionService
 from app.services.observation_time_service import ObservationTimeService
 from app.coordinators.search_coordinator import SearchCoordinator
 from app.coordinators.report_coordinator import ReportCoordinator
+from app.coordinators.dialog_coordinator import DialogCoordinator
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -717,6 +718,71 @@ class SupernovasApp(tk.Tk):
         """
         messagebox.showwarning(title, message)
 
+    def _show_info_dialog(self, title: str, message: str):
+        """Show an info dialog.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+        """
+        messagebox.showinfo(title, message)
+
+    def _show_error_dialog(self, title: str, message: str):
+        """Show an error dialog.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+        """
+        messagebox.showerror(title, message)
+
+    def _get_selected_supernova(self):
+        """Get the currently selected supernova from the results tree.
+        
+        Returns:
+            Supernova object if one is selected, None otherwise
+        """
+        try:
+            selection = self.resultsTree.selection()
+            if not selection:
+                return None
+            
+            item = selection[0]
+            if item not in self.supernova_data:
+                return None
+            
+            return self.supernova_data[item]
+        except Exception:
+            return None
+
+    def _update_sites_combobox(self, values: list, selected: str = None):
+        """Update site combobox with new values.
+        
+        Args:
+            values: List of site names
+            selected: Site name to select
+        """
+        try:
+            self.filter_panel_manager.update_site_values(values)
+            if selected:
+                self.site.set(selected)
+        except Exception:
+            log_exception(logger, "Failed to update sites combobox")
+
+    def _update_visibility_windows_combobox(self, values: list, selected: str = None):
+        """Update visibility window combobox with new values.
+        
+        Args:
+            values: List of visibility window names
+            selected: Visibility window name to select
+        """
+        try:
+            self.filter_panel_manager.update_visibility_window_values(values)
+            if selected:
+                self.visibilityWindow.set(selected)
+        except Exception:
+            log_exception(logger, "Failed to update visibility windows combobox")
+
     def callbackClearResults(self, var, index, mode):
         self.supernovasFound = None
 
@@ -1203,292 +1269,20 @@ class SupernovasApp(tk.Tk):
             log_exception(logger, f"Failed to refilter from cache for source={source}")
 
     def callbackIgnoreSelectedSN(self):
-        """Add the currently selected SN from the Results table to the
-        user's `old_supernovae.txt`, sorting and deduplicating the file.
-        """
-        # get selection from tree
-        try:
-            selection = self.resultsTree.selection()
-            if not selection:
-                messagebox.showinfo(_("No selection"), _("No supernova selected in the Results table."))
-                return
-
-            item = selection[0]
-            if item not in self.supernova_data:
-                messagebox.showinfo(_("No selection"), _("No supernova data found for selection."))
-                return
-
-            sn = self.supernova_data[item]
-            name = getattr(sn, 'name', '').strip()
-        except Exception:
-            messagebox.showinfo(_("No selection"), _("No supernova selected in the Results table."))
-            return
-
-        if not name:
-            messagebox.showinfo(_("No selection"), _("Selected supernova has no name."))
-            return
-
-        # determine path
-        try:
-            cfgdir = get_user_config_dir()
-            os.makedirs(cfgdir, exist_ok=True)
-            path = os.path.join(cfgdir, "old_supernovae.txt")
-        except Exception:
-            path = os.path.join(os.path.dirname(__file__), "old_supernovae.txt")
-
-        # read existing
-        existing = []
-        try:
-            with open(path, "r", encoding="utf-8") as fh:
-                existing = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
-        except Exception:
-            existing = []
-
-        if name in existing:
-            messagebox.showinfo(_("Already present"), _("'{name}' is already ignored.").format(name=name))
-            return
-
-        existing.append(name)
-        unique_sorted = sorted(set(existing), key=lambda s: s.lower())
-
-        try:
-            with open(path, "w", encoding="utf-8") as fh:
-                for ln in unique_sorted:
-                    fh.write(ln + "\n")
-            # reload global old list
-            try:
-                global old
-                old = load_old_supernovae(path)
-            except Exception:
-                log_exception(logger, "Failed to reload ignored supernovae after add")
-            messagebox.showinfo(_("Added"), _("Added '{name}' to ignored supernovae.").format(name=name))
-            # Auto-reload results using cached rows when possible
-            try:
-                self.refilter_from_cache("REFRESH")
-            except Exception:
-                # fallback to network refresh
-                try:
-                    self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
-                except Exception:
-                    log_exception(logger, "Failed to refresh after adding ignored supernova")
-        except Exception as ex:
-            messagebox.showerror(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
+        """Add the currently selected SN to the ignore list."""
+        self.dialog_coordinator.ignore_selected_supernova()
 
     def callbackEditOldSupernovae(self):
-        """Open a simple dialog to edit the user's `old_supernovae.txt` file.
-
-        The editor writes to the user config directory returned by
-        `get_user_config_dir()` and updates the global `old` list when saved.
-        """
-        try:
-            cfgdir = get_user_config_dir()
-            os.makedirs(cfgdir, exist_ok=True)
-            path = os.path.join(cfgdir, "old_supernovae.txt")
-        except Exception:
-            # fallback to package-local file if user config dir can't be used
-            path = os.path.join(os.path.dirname(__file__), "old_supernovae.txt")
-
-        # Load current contents (preserve comments and blank lines minimally)
-        try:
-            with open(path, "r", encoding="utf-8") as fh:
-                current = fh.read()
-        except Exception:
-            current = "" if old is None else "\n".join(old)
-
-        # Create editor window
-        editor = tk.Toplevel(self)
-        editor.title(_("Edit ignored/old supernovae"))
-        editor.geometry("600x400")
-
-        txt = tk.Text(editor, wrap="none")
-        txt.grid(column=0, row=0, columnspan=3, sticky="nsew")
-        txt.insert("1.0", current)
-
-        # Add simple save and close buttons
-        def do_save():
-            content = txt.get("1.0", "end").strip()
-            try:
-                # Normalize: keep only non-empty, non-comment lines
-                lines = [line.strip() for line in content.splitlines() if line.strip() and not line.strip().startswith("#")]
-                # Deduplicate and sort (case-insensitive sort)
-                unique_sorted = sorted(set(lines), key=lambda s: s.lower())
-                with open(path, "w", encoding="utf-8") as fh:
-                    for ln in unique_sorted:
-                        fh.write(ln + "\n")
-                # update global old list so the running app respects changes
-                try:
-                    global old
-                    old = load_old_supernovae(path)
-                except Exception:
-                    log_exception(logger, "Failed to reload ignored supernovae after edit")
-                editor.destroy()
-                # Auto-reload results using cached rows when possible
-                try:
-                    self.refilter_from_cache("REFRESH")
-                except Exception:
-                    try:
-                        self.callbackSearchSupernovasAsync(self.getDataToSearch(), "REFRESH")
-                    except Exception:
-                        log_exception(logger, "Failed to refresh after editing ignored supernovae")
-            except Exception as ex:
-                messagebox.showerror(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
-
-        def do_close():
-            editor.destroy()
-
-        save_btn = ttk.Button(editor, text=_("Save"), command=do_save)
-        save_btn.grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
-        close_btn = ttk.Button(editor, text=_("Close"), command=do_close)
-        close_btn.grid(column=1, row=1, sticky=tk.W, padx=5, pady=5)
-        # allow the text widget and buttons to expand
-        editor.grid_rowconfigure(0, weight=1)
-        editor.grid_columnconfigure(0, weight=1)
+        """Open the old supernovae editor dialog."""
+        self.dialog_coordinator.edit_old_supernovae()
 
     def callbackAddSite(self):
-        """Open the Sites dialog implemented in `app.ui.sites_dialog`.
-
-        The full dialog UI and persistence logic was extracted to a separate
-        module to keep this class focused. After the dialog closes, reload the
-        `sites` mapping and update the site combobox values.
-        """
-        try:
-            from app.ui.sites_dialog import SitesDialog
-        except Exception:
-            # fallback: nothing to do
-            return
-
-        # obtain current mapping to show in dialog (best-effort)
-        try:
-            current_sites = load_sites()
-        except Exception:
-            current_sites = {}
-
-        # launch dialog and wait for it to close
-        dlg = SitesDialog(self, current_sites)
-        self.wait_window(dlg)
-
-        # Reload persisted sites using the canonical loader so the global
-        # `sites` mapping contains `EarthLocation` objects (not plain dicts).
-        try:
-            try:
-                new_sites = load_sites()
-            except Exception:
-                new_sites = None
-
-            if new_sites is not None:
-                try:
-                    global sites
-                    sites = new_sites
-                except Exception:
-                    sites = new_sites
-
-                try:
-                    vals = sorted(list(sites.keys())) if isinstance(sites, dict) or hasattr(sites, 'keys') else []
-                    self.filter_panel_manager.update_site_values(vals)
-
-                    # prefer selecting a newly added site (difference between
-                    # previous and new), otherwise preserve previous selection.
-                    sel_name = None
-                    try:
-                        old_keys = set(current_sites.keys()) if isinstance(current_sites, dict) else set()
-                        new_keys = set(vals)
-                        added = sorted(new_keys - old_keys)
-                        if added:
-                            sel_name = added[0]
-                    except Exception:
-                        sel_name = None
-
-                    prev = None
-                    try:
-                        prev = self.site.get()
-                    except Exception:
-                        prev = None
-
-                    if not sel_name:
-                        if prev in vals:
-                            sel_name = prev
-                        elif vals:
-                            sel_name = vals[0]
-
-                    if sel_name:
-                        try:
-                            self.site.set(sel_name)
-                            if self.cbSite:
-                                self.cbSite.update_idletasks()
-                        except Exception:
-                            log_exception(logger, "Failed to apply selected site after site dialog")
-                except Exception:
-                    log_exception(logger, "Failed to refresh site values after site dialog")
-        except Exception:
-            log_exception(logger, "Failed to process site dialog result")
+        """Open the sites configuration dialog."""
+        self.dialog_coordinator.open_sites_dialog()
 
     def callbackAddVisibilityWindow(self):
-        try:
-            from app.ui.visibility_dialog import VisibilityDialog
-        except Exception:
-            return
-
-        try:
-            current = load_visibility_windows()
-        except Exception:
-            current = {}
-
-        dlg = VisibilityDialog(self, current)
-        self.wait_window(dlg)
-
-        try:
-            new_vis = getattr(dlg, "result", None)
-            if new_vis is None:
-                try:
-                    new_vis = load_visibility_windows()
-                except Exception:
-                    new_vis = None
-
-            if new_vis is not None:
-                try:
-                    global visibility_windows
-                    visibility_windows = new_vis
-                except Exception:
-                    visibility_windows = new_vis
-
-                try:
-                    vals = [""] + sorted(list(visibility_windows.keys()))
-                    self.filter_panel_manager.update_visibility_window_values(vals)
-
-                    # Prefer newly added selection when possible
-                    sel_name = None
-                    try:
-                        old_keys = set(current.keys()) if isinstance(current, dict) else set()
-                        new_keys = set(visibility_windows.keys())
-                        added = sorted(new_keys - old_keys)
-                        if added:
-                            sel_name = added[0]
-                    except Exception:
-                        sel_name = None
-
-                    prev = None
-                    try:
-                        prev = self.visibilityWindow.get()
-                    except Exception:
-                        prev = None
-
-                    if not sel_name:
-                        if prev in vals:
-                            sel_name = prev
-                        elif vals:
-                            sel_name = vals[0]
-
-                    if sel_name:
-                        try:
-                            self.visibilityWindow.set(sel_name)
-                            if self.cbVisibility:
-                                self.cbVisibility.update_idletasks()
-                        except Exception:
-                            log_exception(logger, "Failed to apply selected visibility window after dialog")
-                except Exception:
-                    log_exception(logger, "Failed to refresh visibility window values after dialog")
-        except Exception:
-            log_exception(logger, "Failed to process visibility window dialog result")
+        """Open the visibility window configuration dialog."""
+        self.dialog_coordinator.open_visibility_window_dialog()
 
     def __init__(self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
 
@@ -1587,6 +1381,22 @@ class SupernovasApp(tk.Tk):
             on_results_text_update=self.set_results_text,
             on_show_message=self._show_yes_no_dialog,
             on_show_warning=self._show_warning_dialog,
+        )
+
+        # Initialize DialogCoordinator for managing modal dialogs
+        self.dialog_coordinator = DialogCoordinator(
+            parent_window=self,
+            get_selected_supernova=self._get_selected_supernova,
+            on_update_sites=self._update_sites_combobox,
+            on_update_visibility_windows=self._update_visibility_windows_combobox,
+            on_refilter=lambda: self.refilter_from_cache("REFRESH"),
+            on_search_async=lambda data, source: self.callbackSearchSupernovasAsync(data, source),
+            on_show_info=self._show_info_dialog,
+            on_show_error=self._show_error_dialog,
+            on_get_current_site=lambda: self.site.get() if hasattr(self, 'site') else "",
+            on_get_current_visibility_window=lambda: self.visibilityWindow.get() if hasattr(self, 'visibilityWindow') else "",
+            get_combobox_site=lambda: self.cbSite if hasattr(self, 'cbSite') else None,
+            get_combobox_visibility=lambda: self.cbVisibility if hasattr(self, 'cbVisibility') else None,
         )
 
         self.title(_("Find latest supernovae - {}").format(__version__))
