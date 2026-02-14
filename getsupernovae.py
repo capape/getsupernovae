@@ -420,7 +420,7 @@ class SupernovasApp(tk.Tk):
                         if getattr(self, "langVar", None):
                             self.langVar.set(lang)
                         try:
-                            self._on_language_change()
+                            self.language_coordinator.on_language_change()
                         except Exception:
                             log_exception(logger, "Failed to refresh UI after language restoration")
                     except Exception:
@@ -745,7 +745,7 @@ class SupernovasApp(tk.Tk):
                 on_clear_results=self.callbackClearResults,
                 on_persist_prefs=self._persist_prefs,
                 on_update_visibility_ui=self._update_visibility_ui,
-                on_language_change=self._on_language_change,
+                on_language_change=self.language_coordinator.on_language_change,
                 on_add_site=self.callbackAddSite,
                 on_add_visibility_window=self.callbackAddVisibilityWindow,
             )
@@ -948,73 +948,6 @@ class SupernovasApp(tk.Tk):
         from app.ui.initialization_builder import InitializationBuilder
         builder = InitializationBuilder(self, filters)
         builder.build(presenter, visibility_factory, provider_factory, reporter)
-
-    def _on_language_change(self):
-        """Handler when UI language selection changes: apply and refresh labels."""
-        try:
-            if not hasattr(self, 'langVar') or self.langVar is None:
-                return
-            lang = self.langVar.get().strip()
-            if not lang:
-                set_language(None)
-            else:
-                set_language(lang)
-        except Exception:
-            log_exception(logger, "Failed to apply selected language")
-
-        # Update visible widget texts to the new language
-        try:
-            if hasattr(self, 'filter_panel_manager') and self.filter_panel_manager is not None:
-                self.filter_panel_manager.refresh_labels()
-            if hasattr(self, 'labelLatitud') and self.labelLatitud is not None:
-                self.labelLatitud.config(text=_("Min latitude: "))
-
-            # Refresh UI manager labels
-            if hasattr(self, 'results_panel_manager') and self.results_panel_manager is not None:
-                self.results_panel_manager.refresh_labels()
-            if hasattr(self, 'toolbar_manager') and self.toolbar_manager is not None:
-                self.toolbar_manager.refresh_labels()
-            try:
-                if hasattr(self, 'ignoreSelectedButton') and self.ignoreSelectedButton is not None:
-                    self.ignoreSelectedButton.config(text=_("Ignore selected SN"))
-                if hasattr(self, 'editOldButton') and self.editOldButton is not None:
-                    self.editOldButton.config(text=_("Edit Ignored SN"))
-            except Exception:
-                log_exception(logger, "Failed to refresh ignore/edit toolbar labels")
-            try:
-                if hasattr(self, 'pdfButton') and self.pdfButton is not None:
-                    self.pdfButton.config(text=_("PDF"))
-                if hasattr(self, 'txtButton') and self.txtButton is not None:
-                    self.txtButton.config(text=_("TXT"))
-                if hasattr(self, 'searchButton') and self.searchButton is not None:
-                    self.searchButton.config(text=_("Refresh Search"))
-                if hasattr(self, 'exitButton') and self.exitButton is not None:
-                    self.exitButton.config(text=_("Exit"))
-            except Exception:
-                log_exception(logger, "Failed to refresh action button labels")
-            # Update window title
-            try:
-                self.title(_("Find latest supernovae"))
-            except Exception:
-                log_exception(logger, "Failed to refresh window title after language change")
-        except Exception:
-            log_exception(logger, "Failed to refresh UI labels after language change")
-
-        # Reapply results tree styling after language change
-        try:
-            self.theme_coordinator.configure_results_tree_styling()
-        except Exception:
-            log_exception(logger, "Failed to reconfigure results tree after language change")
-        try:
-            # re-apply theme in case translations affected widget styles
-            self.theme_coordinator.apply_theme()
-        except Exception:
-            log_exception(logger, "Failed to reapply theme after language change")
-        try:
-            # ensure visibility UI reflects current selection at startup
-            self._update_visibility_ui()
-        except Exception:
-            log_exception(logger, "Failed to refresh visibility UI after language change")
 
 
 def representsInt(s):
