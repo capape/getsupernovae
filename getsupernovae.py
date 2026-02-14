@@ -275,7 +275,7 @@ class SupernovasApp(tk.Tk):
     #
     # Check if there is already a search done with current filters
     #
-    def withData(self):
+    def has_results(self):
         if self.supernovasFound == None:
             return False
         return True
@@ -284,20 +284,20 @@ class SupernovasApp(tk.Tk):
     #
     # PDF button callback
     #
-    def callbackPdfSupernovas(self, e: SupernovaCallBackData):
+    def on_pdf_export_clicked(self, e: SupernovaCallBackData):
         """Generate PDF report using report coordinator."""
         self.report_coordinator.generate_pdf_report(e)
 
     #
     # TXT button callback
     #
-    def callbackTextSupernovas(self, e: SupernovaCallBackData):
+    def on_text_export_clicked(self, e: SupernovaCallBackData):
         """Generate TXT report using report coordinator."""
         self.report_coordinator.generate_txt_report(e)
     #
     #  Refresh button callback
     #
-    def callbackRefreshSearchSupernovas(self, e: SupernovaCallBackData):
+    def on_refresh_clicked(self, e: SupernovaCallBackData):
         """Refresh search results using the search coordinator."""
         if e is None:
             return
@@ -306,7 +306,7 @@ class SupernovasApp(tk.Tk):
     #
     # Do a async search
     #
-    def callbackSearchSupernovasAsync(self, e: SupernovaCallBackData, source="SEARCH"):
+    def on_search_async(self, e: SupernovaCallBackData, source="SEARCH"):
         """Execute async search using the search coordinator."""
         self.search_coordinator.search_async(e, source)
 
@@ -467,7 +467,7 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to disable find stars button")
 
-    def callbackClearResults(self, var, index, mode):
+    def on_clear_results(self, var, index, mode):
         self.supernovasFound = None
 
     def set_results_text(self, datatxt: str):
@@ -548,12 +548,12 @@ class SupernovasApp(tk.Tk):
 
             # Create callbacks for the filter panel
             callbacks = FilterPanelCallbacks(
-                on_clear_results=self.callbackClearResults,
+                on_clear_results=self.on_clear_results,
                 on_persist_prefs=self.preferences_coordinator.persist_prefs,
                 on_update_visibility_ui=self.preferences_coordinator.update_visibility_ui,
                 on_language_change=self.language_coordinator.on_language_change,
-                on_add_site=self.callbackAddSite,
-                on_add_visibility_window=self.callbackAddVisibilityWindow,
+                on_add_site=self.on_add_site,
+                on_add_visibility_window=self.on_add_visibility_window,
             )
 
             # Create and build the filter panel manager
@@ -616,9 +616,9 @@ class SupernovasApp(tk.Tk):
                 on_motion=lambda e: None,
                 on_leave=lambda e: None,
                 on_selection_change=lambda e: None,
-                on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
-                on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
-                on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
+                on_pdf=lambda: self.on_pdf_export_clicked(self.getDataToSearch()),
+                on_txt=lambda: self.on_text_export_clicked(self.getDataToSearch()),
+                on_refresh=lambda: self.on_refresh_clicked(self.getDataToSearch()),
                 on_exit=self.quit,
             )
 
@@ -660,9 +660,9 @@ class SupernovasApp(tk.Tk):
                 on_motion=self.tree_coordinator.on_motion,
                 on_leave=self.tree_coordinator.on_leave,
                 on_selection_change=self.tree_coordinator.on_selection_change,
-                on_pdf=lambda: self.callbackPdfSupernovas(self.getDataToSearch()),
-                on_txt=lambda: self.callbackTextSupernovas(self.getDataToSearch()),
-                on_refresh=lambda: self.callbackRefreshSearchSupernovas(self.getDataToSearch()),
+                on_pdf=lambda: self.on_pdf_export_clicked(self.getDataToSearch()),
+                on_txt=lambda: self.on_text_export_clicked(self.getDataToSearch()),
+                on_refresh=lambda: self.on_refresh_clicked(self.getDataToSearch()),
                 on_exit=self.quit,
             )
             
@@ -691,8 +691,8 @@ class SupernovasApp(tk.Tk):
             # Create toolbar manager callbacks
             toolbar_callbacks = ToolbarCallbacks(
                 on_find_stars=self.tree_coordinator.find_stars_in_simbad,
-                on_ignore_selected=self.callbackIgnoreSelectedSN,
-                on_edit_old=self.callbackEditOldSupernovae,
+                on_ignore_selected=self.on_ignore_selected,
+                on_edit_old=self.on_edit_old_supernovae,
                 on_dark_mode_toggle=self.theme_coordinator.apply_theme,
             )
 
@@ -730,19 +730,19 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, f"Failed to refilter from cache for source={source}")
 
-    def callbackIgnoreSelectedSN(self):
+    def on_ignore_selected(self):
         """Add the currently selected SN to the ignore list."""
         self.dialog_coordinator.ignore_selected_supernova()
 
-    def callbackEditOldSupernovae(self):
+    def on_edit_old_supernovae(self):
         """Open the old supernovae editor dialog."""
         self.dialog_coordinator.edit_old_supernovae()
 
-    def callbackAddSite(self):
+    def on_add_site(self):
         """Open the sites configuration dialog."""
         self.dialog_coordinator.open_sites_dialog()
 
-    def callbackAddVisibilityWindow(self):
+    def on_add_visibility_window(self):
         """Open the visibility window configuration dialog."""
         self.dialog_coordinator.open_visibility_window_dialog()
 

@@ -1,7 +1,7 @@
 """Visibility windows editor dialog.
 
 Provides `VisibilityDialog` which extracts the inline editor from
-`getsupernovae.callbackAddVisibilityWindow` into a testable component.
+`getsupernovae.on_add_visibility_window` into a testable component.
 """
 
 import json

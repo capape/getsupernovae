@@ -73,31 +73,31 @@ class InitializationBuilder:
         """Create all Tkinter variables with trace callbacks."""
         # Create variables with clear results callback
         self.app.magnitude = tk.StringVar()
-        self.app.magnitude.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.magnitude.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.daysToSearch = tk.StringVar()
-        self.app.daysToSearch.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.daysToSearch.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.observationDate = tk.StringVar()
-        self.app.observationDate.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.observationDate.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.observationDuration = tk.StringVar()
-        self.app.observationDuration.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.observationDuration.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.minLatitud = tk.StringVar()
-        self.app.minLatitud.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.minLatitud.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.observationTime = tk.StringVar()
-        self.app.observationTime.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.observationTime.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.site = tk.StringVar()
-        self.app.site.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.site.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.visibilityWindow = tk.StringVar()
-        self.app.visibilityWindow.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.visibilityWindow.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.results = tk.StringVar()
-        self.app.results.trace_add(["write", "unset"], self.app.callbackClearResults)
+        self.app.results.trace_add(["write", "unset"], self.app.on_clear_results)
         
         # Dark mode variable already created in setup_theme_and_language
         self.app.dark_mode.trace_add(["write", "unset"], lambda *a: None)
@@ -145,9 +145,9 @@ class InitializationBuilder:
 
         # ReportCoordinator
         self.app.report_coordinator = ReportCoordinator(
-            has_results=self.app.withData,
+            has_results=self.app.has_results,
             get_results=lambda: self.app.supernovasFound,
-            on_search_async=self.app.callbackSearchSupernovasAsync,
+            on_search_async=self.app.on_search_async,
             on_results_text_update=self.app.set_results_text,
             on_show_message=self.app._show_yes_no_dialog,
             on_show_warning=self.app._show_warning_dialog,
@@ -160,7 +160,7 @@ class InitializationBuilder:
             on_update_sites=self.app._update_sites_combobox,
             on_update_visibility_windows=self.app._update_visibility_windows_combobox,
             on_refilter=lambda: self.app.refilter_from_cache("REFRESH"),
-            on_search_async=lambda data, source: self.app.callbackSearchSupernovasAsync(data, source),
+            on_search_async=lambda data, source: self.app.on_search_async(data, source),
             on_show_info=self.app._show_info_dialog,
             on_show_error=self.app._show_error_dialog,
             on_get_current_site=lambda: self.app.site.get() if hasattr(self.app, 'site') else "",
