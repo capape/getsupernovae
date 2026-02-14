@@ -39,7 +39,9 @@ class VisibilityDialog(tk.Toplevel):
         self._current = self._load_current(current)
         # adopt parent's theme where possible and act as a transient modal
         try:
-            if hasattr(parent, "apply_theme"):
+            if hasattr(parent, "theme_coordinator"):
+                parent.theme_coordinator.apply_theme()
+            elif hasattr(parent, "apply_theme"):
                 parent.apply_theme()
         except Exception:
             pass

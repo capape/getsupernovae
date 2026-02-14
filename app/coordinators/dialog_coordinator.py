@@ -167,8 +167,44 @@ class DialogCoordinator:
         editor.title(_("Edit ignored/old supernovae"))
         editor.geometry("600x400")
 
+        # Apply parent theme to dialog
+        try:
+            if hasattr(self.parent, "theme_coordinator"):
+                self.parent.theme_coordinator.apply_theme()
+            elif hasattr(self.parent, "apply_theme"):
+                self.parent.apply_theme()
+        except Exception:
+            pass
+
+        # Make dialog transient and modal
+        try:
+            editor.transient(self.parent)
+            editor.grab_set()
+        except Exception:
+            pass
+
         txt = tk.Text(editor, wrap="none")
         txt.grid(column=0, row=0, columnspan=3, sticky="nsew")
+        
+        # Apply theme colors to Text widget
+        try:
+            from app.config.ui_constants import THEME_COLORS
+            dark_mode = False
+            if hasattr(self.parent, 'dark_mode'):
+                try:
+                    dark_mode = self.parent.dark_mode.get()
+                except Exception:
+                    pass
+            
+            if dark_mode:
+                txt.configure(bg=THEME_COLORS.DARK_ENTRY_BG, fg=THEME_COLORS.DARK_FG, 
+                             insertbackground=THEME_COLORS.DARK_FG)
+            else:
+                txt.configure(bg=THEME_COLORS.LIGHT_ENTRY_BG, fg=THEME_COLORS.LIGHT_FG,
+                             insertbackground=THEME_COLORS.LIGHT_FG)
+        except Exception:
+            pass
+        
         txt.insert("1.0", current)
 
         # Save handler
