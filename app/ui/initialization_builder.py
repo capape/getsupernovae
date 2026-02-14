@@ -269,6 +269,33 @@ class InitializationBuilder:
         except Exception:
             log_exception(logger, "Failed to build results panel during startup")
 
+    def initialize_language_coordinator(self):
+        """Initialize the language coordinator after UI panels are built."""
+        from app.coordinators.language_coordinator import LanguageCoordinator
+        
+        try:
+            self.app.language_coordinator = LanguageCoordinator(
+                root_window=self.app,
+                get_langvar=lambda: getattr(self.app, 'langVar', None),
+                get_filter_panel_manager=lambda: getattr(self.app, 'filter_panel_manager', None),
+                get_results_panel_manager=lambda: getattr(self.app, 'results_panel_manager', None),
+                get_toolbar_manager=lambda: getattr(self.app, 'toolbar_manager', None),
+                get_widgets=lambda: {
+                    'labelLatitud': getattr(self.app, 'labelLatitud', None),
+                    'ignoreSelectedButton': getattr(self.app, 'ignoreSelectedButton', None),
+                    'editOldButton': getattr(self.app, 'editOldButton', None),
+                    'pdfButton': getattr(self.app, 'pdfButton', None),
+                    'txtButton': getattr(self.app, 'txtButton', None),
+                    'searchButton': getattr(self.app, 'searchButton', None),
+                    'exitButton': getattr(self.app, 'exitButton', None),
+                },
+                on_configure_tree_styling=self.app.theme_coordinator.configure_results_tree_styling,
+                on_apply_theme=self.app.theme_coordinator.apply_theme,
+                on_update_visibility_ui=self.app._update_visibility_ui,
+            )
+        except Exception:
+            log_exception(logger, "Failed to initialize language coordinator")
+
     def build(self, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
         """Execute the full initialization sequence.
 
@@ -288,6 +315,7 @@ class InitializationBuilder:
         self.initialize_coordinators()
         self.configure_window_properties()
         self.set_initial_filter_values()
+        self.initialize_language_coordinator()
         self.build_ui_panels()
         
         return self.app
