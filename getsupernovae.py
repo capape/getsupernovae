@@ -252,200 +252,6 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to add unset trace callback")
 
-    def _update_visibility_ui(self):
-        """Enable/disable minLatitude entry depending on visibility window selection
-
-        If a named visibility window is selected (present in `visibility_windows`),
-        disable the `minLatitude` entry and show its numeric values in
-        `visibilityValuesLabel`. If no valid window is selected, enable the
-        `minLatitude` entry and clear the label.
-        """
-        try:
-            sel = (getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or ""
-        except Exception:
-            log_exception(logger, "Failed to read selected visibility window")
-            sel = ""
-
-        try:
-            if sel and sel in visibility_windows:
-                cfg = visibility_windows.get(sel, {})
-                minAlt = cfg.get("minAlt", 0.0)
-                maxAlt = cfg.get("maxAlt", 90.0)
-                minAz = cfg.get("minAz", 0.0)
-                maxAz = cfg.get("maxAz", 360.0)
-                txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
-
-                self.filter_panel_manager.update_visibility_values_label(txt)
-                self.filter_panel_manager.set_min_latitude_state("disabled")
-            else:
-                self.filter_panel_manager.update_visibility_values_label("")
-                self.filter_panel_manager.set_min_latitude_state("normal")
-
-        except Exception:
-            log_exception(logger, "Failed to update visibility UI")
-
-    def _persist_prefs(self, *args):
-        """Collect current tracked UI values and persist them to disk."""
-        # Don't persist during initialization (before prefs are loaded)
-        if getattr(self, '_initializing', False):
-            return
-
-        try:
-            # Update state manager with current UI values (store names, not computed values)
-            self.state_manager.update_search_state(
-                magnitude=(getattr(self, "magnitude", None) and self.magnitude.get()) or "",
-                days_to_search=(getattr(self, "daysToSearch", None) and self.daysToSearch.get()) or "30",
-                observation_date=(getattr(self, "observationDate", None) and self.observationDate.get()) or "",
-                observation_time=(getattr(self, "observationTime", None) and self.observationTime.get()) or "",
-                observation_duration=(getattr(self, "observationDuration", None) and self.observationDuration.get()) or "",
-                site=(getattr(self, "site", None) and self.site.get()) or None,
-                visibility_window=(getattr(self, "visibilityWindow", None) and self.visibilityWindow.get()) or None,
-                min_latitude=(getattr(self, "minLatitud", None) and self.minLatitud.get()) or "",
-            )
-
-            self.state_manager.update_ui_state(
-                language=(getattr(self, "langVar", None) and self.langVar.get()) or "en",
-                dark_mode=(getattr(self, "dark_mode", None) and self.dark_mode.get()) or False,
-            )
-
-            # Save to disk using preferences manager
-            try:
-                self.preferences_manager.save_preferences(self.state_manager.state)
-            except Exception:
-                log_exception(logger, "Failed to save preferences to disk")
-        except Exception:
-            log_exception(logger, "Failed to persist preferences")
-
-    def _load_and_apply_prefs(self):
-        """Load persisted prefs and apply to UI variables where valid."""
-        try:
-            # Try to load new format first
-            loaded_state = self.preferences_manager.load_preferences()
-
-            # If no new format exists, try to migrate from old format
-            if loaded_state is None:
-                try:
-                    old_prefs = load_user_prefs()
-                    if old_prefs and isinstance(old_prefs, dict):
-                        # Migrate old flat dict format to new state structure
-                        from app.state.app_state import AppState
-                        loaded_state = AppState()
-
-                        # Map old keys to new state
-                        if 'magnitude' in old_prefs:
-                            loaded_state.search.magnitude = old_prefs['magnitude']
-                        if 'daysToSearch' in old_prefs:
-                            loaded_state.search.days_to_search = old_prefs['daysToSearch']
-                        if 'observationTime' in old_prefs:
-                            loaded_state.search.observation_time = old_prefs['observationTime']
-                        if 'observationHours' in old_prefs:
-                            loaded_state.search.observation_duration = old_prefs['observationHours']
-                        if 'minLatitude' in old_prefs:
-                            loaded_state.search.min_latitude = old_prefs['minLatitude']
-                        if 'site' in old_prefs:
-                            loaded_state.search.site = old_prefs['site']
-                        if 'visibilityWindow' in old_prefs:
-                            loaded_state.search.visibility_window = old_prefs['visibilityWindow']
-                        if 'language' in old_prefs:
-                            loaded_state.ui.language = old_prefs['language']
-
-                        # Save in new format for next time
-                        self.preferences_manager.save_preferences(loaded_state)
-                except Exception:
-                    log_exception(logger, "Failed to migrate legacy preferences")
-
-            if loaded_state is None:
-                return
-
-            # Update state manager with loaded state
-            self.state_manager.state = loaded_state
-
-            # Apply search state to UI
-            try:
-                if loaded_state.search.magnitude:
-                    self.magnitude.set(str(loaded_state.search.magnitude))
-            except Exception:
-                log_exception(logger, "Failed to restore magnitude preference")
-
-            try:
-                if loaded_state.search.days_to_search:
-                    self.daysToSearch.set(str(loaded_state.search.days_to_search))
-            except Exception:
-                log_exception(logger, "Failed to restore days_to_search preference")
-
-            try:
-                if loaded_state.search.observation_date:
-                    self.observationDate.set(str(loaded_state.search.observation_date))
-            except Exception:
-                log_exception(logger, "Failed to restore observation_date preference")
-
-            try:
-                if loaded_state.search.observation_time:
-                    self.observationTime.set(str(loaded_state.search.observation_time))
-            except Exception:
-                log_exception(logger, "Failed to restore observation_time preference")
-
-            try:
-                if loaded_state.search.observation_duration:
-                    self.observationDuration.set(str(loaded_state.search.observation_duration))
-            except Exception:
-                log_exception(logger, "Failed to restore observation_duration preference")
-
-            try:
-                if loaded_state.search.min_latitude:
-                    self.minLatitud.set(str(loaded_state.search.min_latitude))
-            except Exception:
-                log_exception(logger, "Failed to restore min_latitude preference")
-
-            try:
-                site = loaded_state.search.site
-                if site and site in list(sites.keys()):
-                    self.site.set(site)
-            except Exception:
-                log_exception(logger, "Failed to restore site preference")
-
-            try:
-                vw = loaded_state.search.visibility_window
-                if vw and vw in visibility_windows:
-                    self.visibilityWindow.set(vw)
-            except Exception:
-                log_exception(logger, "Failed to restore visibility window preference")
-
-            # Apply UI state
-            try:
-                lang = loaded_state.ui.language
-                if lang:
-                    try:
-                        set_language(lang)
-                        if getattr(self, "langVar", None):
-                            self.langVar.set(lang)
-                        try:
-                            self.language_coordinator.on_language_change()
-                        except Exception:
-                            log_exception(logger, "Failed to refresh UI after language restoration")
-                    except Exception:
-                        log_exception(logger, "Failed to apply restored language")
-            except Exception:
-                log_exception(logger, "Failed while restoring language preference")
-
-            try:
-                dark_mode = loaded_state.ui.dark_mode
-                if dark_mode is not None and getattr(self, "dark_mode", None):
-                    self.dark_mode.set(dark_mode)
-                    try:
-                        self.theme_coordinator.apply_theme()
-                    except Exception:
-                        log_exception(logger, "Failed to apply restored dark mode theme")
-            except Exception:
-                log_exception(logger, "Failed to restore dark mode preference")
-
-            try:
-                self._update_visibility_ui()
-            except Exception:
-                log_exception(logger, "Failed to refresh visibility UI after restoring preferences")
-        except Exception:
-            log_exception(logger, "Failed to load and apply preferences")
-
     def getDataToSearch(self):
         try:
             callbackData = SupernovaCallBackData(
@@ -743,8 +549,8 @@ class SupernovasApp(tk.Tk):
             # Create callbacks for the filter panel
             callbacks = FilterPanelCallbacks(
                 on_clear_results=self.callbackClearResults,
-                on_persist_prefs=self._persist_prefs,
-                on_update_visibility_ui=self._update_visibility_ui,
+                on_persist_prefs=self.preferences_coordinator.persist_prefs,
+                on_update_visibility_ui=self.preferences_coordinator.update_visibility_ui,
                 on_language_change=self.language_coordinator.on_language_change,
                 on_add_site=self.callbackAddSite,
                 on_add_visibility_window=self.callbackAddVisibilityWindow,
@@ -787,7 +593,7 @@ class SupernovasApp(tk.Tk):
 
             # Apply persisted prefs if present (best-effort)
             try:
-                self._load_and_apply_prefs()
+                self.preferences_coordinator.load_and_apply_prefs()
             except Exception:
                 log_exception(logger, "Failed to load and apply preferences while building left panel")
 

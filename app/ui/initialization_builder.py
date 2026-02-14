@@ -48,13 +48,13 @@ class InitializationBuilder:
         # Create dark_mode variable first (required by theme coordinator)
         self.app.dark_mode = tk.BooleanVar(value=True)
 
-        # Initialize ThemeCoordinator
+        # Initialize ThemeCoordinator (will get persist callback later from preferences coordinator)
         self.app.theme_coordinator = ThemeCoordinator(
             root_window=self.app,
             get_results_tree=lambda: getattr(self.app, 'resultsTree', None),
             get_supernova_data=lambda: getattr(self.app, 'supernova_data', {}),
             get_dark_mode=lambda: self.app.dark_mode.get() if hasattr(self.app, 'dark_mode') else False,
-            on_persist_prefs=self.app._persist_prefs,
+            on_persist_prefs=lambda: self.app.preferences_coordinator.persist_prefs() if hasattr(self.app, 'preferences_coordinator') else None,
         )
 
         # Set default language
@@ -291,10 +291,41 @@ class InitializationBuilder:
                 },
                 on_configure_tree_styling=self.app.theme_coordinator.configure_results_tree_styling,
                 on_apply_theme=self.app.theme_coordinator.apply_theme,
-                on_update_visibility_ui=self.app._update_visibility_ui,
+                on_update_visibility_ui=lambda: self.app.preferences_coordinator.update_visibility_ui() if hasattr(self.app, 'preferences_coordinator') else None,
             )
         except Exception:
             log_exception(logger, "Failed to initialize language coordinator")
+
+    def initialize_preferences_coordinator(self):
+        """Initialize the preferences coordinator before loading preferences."""
+        from app.coordinators.preferences_coordinator import PreferencesCoordinator
+        import getsupernovae as gs
+        
+        try:
+            self.app.preferences_coordinator = PreferencesCoordinator(
+                state_manager=self.app.state_manager,
+                preferences_manager=self.app.preferences_manager,
+                get_initializing_flag=lambda: getattr(self.app, '_initializing', False),
+                get_tk_variables=lambda: {
+                    'magnitude': getattr(self.app, 'magnitude', None),
+                    'daysToSearch': getattr(self.app, 'daysToSearch', None),
+                    'observationDate': getattr(self.app, 'observationDate', None),
+                    'observationTime': getattr(self.app, 'observationTime', None),
+                    'observationDuration': getattr(self.app, 'observationDuration', None),
+                    'site': getattr(self.app, 'site', None),
+                    'visibilityWindow': getattr(self.app, 'visibilityWindow', None),
+                    'minLatitud': getattr(self.app, 'minLatitud', None),
+                    'langVar': getattr(self.app, 'langVar', None),
+                    'dark_mode': getattr(self.app, 'dark_mode', None),
+                },
+                get_sites=lambda: gs.sites,
+                get_visibility_windows=lambda: gs.visibility_windows,
+                get_filter_panel_manager=lambda: getattr(self.app, 'filter_panel_manager', None),
+                get_language_coordinator=lambda: getattr(self.app, 'language_coordinator', None),
+                get_theme_coordinator=lambda: getattr(self.app, 'theme_coordinator', None),
+            )
+        except Exception:
+            log_exception(logger, "Failed to initialize preferences coordinator")
 
     def build(self, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
         """Execute the full initialization sequence.
@@ -316,6 +347,7 @@ class InitializationBuilder:
         self.configure_window_properties()
         self.set_initial_filter_values()
         self.initialize_language_coordinator()
+        self.initialize_preferences_coordinator()
         self.build_ui_panels()
         
         return self.app
