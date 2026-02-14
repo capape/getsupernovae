@@ -35,6 +35,7 @@ from app.coordinators.search_coordinator import SearchCoordinator
 from app.coordinators.report_coordinator import ReportCoordinator
 from app.coordinators.dialog_coordinator import DialogCoordinator
 from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
+from app.coordinators.theme_coordinator import ThemeCoordinator
 from app.reports.report_text import createText, createTextAsString
 from app.reports.report_pdf import createPdf
 from app.state import AppStateManager, PreferencesManager
@@ -232,154 +233,6 @@ class SupernovasApp(tk.Tk):
     #
     # Create object with filters to search
     #
-    def _configure_results_tree_styling(self):
-        """Configure results tree row height and alternating row colors."""
-        try:
-            if not hasattr(self, 'resultsTree') or self.resultsTree is None:
-                return
-
-            # Configure row height - must use self as the first argument
-            style = ttk.Style(self)
-            style.configure(UI_STRINGS.RESULTS_TREE_STYLE, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-
-            # Configure alternating row colors based on current theme
-            dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
-            if dark:
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.DARK_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.DARK_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
-            else:
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.LIGHT_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
-                self.resultsTree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.LIGHT_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
-
-            # Reapply tags to all existing items to preserve bright highlighting
-            self._reapply_tree_tags()
-        except Exception:
-            log_exception(logger, "Failed to configure results tree styling")
-
-    def _reapply_tree_tags(self):
-        """Reapply tags to all tree items based on magnitude and position."""
-        try:
-            if not hasattr(self, 'resultsTree') or self.resultsTree is None:
-                return
-
-            items = self.resultsTree.get_children('')
-            for index, item in enumerate(items):
-                try:
-                    if item in self.supernova_data:
-                        sn = self.supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
-                        try:
-                            is_bright = mag is not None and float(mag) < 15
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
-                        else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-
-                        self.resultsTree.item(item, tags=(tag,))
-                except Exception:
-                    log_exception(logger, "Failed to reapply tree tag for item")
-        except Exception:
-            log_exception(logger, "Failed to reapply tree tags")
-
-    def apply_theme(self):
-        """Apply light/dark theme to ttk widgets and some native widgets."""
-        try:
-            # Persist dark mode preference when changed
-            try:
-                self._persist_prefs()
-            except Exception:
-                log_exception(logger, "Failed to persist preferences during theme apply")
-
-            style = ttk.Style()
-            try:
-                style.theme_use("clam")
-            except Exception:
-                log_exception(logger, "Failed to apply ttk theme 'clam'")
-        except Exception:
-            style = None
-
-        dark = getattr(self, "dark_mode", None) and self.dark_mode.get()
-        if dark:
-            bg = THEME_COLORS.DARK_BG
-            fg = THEME_COLORS.DARK_FG
-            entry_bg = THEME_COLORS.DARK_ENTRY_BG
-            btn_bg = THEME_COLORS.DARK_BUTTON_BG
-            tree_bg = THEME_COLORS.DARK_TREE_BG
-        else:
-            # Explicitly set light-mode colors so previously-applied dark
-            # styling is cleared when toggling off.
-            bg = THEME_COLORS.LIGHT_BG
-            fg = THEME_COLORS.LIGHT_FG
-            entry_bg = THEME_COLORS.LIGHT_ENTRY_BG
-            btn_bg = THEME_COLORS.LIGHT_BUTTON_BG
-            tree_bg = THEME_COLORS.LIGHT_TREE_BG
-
-        try:
-            if style is not None:
-                style.configure("TLabel", background=bg, foreground=fg)
-                style.configure("TButton", background=btn_bg, foreground=fg)
-                style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
-                style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
-                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-                style.configure(UI_STRINGS.RESULTS_TREE_STYLE, background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-                style.configure("TFrame", background=bg)
-                style.configure("TCheckbutton", background=bg, foreground=fg)
-                # selection highlight for treeview — choose a subtle color per theme
-                try:
-                    sel_color = THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
-                    style.map('Treeview', background=[('selected', sel_color)])
-                except Exception:
-                    log_exception(logger, "Failed to map Treeview selection color")
-                try:
-                    # also set the main window background for non-ttk widgets
-                    try:
-                        self.configure(background=bg)
-                    except Exception:
-                        log_exception(logger, "Failed to configure root window background")
-                    # Treeview styling
-                    try:
-                        if hasattr(self, 'resultsTree') and self.resultsTree is not None:
-                            self.resultsTree.configure(style="Treeview")
-                    except Exception:
-                        log_exception(logger, "Failed to configure results tree style")
-                except Exception:
-                    log_exception(logger, "Failed while applying non-ttk theme updates")
-        except Exception:
-            log_exception(logger, "Failed to apply ttk theme configuration")
-
-        # Reapply results tree styling after theme change
-        try:
-            self._configure_results_tree_styling()
-        except Exception:
-            log_exception(logger, "Failed to reconfigure results tree after theme change")
-
-        try:
-            if bg:
-                self.configure(bg=bg)
-        except Exception:
-            log_exception(logger, "Failed to set root background color")
-
-        # Update some known frames/widgets that are not styled by ttk
-        try:
-            for child in self.winfo_children():
-                try:
-                    child.configure(background=bg)
-                except tk.TclError:
-                    # Many ttk/native widgets do not expose a `background` option.
-                    # This is expected and should not be logged as an error.
-                    continue
-                except Exception:
-                    log_exception(logger, "Failed to configure child widget background")
-        except Exception:
-            log_exception(logger, "Failed to apply theme to child widgets")
-
     def _safe_trace_add(self, var, callback):
         """Add a trace callback to a Tk variable, with fallbacks for
         environments with different `trace_add` signatures.
@@ -580,7 +433,7 @@ class SupernovasApp(tk.Tk):
                 if dark_mode is not None and getattr(self, "dark_mode", None):
                     self.dark_mode.set(dark_mode)
                     try:
-                        self.apply_theme()
+                        self.theme_coordinator.apply_theme()
                     except Exception:
                         log_exception(logger, "Failed to apply restored dark mode theme")
             except Exception:
@@ -1034,7 +887,7 @@ class SupernovasApp(tk.Tk):
                 on_find_stars=self.tree_coordinator.find_stars_in_simbad,
                 on_ignore_selected=self.callbackIgnoreSelectedSN,
                 on_edit_old=self.callbackEditOldSupernovae,
-                on_dark_mode_toggle=self.apply_theme,
+                on_dark_mode_toggle=self.theme_coordinator.apply_theme,
             )
 
             # Create and build toolbar manager
@@ -1056,7 +909,7 @@ class SupernovasApp(tk.Tk):
             self.darkToggle = self.toolbar_manager.get_widget('toggle_dark_mode')
 
             # Configure results tree styling
-            self._configure_results_tree_styling()
+            self.theme_coordinator.configure_results_tree_styling()
         except Exception:
             log_exception(logger, "Failed to build results panel")
 
@@ -1104,6 +957,15 @@ class SupernovasApp(tk.Tk):
         # Create dark_mode variable first (required by apply_theme)
         self.dark_mode = tk.BooleanVar(value=True)
 
+        # Initialize ThemeCoordinator to manage all theme operations
+        self.theme_coordinator = ThemeCoordinator(
+            root_window=self,
+            get_results_tree=lambda: getattr(self, 'resultsTree', None),
+            get_supernova_data=lambda: getattr(self, 'supernova_data', {}),
+            get_dark_mode=lambda: self.dark_mode.get() if hasattr(self, 'dark_mode') else False,
+            on_persist_prefs=self._persist_prefs,
+        )
+
         # Force default UI language to English on startup
         try:
             set_language("en")
@@ -1112,7 +974,7 @@ class SupernovasApp(tk.Tk):
 
         # Apply theme early so initial widgets pick up dark mode colors
         try:
-            self.apply_theme()
+            self.theme_coordinator.apply_theme()
         except Exception:
             log_exception(logger, "Failed to apply initial theme during startup")
 
@@ -1340,12 +1202,12 @@ class SupernovasApp(tk.Tk):
 
         # Reapply results tree styling after language change
         try:
-            self._configure_results_tree_styling()
+            self.theme_coordinator.configure_results_tree_styling()
         except Exception:
             log_exception(logger, "Failed to reconfigure results tree after language change")
         try:
             # re-apply theme in case translations affected widget styles
-            self.apply_theme()
+            self.theme_coordinator.apply_theme()
         except Exception:
             log_exception(logger, "Failed to reapply theme after language change")
         try:
