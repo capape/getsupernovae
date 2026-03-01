@@ -2,65 +2,44 @@
 # Check supernova data
 #
 
+import os
+import sys
+import tkinter as tk
+from datetime import datetime, timedelta
+from tkinter import messagebox
 from typing import List
-import urllib.parse
+
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
-from datetime import datetime, timedelta
-import sys
-import os
-
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 
 from app.models.dto import SupernovaDTO
+
 # ensure local modules in this directory can be imported when script run directly
 sys.path.insert(0, os.path.dirname(__file__))
 import astropy.units as u
 
-
-
-from app.models.snmodels import Supernova
-from app.utils.snparser import parse_date
-from app.ui.snvisibility import VisibilityWindow
-from app.ui.results_presenter import ResultsPresenter
-from app.ui.filter_panel_manager import FilterPanelManager, FilterPanelCallbacks
-from app.ui.results_panel_manager import ResultsPanelManager, ResultsPanelCallbacks
-from app.ui.toolbar_manager import ToolbarManager, ToolbarCallbacks
-from app.services.supernova_filter_service import SupernovaFilterService
-from app.services.supernova_selection_service import SupernovaSelectionService
-from app.services.observation_time_service import ObservationTimeService
-from app.coordinators.search_coordinator import SearchCoordinator
-from app.coordinators.report_coordinator import ReportCoordinator
-from app.coordinators.dialog_coordinator import DialogCoordinator
-from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
-from app.coordinators.theme_coordinator import ThemeCoordinator
-from app.reports.report_text import createText, createTextAsString
-from app.reports.report_pdf import createPdf
-from app.state import AppStateManager, PreferencesManager
 from app.config.snconfig import (
+    bootstrap_config,
     load_old_supernovae,
     load_sites,
     load_visibility_windows,
-    bootstrap_config,
-    get_user_config_dir,
-    load_user_prefs,
-    save_user_prefs,
 )
-
-# import the external plotter helper
-from app.i18n import _, set_language, get_language
-from app.services.provider import NetworkRochesterProvider
-from app import __version__
 from app.config.ui_constants import (
-    THEME_COLORS,
-    UI_CONSTANTS,
     DEFAULT_VALUES,
-    NETWORK_CONSTANTS,
-    FILE_CONSTANTS,
     UI_STRINGS,
 )
+from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
+
+# import the external plotter helper
+from app.i18n import _
+from app.services.observation_time_service import ObservationTimeService
+from app.services.provider import NetworkRochesterProvider
+from app.services.supernova_filter_service import SupernovaFilterService
+from app.services.supernova_selection_service import SupernovaSelectionService
+from app.ui.filter_panel_manager import FilterPanelCallbacks, FilterPanelManager
+from app.ui.results_panel_manager import ResultsPanelCallbacks, ResultsPanelManager
+from app.ui.snvisibility import VisibilityWindow
+from app.ui.toolbar_manager import ToolbarCallbacks, ToolbarManager
 from app.utils.logger import get_logger, log_exception
 
 bootstrap_config()
@@ -68,6 +47,7 @@ old = load_old_supernovae()
 sites = load_sites()
 visibility_windows = load_visibility_windows()
 logger = get_logger(__name__)
+
 
 class SupernovaCallBackData:
     """Data container for supernova observation search parameters.
@@ -99,28 +79,45 @@ class SupernovaCallBackData:
         self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
         self.visibilityWindowName = visibilityWindowName
 
+
 class RochesterSupernova:
 
-    def __init__(self, visibility_factory=None, provider_factory=None, reporter=None, filter_service=None, selection_service=None):
+    def __init__(
+        self,
+        visibility_factory=None,
+        provider_factory=None,
+        reporter=None,
+        filter_service=None,
+        selection_service=None,
+    ):
         # visibility_factory should be a callable/class that creates a
         # visibility window instance with signature
         # VisibilityWindow(minAlt, maxAlt, minAz, maxAz)
-        self.visibility_factory = visibility_factory if visibility_factory is not None else VisibilityWindow
+        self.visibility_factory = (
+            visibility_factory if visibility_factory is not None else VisibilityWindow
+        )
         # provider_factory constructs a provider used to fetch Rochester data
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
+        self.provider_factory = (
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
+        )
         # reporter is optional; selection logic does not require it but keep for DI consistency
         self.reporter = reporter
         # filter_service handles all filtering logic
-        self.filter_service = filter_service if filter_service is not None else SupernovaFilterService(visibility_factory=self.visibility_factory)
+        self.filter_service = (
+            filter_service
+            if filter_service is not None
+            else SupernovaFilterService(visibility_factory=self.visibility_factory)
+        )
         # selection_service coordinates selection and sorting
-        self.selection_service = selection_service if selection_service is not None else SupernovaSelectionService(
-            filter_service=self.filter_service,
-            visibility_windows=visibility_windows
+        self.selection_service = (
+            selection_service
+            if selection_service is not None
+            else SupernovaSelectionService(
+                filter_service=self.filter_service, visibility_windows=visibility_windows
+            )
         )
 
-    def selectAndSortSupernovas(
-        self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]
-    ):
+    def selectAndSortSupernovas(self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]):
         """Select and sort supernovae using the selection service.
 
         This method now delegates to SupernovaSelectionService for all
@@ -143,7 +140,7 @@ class RochesterSupernova:
             exclusion_list=set(old) if old else set(),
             visibility_window_name=getattr(e, "visibilityWindowName", None),
             min_latitude=float(e.minLatitude),
-            visibility_factory=self.visibility_factory
+            visibility_factory=self.visibility_factory,
         )
 
         return supernovas
@@ -167,9 +164,7 @@ class RochesterSupernova:
         Legacy method kept for backward compatibility. Delegates to filter service.
         For new code, prefer using selectAndSortSupernovas with SupernovaCallBackData.
         """
-        observationStart = (
-            observationDay.strftime("%Y-%m-%d") + "T" + localStartTime + "Z"
-        )
+        observationStart = observationDay.strftime("%Y-%m-%d") + "T" + localStartTime + "Z"
 
         time1 = Time(observationStart)
         time2 = time1 + timedelta(hours=hoursObservation)
@@ -193,7 +188,7 @@ class RochesterSupernova:
             max_altitude=maxAlt,
             min_azimuth=minAz,
             max_azimuth=maxAz,
-            visibility_factory=self.visibility_factory
+            visibility_factory=self.visibility_factory,
         )
 
         # Convert to domain models
@@ -268,7 +263,9 @@ class SupernovasApp(tk.Tk):
         except Exception as ex:
             messagebox.showerror(
                 _("Invalid input"),
-                _("Invalid observation time. Use HH, HH:MM or HH:MM:SS.\n\nDetails: {error}").format(error=str(ex)),
+                _(
+                    "Invalid observation time. Use HH, HH:MM or HH:MM:SS.\n\nDetails: {error}"
+                ).format(error=str(ex)),
             )
             return None
 
@@ -279,7 +276,6 @@ class SupernovasApp(tk.Tk):
         if self.supernovasFound == None:
             return False
         return True
-
 
     #
     # PDF button callback
@@ -294,6 +290,7 @@ class SupernovasApp(tk.Tk):
     def on_text_export_clicked(self, e: SupernovaCallBackData):
         """Generate TXT report using report coordinator."""
         self.report_coordinator.generate_txt_report(e)
+
     #
     #  Refresh button callback
     #
@@ -339,11 +336,11 @@ class SupernovasApp(tk.Tk):
         """
         try:
             tk_state = tk.NORMAL if state == "normal" else tk.DISABLED
-            if button_name == "pdf" and hasattr(self, 'pdfButton'):
+            if button_name == "pdf" and hasattr(self, "pdfButton"):
                 self.pdfButton["state"] = tk_state
-            elif button_name == "txt" and hasattr(self, 'txtButton'):
+            elif button_name == "txt" and hasattr(self, "txtButton"):
                 self.txtButton["state"] = tk_state
-            elif button_name == "refresh" and hasattr(self, 'searchButton'):
+            elif button_name == "refresh" and hasattr(self, "searchButton"):
                 self.searchButton["state"] = tk_state
         except Exception:
             log_exception(logger, f"Failed to set {button_name} button state to {state}")
@@ -358,20 +355,20 @@ class SupernovasApp(tk.Tk):
 
     def _show_yes_no_dialog(self, title: str, message: str, icon_type: str = "question") -> bool:
         """Show a yes/no dialog and return the user's choice.
-        
+
         Args:
             title: Dialog title
             message: Dialog message
             icon_type: Icon type for the dialog
-            
+
         Returns:
             True if user clicked Yes, False otherwise
         """
         return messagebox.askyesno(title, message, icon=icon_type)
-    
+
     def _show_warning_dialog(self, title: str, message: str):
         """Show a warning dialog.
-        
+
         Args:
             title: Dialog title
             message: Dialog message
@@ -380,7 +377,7 @@ class SupernovasApp(tk.Tk):
 
     def _show_info_dialog(self, title: str, message: str):
         """Show an info dialog.
-        
+
         Args:
             title: Dialog title
             message: Dialog message
@@ -389,7 +386,7 @@ class SupernovasApp(tk.Tk):
 
     def _show_error_dialog(self, title: str, message: str):
         """Show an error dialog.
-        
+
         Args:
             title: Dialog title
             message: Dialog message
@@ -398,7 +395,7 @@ class SupernovasApp(tk.Tk):
 
     def _get_selected_supernova(self):
         """Get the currently selected supernova from the results tree.
-        
+
         Returns:
             Supernova object if one is selected, None otherwise
         """
@@ -406,18 +403,18 @@ class SupernovasApp(tk.Tk):
             selection = self.resultsTree.selection()
             if not selection:
                 return None
-            
+
             item = selection[0]
             if item not in self.supernova_data:
                 return None
-            
+
             return self.supernova_data[item]
         except Exception:
             return None
 
     def _update_sites_combobox(self, values: list, selected: str = None):
         """Update site combobox with new values.
-        
+
         Args:
             values: List of site names
             selected: Site name to select
@@ -431,7 +428,7 @@ class SupernovasApp(tk.Tk):
 
     def _update_visibility_windows_combobox(self, values: list, selected: str = None):
         """Update visibility window combobox with new values.
-        
+
         Args:
             values: List of visibility window names
             selected: Visibility window name to select
@@ -445,24 +442,24 @@ class SupernovasApp(tk.Tk):
 
     def _enable_find_stars_button(self, button_name: str):
         """Enable the find stars button.
-        
+
         Args:
             button_name: Button name (not used, kept for interface compatibility)
         """
         try:
-            if hasattr(self, 'findStarsButton') and self.findStarsButton:
+            if hasattr(self, "findStarsButton") and self.findStarsButton:
                 self.findStarsButton.config(state=tk.NORMAL)
         except Exception:
             log_exception(logger, "Failed to enable find stars button")
 
     def _disable_find_stars_button(self, button_name: str):
         """Disable the find stars button.
-        
+
         Args:
             button_name: Button name (not used, kept for interface compatibility)
         """
         try:
-            if hasattr(self, 'findStarsButton') and self.findStarsButton:
+            if hasattr(self, "findStarsButton") and self.findStarsButton:
                 self.findStarsButton.config(state=tk.DISABLED)
         except Exception:
             log_exception(logger, "Failed to disable find stars button")
@@ -484,7 +481,9 @@ class SupernovasApp(tk.Tk):
         if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
             try:
                 # Insert error as a single row
-                self.resultsTree.insert("", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", ""))
+                self.resultsTree.insert(
+                    "", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", "")
+                )
             except Exception:
                 log_exception(logger, "Failed to render error row in results tree")
             return
@@ -499,35 +498,51 @@ class SupernovasApp(tk.Tk):
                     except Exception:
                         # Fallback to minimal row on presenter error
                         row = (
-                            getattr(sn, 'name', ''),
-                            getattr(sn, 'type', ''),
-                            getattr(sn, 'mag', '') or '',
-                            getattr(sn, 'date', '') or '',
-                            '',
-                            getattr(sn, 'host', ''),
-                            getattr(sn, 'constellation', ''),
-                            '',
-                            '',
-                            '🔗',
-                            '🔗',
+                            getattr(sn, "name", ""),
+                            getattr(sn, "type", ""),
+                            getattr(sn, "mag", "") or "",
+                            getattr(sn, "date", "") or "",
+                            "",
+                            getattr(sn, "host", ""),
+                            getattr(sn, "constellation", ""),
+                            "",
+                            "",
+                            "🔗",
+                            "🔗",
                         )
 
                     # Determine brightness tag based on numeric magnitude
                     mag_val = None
                     try:
-                        mag_val = float(getattr(sn, 'mag', None)) if getattr(sn, 'mag', None) is not None else None
+                        mag_val = (
+                            float(getattr(sn, "mag", None))
+                            if getattr(sn, "mag", None) is not None
+                            else None
+                        )
                     except Exception:
                         mag_val = None
 
-                    is_bright = mag_val is not None and mag_val < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
-                    tag = (UI_STRINGS.TAG_EVEN_ROW_BRIGHT if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW_BRIGHT) if is_bright else (UI_STRINGS.TAG_EVEN_ROW if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW)
+                    is_bright = (
+                        mag_val is not None and mag_val < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
+                    )
+                    tag = (
+                        (
+                            UI_STRINGS.TAG_EVEN_ROW_BRIGHT
+                            if idx % 2 == 0
+                            else UI_STRINGS.TAG_ODD_ROW_BRIGHT
+                        )
+                        if is_bright
+                        else (UI_STRINGS.TAG_EVEN_ROW if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW)
+                    )
 
                     item_id = self.resultsTree.insert("", "end", values=row, tags=(tag,))
                     self.supernova_data[item_id] = sn
         except Exception as e:
             # If population fails, show error
             try:
-                self.resultsTree.insert("", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", ""))
+                self.resultsTree.insert(
+                    "", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", "")
+                )
             except Exception:
                 log_exception(logger, "Failed to render exception row in results tree")
 
@@ -536,14 +551,14 @@ class SupernovasApp(tk.Tk):
         try:
             # Prepare variables dictionary for the filter panel
             filter_variables = {
-                'magnitude': self.magnitude,
-                'days_to_search': self.daysToSearch,
-                'observation_date': self.observationDate,
-                'observation_time': self.observationTime,
-                'observation_duration': self.observationDuration,
-                'site': self.site,
-                'visibility_window': self.visibilityWindow,
-                'min_latitude': self.minLatitud,
+                "magnitude": self.magnitude,
+                "days_to_search": self.daysToSearch,
+                "observation_date": self.observationDate,
+                "observation_time": self.observationTime,
+                "observation_duration": self.observationDuration,
+                "site": self.site,
+                "visibility_window": self.visibilityWindow,
+                "min_latitude": self.minLatitud,
             }
 
             # Create callbacks for the filter panel
@@ -563,39 +578,45 @@ class SupernovasApp(tk.Tk):
                 sites=sites,
                 visibility_windows=visibility_windows,
                 callbacks=callbacks,
-                dark_mode=self.dark_mode
+                dark_mode=self.dark_mode,
             )
 
             self.filter_panel_manager.build()
 
             # Store references to commonly accessed widgets for backward compatibility
-            self.cbSite = self.filter_panel_manager.widgets.get('combobox_site')
-            self.cbVisibility = self.filter_panel_manager.widgets.get('combobox_visibility')
-            self.entryLatitud = self.filter_panel_manager.widgets.get('entry_min_latitude')
-            self.visibilityValuesLabel = self.filter_panel_manager.widgets.get('label_visibility_values')
+            self.cbSite = self.filter_panel_manager.widgets.get("combobox_site")
+            self.cbVisibility = self.filter_panel_manager.widgets.get("combobox_visibility")
+            self.entryLatitud = self.filter_panel_manager.widgets.get("entry_min_latitude")
+            self.visibilityValuesLabel = self.filter_panel_manager.widgets.get(
+                "label_visibility_values"
+            )
 
             # Store widget references for language change updates
-            self.labelMagnitude = self.filter_panel_manager.widgets.get('label_magnitude')
-            self.labelDaysToSearch = self.filter_panel_manager.widgets.get('label_days_to_search')
-            self.labelObservationDate = self.filter_panel_manager.widgets.get('label_observation_date')
-            self.labelInitTime = self.filter_panel_manager.widgets.get('label_init_time')
-            self.labelDuration = self.filter_panel_manager.widgets.get('label_duration')
-            self.labelSite = self.filter_panel_manager.widgets.get('label_site')
-            self.labelLang = self.filter_panel_manager.widgets.get('label_language')
-            self.labelVisibility = self.filter_panel_manager.widgets.get('label_visibility')
-            self.labelLatitud = self.filter_panel_manager.widgets.get('label_min_latitude')
-            self.rochesterText = self.filter_panel_manager.widgets.get('text_rochester')
-            self.cbLang = self.filter_panel_manager.widgets.get('combobox_language')
+            self.labelMagnitude = self.filter_panel_manager.widgets.get("label_magnitude")
+            self.labelDaysToSearch = self.filter_panel_manager.widgets.get("label_days_to_search")
+            self.labelObservationDate = self.filter_panel_manager.widgets.get(
+                "label_observation_date"
+            )
+            self.labelInitTime = self.filter_panel_manager.widgets.get("label_init_time")
+            self.labelDuration = self.filter_panel_manager.widgets.get("label_duration")
+            self.labelSite = self.filter_panel_manager.widgets.get("label_site")
+            self.labelLang = self.filter_panel_manager.widgets.get("label_language")
+            self.labelVisibility = self.filter_panel_manager.widgets.get("label_visibility")
+            self.labelLatitud = self.filter_panel_manager.widgets.get("label_min_latitude")
+            self.rochesterText = self.filter_panel_manager.widgets.get("text_rochester")
+            self.cbLang = self.filter_panel_manager.widgets.get("combobox_language")
 
             # Get langVar from filter panel manager
-            if 'language' in filter_variables:
-                self.langVar = filter_variables['language']
+            if "language" in filter_variables:
+                self.langVar = filter_variables["language"]
 
             # Apply persisted prefs if present (best-effort)
             try:
                 self.preferences_coordinator.load_and_apply_prefs()
             except Exception:
-                log_exception(logger, "Failed to load and apply preferences while building left panel")
+                log_exception(
+                    logger, "Failed to load and apply preferences while building left panel"
+                )
 
             # Initialization complete, enable preference persistence
             self._initializing = False
@@ -608,7 +629,7 @@ class SupernovasApp(tk.Tk):
             # Store references first (needed for coordinator initialization)
             # These will be properly set after building the panel
             self.supernova_data = {}
-            
+
             # Placeholder callbacks - will be replaced with coordinator methods
             callbacks = ResultsPanelCallbacks(
                 on_sort_column=lambda col, is_numeric: None,
@@ -624,21 +645,19 @@ class SupernovasApp(tk.Tk):
 
             # Create and build the results panel manager
             self.results_panel_manager = ResultsPanelManager(
-                parent=self,
-                callbacks=callbacks,
-                dark_mode=self.dark_mode
+                parent=self, callbacks=callbacks, dark_mode=self.dark_mode
             )
 
             self.results_panel_manager.build()
 
             # Store references to commonly accessed widgets for backward compatibility
             self.resultsTree = self.results_panel_manager.get_tree()
-            self.labelResults = self.results_panel_manager.widgets.get('label_results')
-            self.pdfButton = self.results_panel_manager.widgets.get('button_pdf')
-            self.txtButton = self.results_panel_manager.widgets.get('button_txt')
-            self.searchButton = self.results_panel_manager.widgets.get('button_refresh')
-            self.exitButton = self.results_panel_manager.widgets.get('button_exit')
-            self.progressBar = self.results_panel_manager.widgets.get('progress_bar')
+            self.labelResults = self.results_panel_manager.widgets.get("label_results")
+            self.pdfButton = self.results_panel_manager.widgets.get("button_pdf")
+            self.txtButton = self.results_panel_manager.widgets.get("button_txt")
+            self.searchButton = self.results_panel_manager.widgets.get("button_refresh")
+            self.exitButton = self.results_panel_manager.widgets.get("button_exit")
+            self.progressBar = self.results_panel_manager.widgets.get("progress_bar")
 
             # Use manager's data storage
             self.supernova_data = self.results_panel_manager.supernova_data
@@ -647,7 +666,7 @@ class SupernovasApp(tk.Tk):
             self.tree_coordinator = ResultsTreeCoordinator(
                 tree_widget=self.resultsTree,
                 supernova_data=self.supernova_data,
-                get_dark_mode=lambda: self.dark_mode.get() if hasattr(self, 'dark_mode') else False,
+                get_dark_mode=lambda: self.dark_mode.get() if hasattr(self, "dark_mode") else False,
                 on_enable_button=self._enable_find_stars_button,
                 on_disable_button=self._disable_find_stars_button,
                 on_show_error=self._show_error_dialog,
@@ -665,26 +684,40 @@ class SupernovasApp(tk.Tk):
                 on_refresh=lambda: self.on_refresh_clicked(self.getDataToSearch()),
                 on_exit=self.quit,
             )
-            
+
             # Update callbacks and manually rebind tree events
             self.results_panel_manager.callbacks = updated_callbacks
-            
+
             # Rebind tree events with coordinator methods
             try:
                 self.resultsTree.bind("<Double-Button-1>", self.tree_coordinator.on_double_click)
                 self.resultsTree.bind("<Motion>", self.tree_coordinator.on_motion)
                 self.resultsTree.bind("<Leave>", self.tree_coordinator.on_leave)
-                self.resultsTree.bind("<<TreeviewSelect>>", self.tree_coordinator.on_selection_change)
+                self.resultsTree.bind(
+                    "<<TreeviewSelect>>", self.tree_coordinator.on_selection_change
+                )
             except Exception:
                 log_exception(logger, "Failed to rebind tree events with coordinator")
-            
+
             # Update column sort commands to use coordinator
             try:
-                for col, is_numeric in [("name", False), ("type", False), ("magnitude", True), 
-                                       ("date", False), ("observation_time", False), ("host", False),
-                                       ("constellation", False), ("ra", False), ("dec", False),
-                                       ("rochester", False), ("tns", False)]:
-                    self.resultsTree.heading(col, command=lambda c=col, n=is_numeric: self.tree_coordinator.sort_column(c, n))
+                for col, is_numeric in [
+                    ("name", False),
+                    ("type", False),
+                    ("magnitude", True),
+                    ("date", False),
+                    ("observation_time", False),
+                    ("host", False),
+                    ("constellation", False),
+                    ("ra", False),
+                    ("dec", False),
+                    ("rochester", False),
+                    ("tns", False),
+                ]:
+                    self.resultsTree.heading(
+                        col,
+                        command=lambda c=col, n=is_numeric: self.tree_coordinator.sort_column(c, n),
+                    )
             except Exception:
                 log_exception(logger, "Failed to update column sort commands")
 
@@ -703,16 +736,16 @@ class SupernovasApp(tk.Tk):
                 dark_mode=self.dark_mode,
                 grid_column=3,
                 grid_row=11,
-                columnspan=2
+                columnspan=2,
             )
 
             self.toolbar_manager.build()
 
             # Store toolbar widget references
-            self.findStarsButton = self.toolbar_manager.get_widget('button_find_stars')
-            self.ignoreSelectedButton = self.toolbar_manager.get_widget('button_ignore_selected')
-            self.editOldButton = self.toolbar_manager.get_widget('button_edit_old')
-            self.darkToggle = self.toolbar_manager.get_widget('toggle_dark_mode')
+            self.findStarsButton = self.toolbar_manager.get_widget("button_find_stars")
+            self.ignoreSelectedButton = self.toolbar_manager.get_widget("button_ignore_selected")
+            self.editOldButton = self.toolbar_manager.get_widget("button_edit_old")
+            self.darkToggle = self.toolbar_manager.get_widget("toggle_dark_mode")
 
             # Configure results tree styling
             self.theme_coordinator.configure_results_tree_styling()
@@ -746,12 +779,15 @@ class SupernovasApp(tk.Tk):
         """Open the visibility window configuration dialog."""
         self.dialog_coordinator.open_visibility_window_dialog()
 
-    def __init__(self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
+    def __init__(
+        self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None
+    ):
 
         super().__init__()
 
         # Use InitializationBuilder to handle complex setup
         from app.ui.initialization_builder import InitializationBuilder
+
         builder = InitializationBuilder(self, filters)
         builder.build(presenter, visibility_factory, provider_factory, reporter)
 
@@ -785,11 +821,17 @@ def main():
 
     site = list(sites.keys())[0]
 
-
-    filters = SearchFilters(mag, daysToSearch, datetime.now(), DEFAULT_VALUES.OBSERVATION_TIME, DEFAULT_VALUES.OBSERVATION_HOURS, site, DEFAULT_VALUES.MIN_LATITUDE)
+    filters = SearchFilters(
+        mag,
+        daysToSearch,
+        datetime.now(),
+        DEFAULT_VALUES.OBSERVATION_TIME,
+        DEFAULT_VALUES.OBSERVATION_HOURS,
+        site,
+        DEFAULT_VALUES.MIN_LATITUDE,
+    )
     app = SupernovasApp(filters)
     app.mainloop()
-
 
 
 # `_parse_row_safe` is provided by `snparser.py` and imported at the top of this file.

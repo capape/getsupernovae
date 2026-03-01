@@ -1,5 +1,6 @@
-from typing import List, Protocol, Iterable
 import urllib.request
+from typing import List, Protocol
+
 from bs4 import BeautifulSoup
 
 from app.models.dto import SupernovaDTO
@@ -9,6 +10,7 @@ from app.utils.snparser import _parse_row_safe
 class ISupernovaProvider(Protocol):
     def fetch(self) -> List[SupernovaDTO]:
         """Fetch supernovae from the provider's configured source and return list of SupernovaDTO."""
+
 
 class RochesterProvider:
     """Abstract base class for Rochester providers."""
@@ -44,7 +46,7 @@ class RochesterProvider:
                 parsed.get("type"),
                 parsed.get("maxMagnitudeDate_obj"),
                 parsed.get("firstObserved_obj"),
-            )            
+            )
             result.append(sn)
 
         return result
@@ -74,7 +76,6 @@ class FileRochesterProvider(RochesterProvider):
         return self.parse_html(html)
 
 
-
 class NetworkRochesterProvider(RochesterProvider):
     """Network adapter that fetches Rochester HTML and returns parsed Supernovas
     and raw HTML rows. It uses `RochesterProvider.parse_html` to parse content.
@@ -83,7 +84,6 @@ class NetworkRochesterProvider(RochesterProvider):
     def __init__(self, timeout: int = 20):
         self.timeout = timeout
         self.source = "https://www.rochesterastronomy.org/snimages/snactive.html"
-    
 
     def fetch(self):
         """Fetch from `Rochester source` Returns (parsed_list, rows).
@@ -92,6 +92,7 @@ class NetworkRochesterProvider(RochesterProvider):
         rows: ResultSet of <tr> elements (BeautifulSoup list)
         """
         import ssl
+
         source = self.source
         try:
             ctx = ssl.create_default_context()
@@ -99,11 +100,9 @@ class NetworkRochesterProvider(RochesterProvider):
             ctx.verify_mode = ssl.CERT_NONE
             with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
                 html = resp.read()
-            
+
         except Exception:
             raise
 
         # parse using RochesterProvider
         return self.parse_html(html)
-        
-

@@ -4,18 +4,18 @@ Tests the filter panel UI manager functionality, including widget creation,
 state management, and callback integration.
 """
 
-import sys
 import os
+import sys
+
 # Ensure the parent directory is in the path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import unittest
 import tkinter as tk
+import unittest
 from tkinter import ttk
-from unittest.mock import Mock, MagicMock, patch, call
-from typing import Dict
+from unittest.mock import Mock, patch
 
-from app.ui.filter_panel_manager import FilterPanelManager, FilterPanelCallbacks
+from app.ui.filter_panel_manager import FilterPanelCallbacks, FilterPanelManager
 
 
 class TestFilterPanelManager(unittest.TestCase):
@@ -25,25 +25,25 @@ class TestFilterPanelManager(unittest.TestCase):
         """Set up test fixtures."""
         # Create root window for tests
         self.root = tk.Tk()
-        
+
         # Create mock variables
         self.variables = {
-            'magnitude': tk.StringVar(value="15.0"),
-            'days_to_search': tk.StringVar(value="30"),
-            'observation_date': tk.StringVar(value="2024-01-01"),
-            'observation_time': tk.StringVar(value="20:00"),
-            'observation_duration': tk.StringVar(value="8"),
-            'site': tk.StringVar(value="Test Site"),
-            'visibility_window': tk.StringVar(value=""),
-            'min_latitude': tk.StringVar(value="30"),
+            "magnitude": tk.StringVar(value="15.0"),
+            "days_to_search": tk.StringVar(value="30"),
+            "observation_date": tk.StringVar(value="2024-01-01"),
+            "observation_time": tk.StringVar(value="20:00"),
+            "observation_duration": tk.StringVar(value="8"),
+            "site": tk.StringVar(value="Test Site"),
+            "visibility_window": tk.StringVar(value=""),
+            "min_latitude": tk.StringVar(value="30"),
         }
-        
+
         # Mock sites and visibility windows
         self.sites = {
             "Test Site": Mock(),
             "Another Site": Mock(),
         }
-        
+
         self.visibility_windows = {
             "Night Window": {
                 "minAlt": 30.0,
@@ -52,7 +52,7 @@ class TestFilterPanelManager(unittest.TestCase):
                 "maxAz": 360.0,
             }
         }
-        
+
         # Create mock callbacks
         self.callbacks = FilterPanelCallbacks(
             on_clear_results=Mock(),
@@ -62,7 +62,7 @@ class TestFilterPanelManager(unittest.TestCase):
             on_add_site=Mock(),
             on_add_visibility_window=Mock(),
         )
-        
+
         # Create dark mode variable
         self.dark_mode = tk.BooleanVar(value=False)
 
@@ -81,9 +81,9 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         self.assertIsNotNone(manager)
         self.assertEqual(manager.parent, self.root)
         self.assertEqual(manager.variables, self.variables)
@@ -102,11 +102,11 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         frame = manager.build()
-        
+
         self.assertIsNotNone(frame)
         self.assertIsInstance(frame, ttk.Frame)
         self.assertEqual(manager.frame, frame)
@@ -119,25 +119,36 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         # Check that all expected widgets were created
         expected_widgets = [
-            'label_magnitude', 'entry_magnitude',
-            'label_days_to_search', 'entry_days_to_search',
-            'label_observation_date', 'entry_observation_date',
-            'label_init_time', 'entry_init_time',
-            'label_duration', 'entry_duration',
-            'label_site', 'combobox_site', 'button_add_site',
-            'label_visibility', 'combobox_visibility', 'button_add_visibility',
-            'label_min_latitude', 'entry_min_latitude',
-            'label_visibility_values',
-            'label_language', 'combobox_language',
+            "label_magnitude",
+            "entry_magnitude",
+            "label_days_to_search",
+            "entry_days_to_search",
+            "label_observation_date",
+            "entry_observation_date",
+            "label_init_time",
+            "entry_init_time",
+            "label_duration",
+            "entry_duration",
+            "label_site",
+            "combobox_site",
+            "button_add_site",
+            "label_visibility",
+            "combobox_visibility",
+            "button_add_visibility",
+            "label_min_latitude",
+            "entry_min_latitude",
+            "label_visibility_values",
+            "label_language",
+            "combobox_language",
         ]
-        
+
         for widget_name in expected_widgets:
             self.assertIn(widget_name, manager.widgets, f"Missing widget: {widget_name}")
 
@@ -149,16 +160,16 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         # Change variable and verify entry updates
-        self.variables['magnitude'].set("18.5")
+        self.variables["magnitude"].set("18.5")
         self.root.update()
-        
-        entry = manager.widgets['entry_magnitude']
+
+        entry = manager.widgets["entry_magnitude"]
         self.assertEqual(entry.get(), "18.5")
 
     def test_site_combobox_has_correct_values(self):
@@ -169,14 +180,14 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
-        combobox = manager.widgets['combobox_site']
-        values = combobox['values']
-        
+
+        combobox = manager.widgets["combobox_site"]
+        values = combobox["values"]
+
         self.assertIn("Test Site", values)
         self.assertIn("Another Site", values)
 
@@ -188,14 +199,14 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
-        combobox = manager.widgets['combobox_visibility']
-        values = combobox['values']
-        
+
+        combobox = manager.widgets["combobox_visibility"]
+        values = combobox["values"]
+
         # Should have empty string first
         self.assertEqual(values[0], "")
         self.assertIn("Night Window", values)
@@ -208,14 +219,14 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
-        button = manager.widgets['button_add_site']
+
+        button = manager.widgets["button_add_site"]
         button.invoke()
-        
+
         self.callbacks.on_add_site.assert_called_once()
 
     def test_add_visibility_window_button_calls_callback(self):
@@ -226,14 +237,14 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
-        button = manager.widgets['button_add_visibility']
+
+        button = manager.widgets["button_add_visibility"]
         button.invoke()
-        
+
         self.callbacks.on_add_visibility_window.assert_called_once()
 
     def test_update_visibility_values_label(self):
@@ -244,16 +255,16 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         test_text = "minAlt: 30.0° maxAlt: 85.0°"
         manager.update_visibility_values_label(test_text)
-        
-        label = manager.widgets['label_visibility_values']
-        self.assertEqual(label.cget('text'), test_text)
+
+        label = manager.widgets["label_visibility_values"]
+        self.assertEqual(label.cget("text"), test_text)
 
     def test_set_min_latitude_state_disabled(self):
         """Test disabling the min latitude entry."""
@@ -263,15 +274,15 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         manager.set_min_latitude_state("disabled")
-        
-        entry = manager.widgets['entry_min_latitude']
-        self.assertEqual(str(entry.cget('state')), "disabled")
+
+        entry = manager.widgets["entry_min_latitude"]
+        self.assertEqual(str(entry.cget("state")), "disabled")
 
     def test_set_min_latitude_state_normal(self):
         """Test enabling the min latitude entry."""
@@ -281,17 +292,17 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         # First disable, then enable
         manager.set_min_latitude_state("disabled")
         manager.set_min_latitude_state("normal")
-        
-        entry = manager.widgets['entry_min_latitude']
-        self.assertEqual(str(entry.cget('state')), "normal")
+
+        entry = manager.widgets["entry_min_latitude"]
+        self.assertEqual(str(entry.cget("state")), "normal")
 
     def test_update_site_values(self):
         """Test updating site combobox values."""
@@ -301,17 +312,17 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         new_sites = ["New Site 1", "New Site 2", "New Site 3"]
         manager.update_site_values(new_sites)
-        
-        combobox = manager.widgets['combobox_site']
-        values = combobox['values']
-        
+
+        combobox = manager.widgets["combobox_site"]
+        values = combobox["values"]
+
         self.assertEqual(list(values), new_sites)
 
     def test_update_visibility_window_values(self):
@@ -322,17 +333,17 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         new_windows = ["", "Window 1", "Window 2"]
         manager.update_visibility_window_values(new_windows)
-        
-        combobox = manager.widgets['combobox_visibility']
-        values = combobox['values']
-        
+
+        combobox = manager.widgets["combobox_visibility"]
+        values = combobox["values"]
+
         self.assertEqual(list(values), new_windows)
 
     def test_refresh_labels_updates_text(self):
@@ -343,20 +354,20 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         # Mock the translation function
-        with patch('app.ui.filter_panel_manager._') as mock_translate:
+        with patch("app.ui.filter_panel_manager._") as mock_translate:
             mock_translate.side_effect = lambda x: f"TRANSLATED: {x}"
-            
+
             manager.refresh_labels()
-            
+
             # Verify at least one label was updated
-            label = manager.widgets['label_magnitude']
-            text = label.cget('text')
+            label = manager.widgets["label_magnitude"]
+            text = label.cget("text")
             self.assertIn("TRANSLATED:", text)
 
     def test_apply_theme_light_mode(self):
@@ -367,17 +378,17 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         manager.apply_theme(dark_mode=False)
-        
+
         # Verify Rochester text has light background
-        if 'text_rochester' in manager.widgets:
-            text_widget = manager.widgets['text_rochester']
-            bg = text_widget.cget('background')
+        if "text_rochester" in manager.widgets:
+            text_widget = manager.widgets["text_rochester"]
+            bg = text_widget.cget("background")
             # Should be light color (not dark)
             self.assertIsNotNone(bg)
 
@@ -389,17 +400,17 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
+
         manager.apply_theme(dark_mode=True)
-        
+
         # Verify Rochester text has dark background
-        if 'text_rochester' in manager.widgets:
-            text_widget = manager.widgets['text_rochester']
-            bg = text_widget.cget('background')
+        if "text_rochester" in manager.widgets:
+            text_widget = manager.widgets["text_rochester"]
+            bg = text_widget.cget("background")
             self.assertIsNotNone(bg)
 
     def test_variable_traces_trigger_callbacks(self):
@@ -410,20 +421,20 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
         self.root.update()
-        
+
         # Reset mocks to ignore setup calls
         self.callbacks.on_clear_results.reset_mock()
         self.callbacks.on_persist_prefs.reset_mock()
-        
+
         # Change magnitude variable
-        self.variables['magnitude'].set("17.0")
+        self.variables["magnitude"].set("17.0")
         self.root.update()
-        
+
         # Should trigger clear and persist callbacks
         self.assertTrue(self.callbacks.on_clear_results.called)
         self.assertTrue(self.callbacks.on_persist_prefs.called)
@@ -436,19 +447,19 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
         self.root.update()
-        
+
         # Reset mock to ignore setup calls
         self.callbacks.on_update_visibility_ui.reset_mock()
-        
+
         # Change visibility window variable
-        self.variables['visibility_window'].set("Night Window")
+        self.variables["visibility_window"].set("Night Window")
         self.root.update()
-        
+
         # Should trigger update visibility UI callback
         self.assertTrue(self.callbacks.on_update_visibility_ui.called)
 
@@ -460,9 +471,9 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         # Don't build, so widgets don't exist
         # These should not raise exceptions
         manager.update_visibility_values_label("test")
@@ -480,13 +491,13 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         # Create a mock variable that raises exception on trace_add
         bad_var = Mock()
         bad_var.trace_add.side_effect = Exception("Test exception")
-        
+
         # Should not raise exception
         manager._safe_trace_add(bad_var, lambda: None)
 
@@ -498,14 +509,14 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         manager.build()
-        
-        combobox = manager.widgets['combobox_language']
-        values = combobox['values']
-        
+
+        combobox = manager.widgets["combobox_language"]
+        values = combobox["values"]
+
         # Should always have 'en'
         self.assertIn("en", values)
 
@@ -517,9 +528,9 @@ class TestFilterPanelManager(unittest.TestCase):
             sites={},  # Empty sites
             visibility_windows=self.visibility_windows,
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         # Should not raise exception
         frame = manager.build()
         self.assertIsNotNone(frame)
@@ -532,18 +543,18 @@ class TestFilterPanelManager(unittest.TestCase):
             sites=self.sites,
             visibility_windows={},  # Empty visibility windows
             callbacks=self.callbacks,
-            dark_mode=self.dark_mode
+            dark_mode=self.dark_mode,
         )
-        
+
         # Should not raise exception
         frame = manager.build()
         self.assertIsNotNone(frame)
-        
+
         # Should have empty string as first option
-        combobox = manager.widgets['combobox_visibility']
-        values = combobox['values']
+        combobox = manager.widgets["combobox_visibility"]
+        values = combobox["values"]
         self.assertEqual(values[0], "")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

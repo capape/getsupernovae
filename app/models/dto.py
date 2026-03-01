@@ -1,8 +1,6 @@
-from dataclasses import dataclass, field
-from typing import Optional, Any
-from datetime import date
+from dataclasses import dataclass
+from typing import Any, Optional
 
-from app.models.snmodels import Visibility
 
 
 @dataclass
@@ -12,6 +10,7 @@ class SupernovaDTO:
     This mirrors the fields used by `Supernova` but is intended as a
     lightweight, provider-facing representation.
     """
+
     name: str
     date: Optional[str] = None
     date_obj: Optional[date] = None

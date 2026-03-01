@@ -1,26 +1,32 @@
 import io
+
 from reportlab.lib.utils import ImageReader
 
 # matplotlib is optional; use Agg backend for non-GUI plotting
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except Exception:
     HAS_MATPLOTLIB = False
 
 from datetime import datetime
+
 import astropy.units as u
 from astropy.time import Time
+
 try:
-    from astropy.coordinates import get_moon, AltAz
+    from astropy.coordinates import AltAz, get_moon
+
     HAS_GET_MOON = True
 except Exception:
     from astropy.coordinates import AltAz
+
     HAS_GET_MOON = False
 from app.utils.snparser import format_iso_datetime
-
 
 
 class VisibilityPlotter:
@@ -91,13 +97,17 @@ class VisibilityPlotter:
                     aa = AltAz(obstime=t_astropy, location=location)
                     moon_altaz = moon_coord.transform_to(aa)
                     moon_alts = [ma.alt.to_value(u.deg) for ma in moon_altaz]
-                    ax.plot(times, moon_alts, color="#666666", linestyle="--", linewidth=1, label="Moon")
+                    ax.plot(
+                        times, moon_alts, color="#666666", linestyle="--", linewidth=1, label="Moon"
+                    )
                     # shade when moon above horizon
                     try:
                         import numpy as _np
 
                         moon_arr = _np.array(moon_alts)
-                        ax.fill_between(times, moon_arr, 0, where=moon_arr > 0, color="#999999", alpha=0.12)
+                        ax.fill_between(
+                            times, moon_arr, 0, where=moon_arr > 0, color="#999999", alpha=0.12
+                        )
                     except Exception:
                         pass
                 except Exception:

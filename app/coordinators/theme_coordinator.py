@@ -6,16 +6,17 @@ This coordinator handles:
 - Results tree row coloring and tagging
 - Theme persistence
 """
+
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, Callable, Optional, Any
+from typing import Any, Callable, Dict, Optional
 
-from app.utils.logger import log_exception, get_logger
 from app.config.ui_constants import (
-    UI_CONSTANTS,
     THEME_COLORS,
+    UI_CONSTANTS,
     UI_STRINGS,
 )
+from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
 
@@ -62,13 +63,29 @@ class ThemeCoordinator:
             if dark:
                 tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
                 tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.DARK_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.DARK_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
+                    background=THEME_COLORS.DARK_EVEN_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_DARK,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW_BRIGHT,
+                    background=THEME_COLORS.DARK_ODD_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_DARK,
+                )
             else:
                 tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
                 tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.LIGHT_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.LIGHT_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
+                    background=THEME_COLORS.LIGHT_EVEN_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_LIGHT,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW_BRIGHT,
+                    background=THEME_COLORS.LIGHT_ODD_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_LIGHT,
+                )
 
             # Reapply tags to all existing items to preserve bright highlighting
             self.reapply_tree_tags()
@@ -83,21 +100,21 @@ class ThemeCoordinator:
                 return
 
             supernova_data = self.get_supernova_data()
-            items = tree.get_children('')
+            items = tree.get_children("")
             for index, item in enumerate(items):
                 try:
                     if item in supernova_data:
                         sn = supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
+                        mag = getattr(sn, "mag", None)
                         try:
                             is_bright = mag is not None and float(mag) < 15
                         except (ValueError, TypeError):
                             is_bright = False
 
                         if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
+                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
                         else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+                            tag = "evenrow" if index % 2 == 0 else "oddrow"
 
                         tree.item(item, tags=(tag,))
                 except Exception:
@@ -144,14 +161,28 @@ class ThemeCoordinator:
                 style.configure("TButton", background=btn_bg, foreground=fg)
                 style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
                 style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
-                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-                style.configure(UI_STRINGS.RESULTS_TREE_STYLE, background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
+                style.configure(
+                    "Treeview",
+                    background=tree_bg,
+                    fieldbackground=tree_bg,
+                    foreground=fg,
+                    rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
+                )
+                style.configure(
+                    UI_STRINGS.RESULTS_TREE_STYLE,
+                    background=tree_bg,
+                    fieldbackground=tree_bg,
+                    foreground=fg,
+                    rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
+                )
                 style.configure("TFrame", background=bg)
                 style.configure("TCheckbutton", background=bg, foreground=fg)
                 # selection highlight for treeview — choose a subtle color per theme
                 try:
-                    sel_color = THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
-                    style.map('Treeview', background=[('selected', sel_color)])
+                    sel_color = (
+                        THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
+                    )
+                    style.map("Treeview", background=[("selected", sel_color)])
                 except Exception:
                     log_exception(logger, "Failed to map Treeview selection color")
                 try:

@@ -7,9 +7,10 @@ Usage:
     set_language('es')   # switch to Spanish if locales/es/LC_MESSAGES/getsupernovae.mo exists
     print(_("Hello, World"))
 """
-from typing import Optional
+
 import gettext
 import os
+from typing import Optional
 
 LOCALEDIR = os.path.join(os.path.dirname(__file__), "locales")
 DOMAIN = "getsupernovae"

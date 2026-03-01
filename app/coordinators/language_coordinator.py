@@ -4,26 +4,25 @@ This module coordinates language-related operations for the supernova applicatio
 Handles language switching and refreshing UI labels across all managers and widgets.
 """
 
-from typing import Callable, Optional, Dict, Any
 import tkinter as tk
+from typing import Any, Callable, Dict, Optional
 
 from app.i18n import _, set_language
 from app.utils.logger import get_logger, log_exception
-
 
 logger = get_logger(__name__)
 
 
 class LanguageCoordinator:
     """Coordinates language switching and UI label refreshing.
-    
+
     This coordinator handles:
     - Language selection changes
     - Refreshing labels in all UI managers
     - Updating individual widget texts
     - Reapplying theme after language change
     - Updating visibility UI
-    
+
     Follows Single Responsibility Principle by focusing on language orchestration.
     Uses callbacks to avoid tight coupling with the main application.
     """
@@ -67,13 +66,13 @@ class LanguageCoordinator:
         """Handler when UI language selection changes: apply and refresh labels."""
         # Apply selected language
         self._apply_selected_language()
-        
+
         # Update all UI labels
         self._refresh_ui_labels()
-        
+
         # Reapply theme and styling
         self._reapply_theme_and_styling()
-        
+
         # Update visibility UI
         self._update_visibility_ui()
 
@@ -83,7 +82,7 @@ class LanguageCoordinator:
             langvar = self.get_langvar()
             if langvar is None:
                 return
-            
+
             lang = langvar.get().strip()
             if not lang:
                 set_language(None)
@@ -97,29 +96,29 @@ class LanguageCoordinator:
         try:
             # Get all widgets
             widgets = self.get_widgets()
-            
+
             # Refresh filter panel manager labels
             self._refresh_filter_panel_labels()
-            
+
             # Refresh labelLatitud (special case)
-            if widgets.get('labelLatitud') is not None:
-                widgets['labelLatitud'].config(text=_("Min latitude: "))
-            
+            if widgets.get("labelLatitud") is not None:
+                widgets["labelLatitud"].config(text=_("Min latitude: "))
+
             # Refresh results panel manager labels
             self._refresh_results_panel_labels()
-            
+
             # Refresh toolbar manager labels
             self._refresh_toolbar_labels()
-            
+
             # Refresh toolbar button labels (ignore/edit)
             self._refresh_toolbar_button_labels(widgets)
-            
+
             # Refresh action button labels (PDF/TXT/Refresh/Exit)
             self._refresh_action_button_labels(widgets)
-            
+
             # Update window title
             self._update_window_title()
-            
+
         except Exception:
             log_exception(logger, "Failed to refresh UI labels after language change")
 
@@ -153,11 +152,11 @@ class LanguageCoordinator:
     def _refresh_toolbar_button_labels(self, widgets: Dict[str, Optional[tk.Widget]]):
         """Refresh ignore and edit toolbar button labels."""
         try:
-            ignore_button = widgets.get('ignoreSelectedButton')
+            ignore_button = widgets.get("ignoreSelectedButton")
             if ignore_button is not None:
                 ignore_button.config(text=_("Ignore selected SN"))
-            
-            edit_button = widgets.get('editOldButton')
+
+            edit_button = widgets.get("editOldButton")
             if edit_button is not None:
                 edit_button.config(text=_("Edit Ignored SN"))
         except Exception:
@@ -166,19 +165,19 @@ class LanguageCoordinator:
     def _refresh_action_button_labels(self, widgets: Dict[str, Optional[tk.Widget]]):
         """Refresh PDF, TXT, Refresh Search, and Exit button labels."""
         try:
-            pdf_button = widgets.get('pdfButton')
+            pdf_button = widgets.get("pdfButton")
             if pdf_button is not None:
                 pdf_button.config(text=_("PDF"))
-            
-            txt_button = widgets.get('txtButton')
+
+            txt_button = widgets.get("txtButton")
             if txt_button is not None:
                 txt_button.config(text=_("TXT"))
-            
-            search_button = widgets.get('searchButton')
+
+            search_button = widgets.get("searchButton")
             if search_button is not None:
                 search_button.config(text=_("Refresh Search"))
-            
-            exit_button = widgets.get('exitButton')
+
+            exit_button = widgets.get("exitButton")
             if exit_button is not None:
                 exit_button.config(text=_("Exit"))
         except Exception:
@@ -197,7 +196,7 @@ class LanguageCoordinator:
             self.on_configure_tree_styling()
         except Exception:
             log_exception(logger, "Failed to reconfigure results tree after language change")
-        
+
         try:
             # Re-apply theme in case translations affected widget styles
             self.on_apply_theme()

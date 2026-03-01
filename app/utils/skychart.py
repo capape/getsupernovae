@@ -1,11 +1,13 @@
 import io
 import logging
+
 import astropy.units as u
 from reportlab.lib.utils import ImageReader
 
 # Try to import astroquery; availability flagged in HAS_ASTROQUERY
 try:
     from astroquery.vizier import Vizier
+
     HAS_ASTROQUERY = True
 except Exception as e:
     # Log the import failure so frozen executables expose the root cause
@@ -23,13 +25,25 @@ if not logger.hasHandlers():
 logger.setLevel(logging.INFO)
 
 
-def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: str = "png", width_cm: float = 8.0, height_cm: float = 6.0, dpi: int = 150):
+def make_sky_chart(
+    data,
+    fov_deg: float = 0.32,
+    mag_limit: float = 17.0,
+    fmt: str = "png",
+    width_cm: float = 8.0,
+    height_cm: float = 6.0,
+    dpi: int = 150,
+):
     """Create a tiny sky chart centered on the supernova.
 
     Returns a ReportLab ImageReader (PNG) or an io.BytesIO (SVG) depending
     on `fmt`. Returns None on error or when dependencies are missing.
     """
-    logger.info("generating sky chart for %s, astroquery=%s", getattr(data, "name", None), "yes" if HAS_ASTROQUERY else "no")
+    logger.info(
+        "generating sky chart for %s, astroquery=%s",
+        getattr(data, "name", None),
+        "yes" if HAS_ASTROQUERY else "no",
+    )
     center = None
     try:
         if hasattr(data, "coordinates") and data.coordinates is not None:
@@ -41,23 +55,37 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
                 try:
                     center = SkyCoord(ra, dec, frame="icrs", unit=(u.hourangle, u.deg))
                 except Exception:
-                    logger.exception("failed to create SkyCoord for %s", getattr(data, "name", None))
+                    logger.exception(
+                        "failed to create SkyCoord for %s", getattr(data, "name", None)
+                    )
                     center = None
     except Exception:
         logger.exception("error obtaining center coordinates for %s", getattr(data, "name", None))
         center = None
 
     if center is None:
-        logger.info("no valid coordinates for %s; cannot generate sky chart", getattr(data, "name", None))
+        logger.info(
+            "no valid coordinates for %s; cannot generate sky chart", getattr(data, "name", None)
+        )
         return None
 
     if not HAS_ASTROQUERY:
         return None
 
     try:
-        viz = Vizier(columns=["RAJ2000", "DEJ2000", "Gmag"], column_filters={"Gmag": f"<{mag_limit}"}, row_limit=5000)
-        radius = (fov_deg * (2 ** 0.5)) / 2.0
-        tbls = viz.query_region(center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]) if HAS_ASTROQUERY else []
+        viz = Vizier(
+            columns=["RAJ2000", "DEJ2000", "Gmag"],
+            column_filters={"Gmag": f"<{mag_limit}"},
+            row_limit=5000,
+        )
+        radius = (fov_deg * (2**0.5)) / 2.0
+        tbls = (
+            viz.query_region(
+                center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
+            )
+            if HAS_ASTROQUERY
+            else []
+        )
         stars = None
         if tbls and len(tbls) > 0:
             for t in tbls:
@@ -80,6 +108,7 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
                     break
 
         from astropy.table import Table
+
         tbl = Table()
         tbl["ra"] = ras
         tbl["dec"] = decs
@@ -94,8 +123,8 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
         dec_vals = star_coords.dec.to(u.deg).value
 
         import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
         from astropy.coordinates import Angle
+        from matplotlib.ticker import FuncFormatter
 
         w_in = width_cm / 2.54
         h_in = height_cm / 2.54

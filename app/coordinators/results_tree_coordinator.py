@@ -7,17 +7,18 @@ This coordinator manages:
 - Tooltip display on hover
 - SIMBAD star search
 """
+
 import tkinter as tk
 import urllib.parse
 import webbrowser
-from typing import Dict, Callable, Optional, Any
+from typing import Any, Callable, Dict
 
-from app.utils.logger import log_exception, get_logger
 from app.config.ui_constants import (
-    UI_CONSTANTS,
-    THEME_COLORS,
     NETWORK_CONSTANTS,
+    THEME_COLORS,
+    UI_CONSTANTS,
 )
+from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
 
@@ -75,42 +76,43 @@ class ResultsTreeCoordinator:
                 self._sort_reverse = False
 
             # Get column index
-            col_idx = self.tree['columns'].index(col)
+            col_idx = self.tree["columns"].index(col)
 
             # Get all items with their values
-            items = [(self.tree.set(item, col), item) for item in self.tree.get_children('')]
+            items = [(self.tree.set(item, col), item) for item in self.tree.get_children("")]
 
             # Sort items
             if is_numeric:
                 # Numeric sort - handle empty values
                 def sort_key(x):
                     try:
-                        return float(x[0]) if x[0] else float('inf')
+                        return float(x[0]) if x[0] else float("inf")
                     except (ValueError, TypeError):
-                        return float('inf')
+                        return float("inf")
+
                 items.sort(key=sort_key, reverse=self._sort_reverse)
             else:
                 # Alphabetic sort
-                items.sort(key=lambda x: x[0].lower() if x[0] else '', reverse=self._sort_reverse)
+                items.sort(key=lambda x: x[0].lower() if x[0] else "", reverse=self._sort_reverse)
 
             # Rearrange items in sorted order
             for index, (val, item) in enumerate(items):
-                self.tree.move(item, '', index)
+                self.tree.move(item, "", index)
 
                 # Reapply alternating row colors and brightness after sorting
                 try:
                     if item in self.supernova_data:
                         sn = self.supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
+                        mag = getattr(sn, "mag", None)
                         try:
                             is_bright = mag is not None and float(mag) < 15
                         except (ValueError, TypeError):
                             is_bright = False
 
                         if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
+                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
                         else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+                            tag = "evenrow" if index % 2 == 0 else "oddrow"
 
                         self.tree.item(item, tags=(tag,))
                 except Exception:
@@ -137,7 +139,7 @@ class ResultsTreeCoordinator:
         """Query SIMBAD for objects near the selected supernova."""
         # Import here to avoid circular dependency
         from app.i18n import _
-        
+
         try:
             selection = self.tree.selection()
             if not selection or len(selection) == 0:
@@ -150,10 +152,10 @@ class ResultsTreeCoordinator:
             sn = self.supernova_data[item]
 
             # Build SIMBAD query URL for the region around the supernova
-            coord = getattr(sn, 'coordinates', None)
+            coord = getattr(sn, "coordinates", None)
             if coord is not None:
-                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
-                dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1, alwayssign=True)
+                ra_str = coord.ra.to_string(unit="hour", sep=":", precision=1)
+                dec_str = coord.dec.to_string(unit="degree", sep=":", precision=1, alwayssign=True)
             else:
                 ra_str = dec_str = ""
 
@@ -182,10 +184,7 @@ class ResultsTreeCoordinator:
 
         except Exception as e:
             try:
-                self.on_show_error(
-                    _("Error"),
-                    _("Failed to query SIMBAD: ") + str(e)
-                )
+                self.on_show_error(_("Error"), _("Failed to query SIMBAD: ") + str(e))
             except Exception:
                 log_exception(logger, "Failed to show SIMBAD error message")
 
@@ -210,10 +209,13 @@ class ResultsTreeCoordinator:
 
             # Column #10 is rochester, #11 is tns (1-indexed)
             if column == "#10":  # Rochester
-                url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
+                url = getattr(sn, "rochesterUrl", None) or f"{getattr(sn, 'link', '')}"
                 self._open_url(url)
             elif column == "#11":  # TNS
-                url = getattr(sn, 'tnsUrl', None) or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
+                url = (
+                    getattr(sn, "tnsUrl", None)
+                    or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
+                )
                 self._open_url(url)
         except Exception:
             log_exception(logger, "Failed to process results table double click")
@@ -250,12 +252,12 @@ class ResultsTreeCoordinator:
                     tooltip_lines = []
 
                     # Discovery information
-                    first_obs = getattr(sn, 'firstObserved', None)
+                    first_obs = getattr(sn, "firstObserved", None)
                     if first_obs:
                         tooltip_lines.append(f"First observed: {first_obs}")
 
-                    max_mag = getattr(sn, 'maxMagnitude', None)
-                    max_mag_date = getattr(sn, 'maxMagnitudeDate', None)
+                    max_mag = getattr(sn, "maxMagnitude", None)
+                    max_mag_date = getattr(sn, "maxMagnitudeDate", None)
                     if max_mag:
                         mag_line = f"Max magnitude: {max_mag}"
                         if max_mag_date:
@@ -263,32 +265,40 @@ class ResultsTreeCoordinator:
                         tooltip_lines.append(mag_line)
 
                     # Visibility information
-                    visibility = getattr(sn, 'visibility', None)
+                    visibility = getattr(sn, "visibility", None)
                     if visibility:
-                        is_visible = getattr(visibility, 'visible', False)
+                        is_visible = getattr(visibility, "visible", False)
                         tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
 
                         # Get altitude/azimuth coordinates if available
-                        az_coords = getattr(visibility, 'azCords', None)
+                        az_coords = getattr(visibility, "azCords", None)
                         if az_coords and len(az_coords) > 0:
                             # Show first and last altitudes
                             try:
                                 first_coord = az_coords[0]
                                 last_coord = az_coords[-1]
 
-                                first_alt = getattr(first_coord, 'coord', None)
-                                last_alt = getattr(last_coord, 'coord', None)
+                                first_alt = getattr(first_coord, "coord", None)
+                                last_alt = getattr(last_coord, "coord", None)
 
-                                if first_alt is not None and hasattr(first_alt, 'alt'):
-                                    tooltip_lines.append(f"Start altitude: {first_alt.alt.degree:.1f}°")
-                                if last_alt is not None and hasattr(last_alt, 'alt'):
-                                    tooltip_lines.append(f"End altitude: {last_alt.alt.degree:.1f}°")
+                                if first_alt is not None and hasattr(first_alt, "alt"):
+                                    tooltip_lines.append(
+                                        f"Start altitude: {first_alt.alt.degree:.1f}°"
+                                    )
+                                if last_alt is not None and hasattr(last_alt, "alt"):
+                                    tooltip_lines.append(
+                                        f"End altitude: {last_alt.alt.degree:.1f}°"
+                                    )
 
                                 # Find max altitude
                                 max_alt = max(
-                                    (getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')),
+                                    (
+                                        getattr(c.coord, "alt", None)
+                                        for c in az_coords
+                                        if hasattr(c.coord, "alt")
+                                    ),
                                     default=None,
-                                    key=lambda a: a.degree if a is not None else -999
+                                    key=lambda a: a.degree if a is not None else -999,
                                 )
                                 if max_alt is not None:
                                     tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
@@ -324,7 +334,9 @@ class ResultsTreeCoordinator:
 
             self.tooltip_window = tk.Toplevel(parent)
             self.tooltip_window.wm_overrideredirect(True)
-            self.tooltip_window.wm_geometry(f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}")
+            self.tooltip_window.wm_geometry(
+                f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}"
+            )
 
             # Style tooltip based on dark mode
             dark = self.get_dark_mode()
@@ -341,7 +353,7 @@ class ResultsTreeCoordinator:
                 borderwidth=1,
                 padx=UI_CONSTANTS.TOOLTIP_PADX,
                 pady=UI_CONSTANTS.TOOLTIP_PADY,
-                font=("TkDefaultFont", 9)
+                font=("TkDefaultFont", 9),
             )
             label.pack()
         except Exception:

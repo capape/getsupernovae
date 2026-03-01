@@ -1,11 +1,12 @@
 from datetime import timedelta
-from astropy.time import Time
-from astropy.coordinates import Angle
+
 import astropy.units as u
+from astropy.coordinates import Angle
+from astropy.time import Time
 
 # import app helpers
 import getsupernovae as gs
-from app.models.snmodels import Supernova, AxCordInTime, Visibility
+from app.models.snmodels import AxCordInTime, Supernova, Visibility
 from i18n import _
 
 # build visibility azCords: 10 time points over next 5 hours
@@ -37,5 +38,13 @@ sn = Supernova(
     visibility=vis,
 )
 
-outname = gs.createPdf([sn], fromDate="2025-01-01", observationDate="sample", magnitude="17", site=gs.sites.get("Sabadell"), minLatitude=25, visibilityWindowName=None)
+outname = gs.createPdf(
+    [sn],
+    fromDate="2025-01-01",
+    observationDate="sample",
+    magnitude="17",
+    site=gs.sites.get("Sabadell"),
+    minLatitude=25,
+    visibilityWindowName=None,
+)
 print(_("Created PDF: {name}").format(name=outname))

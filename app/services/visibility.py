@@ -5,7 +5,8 @@ where `.coord.alt.degree` and `.coord.az.degree` are numeric (astropy
 Angle/Quantity or simple numbers). They return min/max altitude and
 an azimuth interval that correctly handles wrap-around across 0/360°.
 """
-from typing import Iterable, List, Tuple, Optional
+
+from typing import Iterable, List, Optional, Tuple
 
 
 def _deg_normalize(az: float) -> float:

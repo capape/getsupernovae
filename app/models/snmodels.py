@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
-from typing import Optional, Any, List
+from datetime import date
+from typing import Any, List, Optional
+
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
-from datetime import date
 
 
 @dataclass
 class AxCordInTime:
     """A sampled coordinate at a specific time (used for visibility traces)."""
+
     time: Time
     coord: Any  # typically an AltAz object with .alt/.az attributes
 
@@ -15,6 +17,7 @@ class AxCordInTime:
 @dataclass
 class Visibility:
     """Visibility metadata for a target: list of `AxCordInTime` samples."""
+
     visible: bool
     azCords: List[AxCordInTime] = field(default_factory=list)
     # Optional aggregated summary fields (degrees)

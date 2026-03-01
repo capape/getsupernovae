@@ -1,10 +1,11 @@
 import re
 import urllib.parse
-from typing import Optional, Tuple
 from datetime import datetime
-from bs4 import Tag
-from astropy.coordinates import SkyCoord
+from typing import Optional, Tuple
+
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+from bs4 import Tag
 
 
 def parse_magnitude(text: str) -> Tuple[Optional[float], Optional[str]]:
@@ -50,7 +51,7 @@ def parse_date(text: str):
         except Exception:
             continue
 
-    s2 = s.replace('/', '-').replace('.', '-')
+    s2 = s.replace("/", "-").replace(".", "-")
     try:
         dt = datetime.strptime(s2, "%Y-%m-%d").date()
         return dt, dt.strftime("%Y-%m-%d")

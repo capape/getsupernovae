@@ -1,7 +1,8 @@
-from typing import List
-from app.models.snmodels import AxCordInTime, Visibility
-from astropy.coordinates import AltAz
 from datetime import timedelta
+
+from astropy.coordinates import AltAz
+
+from app.models.snmodels import AxCordInTime, Visibility
 
 # Use the pure visibility helpers to compute summary metadata (non-breaking)
 from app.services.visibility import visibility_summary
@@ -49,4 +50,6 @@ class VisibilityWindow:
         except Exception:
             pass
 
-        return Visibility(visible, azVisibles, minAlt=minAlt, maxAlt=maxAlt, minAz=minAz, maxAz=maxAz)
+        return Visibility(
+            visible, azVisibles, minAlt=minAlt, maxAlt=maxAlt, minAz=minAz, maxAz=maxAz
+        )

@@ -3,9 +3,10 @@ Simple i18n wrapper using gettext.
 
 API mirrors the old top-level `i18n.py`: `_`, `ngettext`, `set_language`, `get_language`.
 """
-from typing import Optional
+
 import gettext
 import os
+from typing import Optional
 
 # point LOCALEDIR to the repository-level `locales/` directory
 LOCALEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "locales"))

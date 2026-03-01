@@ -1,7 +1,9 @@
-from typing import Any, Tuple, Optional
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
+from typing import Any, Optional, Tuple
+
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
+
 from app.services.visibility import visibility_summary
 
 
@@ -94,4 +96,16 @@ class ResultsPresenter:
         host = getattr(sn, "host", "") or ""
         constellation = getattr(sn, "constellation", "") or ""
         ra_str, dec_str = format_ra_dec(getattr(sn, "coordinates", None))
-        return (name, sn_type, mag_str, date_str, obs_time, host, constellation, ra_str, dec_str, self.ROCH_ICON, self.TNS_ICON)
+        return (
+            name,
+            sn_type,
+            mag_str,
+            date_str,
+            obs_time,
+            host,
+            constellation,
+            ra_str,
+            dec_str,
+            self.ROCH_ICON,
+            self.TNS_ICON,
+        )

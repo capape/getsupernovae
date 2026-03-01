@@ -9,7 +9,7 @@ This module coordinates report generation including:
 
 import os
 import subprocess
-from typing import List, Callable, Optional
+from typing import Callable, List, Optional
 
 from app.models.snmodels import Supernova
 from app.reports.report_pdf import createPdf
@@ -84,7 +84,7 @@ class ReportCoordinator:
                 search_criteria.magnitude,
                 search_criteria.site,
                 float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None)
+                getattr(search_criteria, "visibilityWindowName", None),
             )
             self.on_results_text_update(datatxt)
 
@@ -96,7 +96,7 @@ class ReportCoordinator:
                 search_criteria.magnitude,
                 search_criteria.site,
                 float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None),
+                getattr(search_criteria, "visibilityWindowName", None),
             )
 
             # Show success message and offer to open file
@@ -137,7 +137,7 @@ class ReportCoordinator:
                 search_criteria.magnitude,
                 search_criteria.site,
                 float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None)
+                getattr(search_criteria, "visibilityWindowName", None),
             )
             self.on_results_text_update(datatxt)
 
@@ -149,7 +149,7 @@ class ReportCoordinator:
                 search_criteria.magnitude,
                 search_criteria.site,
                 float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None),
+                getattr(search_criteria, "visibilityWindowName", None),
             )
 
         except Exception:
@@ -172,9 +172,7 @@ class ReportCoordinator:
 
             msg = _("PDF report saved to:\n{path}").format(path=pdf_path)
             should_open = self.on_show_message(
-                _("PDF Created"),
-                msg + "\n\n" + _("Do you want to open it?"),
-                "question"
+                _("PDF Created"), msg + "\n\n" + _("Do you want to open it?"), "question"
             )
 
             if should_open:
@@ -190,19 +188,22 @@ class ReportCoordinator:
             file_path: Path to the file to open
         """
         try:
-            if os.name == 'nt':  # Windows
+            if os.name == "nt":  # Windows
                 os.startfile(file_path)
-            elif os.name == 'posix':  # Linux/Mac
-                if 'linux' in os.sys.platform:
-                    subprocess.run(['xdg-open', file_path])
+            elif os.name == "posix":  # Linux/Mac
+                if "linux" in os.sys.platform:
+                    subprocess.run(["xdg-open", file_path])
                 else:
-                    subprocess.run(['open', file_path])
+                    subprocess.run(["open", file_path])
         except Exception as ex:
             if self.on_show_warning:
                 from app.i18n import _
+
                 self.on_show_warning(
                     _("Cannot open file"),
-                    _("File saved but could not be opened automatically: {error}").format(error=str(ex))
+                    _("File saved but could not be opened automatically: {error}").format(
+                        error=str(ex)
+                    ),
                 )
             else:
                 log_exception(logger, f"Failed to open file {file_path}")

@@ -1,9 +1,14 @@
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
-from app.ui.results_presenter import ResultsPresenter, format_observation_time, format_ra_dec, format_magnitude
-from app.models.snmodels import Supernova, AxCordInTime, Visibility
+from app.models.snmodels import AxCordInTime, Supernova, Visibility
+from app.ui.results_presenter import (
+    ResultsPresenter,
+    format_magnitude,
+    format_observation_time,
+    format_ra_dec,
+)
 
 
 def test_format_observation_time_with_astropy_times():
@@ -35,7 +40,13 @@ def test_format_ra_dec_and_magnitude_and_present():
         "14.23",
         "2026-01-27",
         "Ia",
-        Visibility(True, [AxCordInTime(Time("2026-01-27T21:30:00"), None), AxCordInTime(Time("2026-01-27T23:45:00"), None)]),
+        Visibility(
+            True,
+            [
+                AxCordInTime(Time("2026-01-27T21:30:00"), None),
+                AxCordInTime(Time("2026-01-27T23:45:00"), None),
+            ],
+        ),
     )
     presenter = ResultsPresenter()
     row = presenter.present(sn)

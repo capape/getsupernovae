@@ -1,7 +1,8 @@
 from datetime import timedelta
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
+
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
 # Import VisibilityWindow directly from snvisibility; keep `sites` from the
 # application module for site definitions.
@@ -25,7 +26,7 @@ def test_getVisibility_timestamps():
 
     # First sample time should equal t1 (no 0.5h offset)
     first_sample_time = vis.azCords[0].time
-    assert first_sample_time.to_value('iso')[:16] == t1.to_value('iso')[:16]
+    assert first_sample_time.to_value("iso")[:16] == t1.to_value("iso")[:16]
 
     # ensure subsequent samples are spaced by 30 minutes
     if len(vis.azCords) > 1:

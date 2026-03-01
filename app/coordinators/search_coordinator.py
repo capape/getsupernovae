@@ -8,14 +8,13 @@ This module coordinates the search process including:
 """
 
 from threading import Thread
-from typing import List, Callable, Optional, Any
+from typing import Any, Callable, List, Optional
 
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
 from app.services.provider import NetworkRochesterProvider
 from app.ui.snvisibility import VisibilityWindow
 from app.utils.logger import get_logger, log_exception
-
 
 logger = get_logger(__name__)
 
@@ -50,7 +49,9 @@ class AsyncRochesterDownload(Thread):
         self.config = search_criteria
         self.rochester_supernova = rochester_supernova
         self.visibility_factory = visibility_factory
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
+        self.provider_factory = (
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
+        )
         self.reporter = reporter
         self.dto_list = None
 
@@ -119,8 +120,12 @@ class SearchCoordinator:
             after_callback: Callback for scheduling delayed execution (delay_ms, callback)
         """
         self.rochester_supernova = rochester_supernova
-        self.visibility_factory = visibility_factory if visibility_factory is not None else VisibilityWindow
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
+        self.visibility_factory = (
+            visibility_factory if visibility_factory is not None else VisibilityWindow
+        )
+        self.provider_factory = (
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
+        )
         self.reporter = reporter
 
         # UI callbacks
@@ -137,9 +142,7 @@ class SearchCoordinator:
         self.last_rows: Optional[List[SupernovaDTO]] = None
         self.current_results: Optional[List[Supernova]] = None
 
-    def search_async(
-        self, search_criteria: Any, source: str = "SEARCH"
-    ):
+    def search_async(self, search_criteria: Any, source: str = "SEARCH"):
         """Start an async search operation.
 
         Args:
@@ -184,9 +187,7 @@ class SearchCoordinator:
             self._set_button_state("refresh", "disabled")
             self.search_async(search_criteria, "REFRESH")
 
-    def refilter_from_cache(
-        self, search_criteria: Any, source: str = "REFRESH"
-    ):
+    def refilter_from_cache(self, search_criteria: Any, source: str = "REFRESH"):
         """Re-run selection/filtering on cached data without downloading.
 
         Args:

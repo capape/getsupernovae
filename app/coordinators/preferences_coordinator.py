@@ -4,26 +4,25 @@ This module coordinates preferences loading, saving, and UI synchronization.
 Handles persisting user preferences and applying them to UI components.
 """
 
-from typing import Callable, Optional, Any, Dict
 import tkinter as tk
+from typing import Any, Callable, Dict, Optional
 
+from app.config.snconfig import load_user_prefs
 from app.i18n import set_language
 from app.utils.logger import get_logger, log_exception
-from app.config.snconfig import load_user_prefs
-
 
 logger = get_logger(__name__)
 
 
 class PreferencesCoordinator:
     """Coordinates preferences persistence and UI synchronization.
-    
+
     This coordinator handles:
     - Saving current UI state to disk
     - Loading saved preferences and applying to UI
     - Migrating legacy preferences format
     - Updating visibility UI based on window selection
-    
+
     Follows Single Responsibility Principle by focusing on preferences orchestration.
     Uses callbacks to avoid tight coupling with the main application.
     """
@@ -73,8 +72,8 @@ class PreferencesCoordinator:
         """
         try:
             tk_vars = self.get_tk_variables()
-            visibility_window_var = tk_vars.get('visibilityWindow')
-            
+            visibility_window_var = tk_vars.get("visibilityWindow")
+
             sel = ""
             if visibility_window_var:
                 try:
@@ -85,7 +84,7 @@ class PreferencesCoordinator:
 
             visibility_windows = self.get_visibility_windows()
             filter_panel_manager = self.get_filter_panel_manager()
-            
+
             if not filter_panel_manager:
                 return
 
@@ -114,22 +113,22 @@ class PreferencesCoordinator:
 
         try:
             tk_vars = self.get_tk_variables()
-            
+
             # Update state manager with current UI values (store names, not computed values)
             self.state_manager.update_search_state(
-                magnitude=self._get_var_value(tk_vars, 'magnitude', ''),
-                days_to_search=self._get_var_value(tk_vars, 'daysToSearch', '30'),
-                observation_date=self._get_var_value(tk_vars, 'observationDate', ''),
-                observation_time=self._get_var_value(tk_vars, 'observationTime', ''),
-                observation_duration=self._get_var_value(tk_vars, 'observationDuration', ''),
-                site=self._get_var_value(tk_vars, 'site', None),
-                visibility_window=self._get_var_value(tk_vars, 'visibilityWindow', None),
-                min_latitude=self._get_var_value(tk_vars, 'minLatitud', ''),
+                magnitude=self._get_var_value(tk_vars, "magnitude", ""),
+                days_to_search=self._get_var_value(tk_vars, "daysToSearch", "30"),
+                observation_date=self._get_var_value(tk_vars, "observationDate", ""),
+                observation_time=self._get_var_value(tk_vars, "observationTime", ""),
+                observation_duration=self._get_var_value(tk_vars, "observationDuration", ""),
+                site=self._get_var_value(tk_vars, "site", None),
+                visibility_window=self._get_var_value(tk_vars, "visibilityWindow", None),
+                min_latitude=self._get_var_value(tk_vars, "minLatitud", ""),
             )
 
             self.state_manager.update_ui_state(
-                language=self._get_var_value(tk_vars, 'langVar', 'en'),
-                dark_mode=self._get_var_value(tk_vars, 'dark_mode', False),
+                language=self._get_var_value(tk_vars, "langVar", "en"),
+                dark_mode=self._get_var_value(tk_vars, "dark_mode", False),
             )
 
             # Save to disk using preferences manager
@@ -159,7 +158,7 @@ class PreferencesCoordinator:
             # Apply loaded state to UI
             self._apply_search_state(loaded_state)
             self._apply_ui_state(loaded_state)
-            
+
             # Update visibility UI
             try:
                 self.update_visibility_ui()
@@ -185,32 +184,33 @@ class PreferencesCoordinator:
             if old_prefs and isinstance(old_prefs, dict):
                 # Migrate old flat dict format to new state structure
                 from app.state.app_state import AppState
+
                 loaded_state = AppState()
 
                 # Map old keys to new state
-                if 'magnitude' in old_prefs:
-                    loaded_state.search.magnitude = old_prefs['magnitude']
-                if 'daysToSearch' in old_prefs:
-                    loaded_state.search.days_to_search = old_prefs['daysToSearch']
-                if 'observationTime' in old_prefs:
-                    loaded_state.search.observation_time = old_prefs['observationTime']
-                if 'observationHours' in old_prefs:
-                    loaded_state.search.observation_duration = old_prefs['observationHours']
-                if 'minLatitude' in old_prefs:
-                    loaded_state.search.min_latitude = old_prefs['minLatitude']
-                if 'site' in old_prefs:
-                    loaded_state.search.site = old_prefs['site']
-                if 'visibilityWindow' in old_prefs:
-                    loaded_state.search.visibility_window = old_prefs['visibilityWindow']
-                if 'language' in old_prefs:
-                    loaded_state.ui.language = old_prefs['language']
+                if "magnitude" in old_prefs:
+                    loaded_state.search.magnitude = old_prefs["magnitude"]
+                if "daysToSearch" in old_prefs:
+                    loaded_state.search.days_to_search = old_prefs["daysToSearch"]
+                if "observationTime" in old_prefs:
+                    loaded_state.search.observation_time = old_prefs["observationTime"]
+                if "observationHours" in old_prefs:
+                    loaded_state.search.observation_duration = old_prefs["observationHours"]
+                if "minLatitude" in old_prefs:
+                    loaded_state.search.min_latitude = old_prefs["minLatitude"]
+                if "site" in old_prefs:
+                    loaded_state.search.site = old_prefs["site"]
+                if "visibilityWindow" in old_prefs:
+                    loaded_state.search.visibility_window = old_prefs["visibilityWindow"]
+                if "language" in old_prefs:
+                    loaded_state.ui.language = old_prefs["language"]
 
                 # Save in new format for next time
                 self.preferences_manager.save_preferences(loaded_state)
                 return loaded_state
         except Exception:
             log_exception(logger, "Failed to migrate legacy preferences")
-        
+
         return None
 
     def _apply_search_state(self, loaded_state: Any):
@@ -220,7 +220,7 @@ class PreferencesCoordinator:
         # Apply magnitude
         try:
             if loaded_state.search.magnitude:
-                var = tk_vars.get('magnitude')
+                var = tk_vars.get("magnitude")
                 if var:
                     var.set(str(loaded_state.search.magnitude))
         except Exception:
@@ -229,7 +229,7 @@ class PreferencesCoordinator:
         # Apply days to search
         try:
             if loaded_state.search.days_to_search:
-                var = tk_vars.get('daysToSearch')
+                var = tk_vars.get("daysToSearch")
                 if var:
                     var.set(str(loaded_state.search.days_to_search))
         except Exception:
@@ -238,7 +238,7 @@ class PreferencesCoordinator:
         # Apply observation date
         try:
             if loaded_state.search.observation_date:
-                var = tk_vars.get('observationDate')
+                var = tk_vars.get("observationDate")
                 if var:
                     var.set(str(loaded_state.search.observation_date))
         except Exception:
@@ -247,7 +247,7 @@ class PreferencesCoordinator:
         # Apply observation time
         try:
             if loaded_state.search.observation_time:
-                var = tk_vars.get('observationTime')
+                var = tk_vars.get("observationTime")
                 if var:
                     var.set(str(loaded_state.search.observation_time))
         except Exception:
@@ -256,7 +256,7 @@ class PreferencesCoordinator:
         # Apply observation duration
         try:
             if loaded_state.search.observation_duration:
-                var = tk_vars.get('observationDuration')
+                var = tk_vars.get("observationDuration")
                 if var:
                     var.set(str(loaded_state.search.observation_duration))
         except Exception:
@@ -265,7 +265,7 @@ class PreferencesCoordinator:
         # Apply min latitude
         try:
             if loaded_state.search.min_latitude:
-                var = tk_vars.get('minLatitud')
+                var = tk_vars.get("minLatitud")
                 if var:
                     var.set(str(loaded_state.search.min_latitude))
         except Exception:
@@ -276,7 +276,7 @@ class PreferencesCoordinator:
             site = loaded_state.search.site
             sites = self.get_sites()
             if site and site in list(sites.keys()):
-                var = tk_vars.get('site')
+                var = tk_vars.get("site")
                 if var:
                     var.set(site)
         except Exception:
@@ -287,7 +287,7 @@ class PreferencesCoordinator:
             vw = loaded_state.search.visibility_window
             visibility_windows = self.get_visibility_windows()
             if vw and vw in visibility_windows:
-                var = tk_vars.get('visibilityWindow')
+                var = tk_vars.get("visibilityWindow")
                 if var:
                     var.set(vw)
         except Exception:
@@ -303,10 +303,10 @@ class PreferencesCoordinator:
             if lang:
                 try:
                     set_language(lang)
-                    langvar = tk_vars.get('langVar')
+                    langvar = tk_vars.get("langVar")
                     if langvar:
                         langvar.set(lang)
-                    
+
                     # Refresh UI after language restoration
                     try:
                         lang_coordinator = self.get_language_coordinator()
@@ -323,10 +323,10 @@ class PreferencesCoordinator:
         try:
             dark_mode = loaded_state.ui.dark_mode
             if dark_mode is not None:
-                dark_mode_var = tk_vars.get('dark_mode')
+                dark_mode_var = tk_vars.get("dark_mode")
                 if dark_mode_var:
                     dark_mode_var.set(dark_mode)
-                    
+
                     # Apply theme
                     try:
                         theme_coordinator = self.get_theme_coordinator()

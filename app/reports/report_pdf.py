@@ -1,21 +1,21 @@
+import logging
 import os
-import io
-from reportlab.pdfgen.canvas import Canvas
+import platform
+from pathlib import Path
+
+from reportlab.lib.colors import Color, black, blue
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from reportlab.lib.colors import Color, black, blue
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.utils import ImageReader
-from app.utils.snparser import format_iso_datetime
+from reportlab.pdfgen.canvas import Canvas
+
+import app.i18n as i18n
+from app.config.snconfig import load_visibility_windows as _load_visibility_windows
 from app.models.snmodels import Supernova
 from app.reports.plotutils import VisibilityPlotter
-from app.config.snconfig import load_visibility_windows as _load_visibility_windows
-import app.i18n as i18n
-from pathlib import Path
-import platform
-from app.utils.skychart import make_sky_chart 
-import logging
+from app.utils.skychart import make_sky_chart
+from app.utils.snparser import format_iso_datetime
 
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
 logger = logging.getLogger(__name__)
@@ -29,8 +29,12 @@ logger.setLevel(logging.INFO)
 def addSupernovaToPdf(textObject, data: Supernova):
     lines = [
         i18n.i18n._("-------------------------------------------------"),
-        i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(date=data.date, mag=data.mag, type=data.type, name=data.name),
-        i18n._("  Const: {constellation}, Host: {host}").format(constellation=data.constellation, host=data.host),
+        i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(
+            date=data.date, mag=data.mag, type=data.type, name=data.name
+        ),
+        i18n._("  Const: {constellation}, Host: {host}").format(
+            constellation=data.constellation, host=data.host
+        ),
         i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
         "",
         i18n._("    Visible from :{visible_from} to: {visible_to}").format(
@@ -46,8 +50,12 @@ def addSupernovaToPdf(textObject, data: Supernova):
             alt1=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
         ),
         "",
-        i18n._("  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}").format(
-            firstObserved=data.firstObserved, maxMagnitude=data.maxMagnitude, maxMagnitudeDate=data.maxMagnitudeDate
+        i18n._(
+            "  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}"
+        ).format(
+            firstObserved=data.firstObserved,
+            maxMagnitude=data.maxMagnitude,
+            maxMagnitudeDate=data.maxMagnitudeDate,
         ),
         " " + (getattr(data, "link", "") or ""),
         "",
@@ -57,9 +65,17 @@ def addSupernovaToPdf(textObject, data: Supernova):
         textObject.textLine(line)
 
 
-def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, minLatitude, visibilityWindowName=None):
+def createPdf(
+    supernovas,
+    fromDate: str,
+    observationDate: str,
+    magnitude,
+    site,
+    minLatitude,
+    visibilityWindowName=None,
+):
     logger.info("Creating pdf")
-    import i18n as i18n_module
+
     # choose a font to embed for better mobile compatibility (Unicode, degree sign)
     used_font = "Courier"
     # prefer bundled font in package/fonts if available
@@ -106,7 +122,9 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
             if not docs.exists():
                 docs = Path.cwd()
         except Exception:
-            logger.exception("failed to determine Documents/Desktop path on Windows; falling back to cwd")
+            logger.exception(
+                "failed to determine Documents/Desktop path on Windows; falling back to cwd"
+            )
             docs = Path.cwd()
     else:
         # Linux/Mac: use Documents or home directory
@@ -117,7 +135,7 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
         except Exception:
             logger.exception("failed to determine Documents/home path; falling back to cwd")
             docs = Path.cwd()
-    
+
     pdf_filename = docs / f"{observationDate}.pdf"
     canvas = Canvas(str(pdf_filename), pagesize=A4)
     try:
@@ -133,13 +151,21 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
         txtobj.setLeading(leading)
         # full header (printed only on first page)
         if full:
-            txtobj.textLine(i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(fromDate=fromDate, to=observationDate, magnitude=magnitude))
+            txtobj.textLine(
+                i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
+                    fromDate=fromDate, to=observationDate, magnitude=magnitude
+                )
+            )
             # reuse local visibility windows loader for header/site summary
             vis = _load_visibility_windows()
-            site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(lon=site.lon.value, lat=site.lat.value, height=site.height.value)
+            site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
+                lon=site.lon.value, lat=site.lat.value, height=site.height.value
+            )
             if visibilityWindowName and visibilityWindowName in vis:
                 cfg = vis.get(visibilityWindowName, {})
-                site_info = site_info + i18n._(" . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º").format(
+                site_info = site_info + i18n._(
+                    " . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º"
+                ).format(
                     minAlt=float(cfg.get("minAlt", 0.0)),
                     maxAlt=float(cfg.get("maxAlt", 90.0)),
                     minAz=float(cfg.get("minAz", 0.0)),
@@ -164,15 +190,30 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
     def supernova_lines(data):
         lines = [
             "",
-            i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(date=data.date, mag=data.mag, type=data.type, name=data.name),
-            i18n._("  Const: {const}, Host: {host}").format(const=data.constellation, host=data.host),
+            i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(
+                date=data.date, mag=data.mag, type=data.type, name=data.name
+            ),
+            i18n._("  Const: {const}, Host: {host}").format(
+                const=data.constellation, host=data.host
+            ),
             i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
             "",
-            i18n._("  Visible from : {from_} to: {to}").format(from_=format_iso_datetime(data.visibility.azCords[0].time), to=format_iso_datetime(data.visibility.azCords[-1].time)),
-            i18n._("  AzCoords az: {az}, lat: {lat}").format(az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2), lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2)),
-            i18n._("  Last azCoords az: {az}, lat: {lat}").format(az=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2), lat=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2)),
+            i18n._("  Visible from : {from_} to: {to}").format(
+                from_=format_iso_datetime(data.visibility.azCords[0].time),
+                to=format_iso_datetime(data.visibility.azCords[-1].time),
+            ),
+            i18n._("  AzCoords az: {az}, lat: {lat}").format(
+                az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
+                lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+            ),
+            i18n._("  Last azCoords az: {az}, lat: {lat}").format(
+                az=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
+                lat=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+            ),
             "",
-            i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(first=data.firstObserved, max=data.maxMagnitude, on=data.maxMagnitudeDate),
+            i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
+                first=data.firstObserved, max=data.maxMagnitude, on=data.maxMagnitudeDate
+            ),
             "",
             "",
         ]
@@ -216,7 +257,9 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                 canvas.setLineWidth(0.6)
                 canvas.line(marginx, rect_top, marginx + usable_width, rect_top)
             except Exception:
-                logger.exception("failed drawing highlight top border for %s", getattr(data, "name", None))
+                logger.exception(
+                    "failed drawing highlight top border for %s", getattr(data, "name", None)
+                )
             canvas.restoreState()
         except Exception:
             logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
@@ -252,7 +295,9 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                 canvas.setFont(used_font, fontsize)
                 canvas.drawString(marginx, link_y, link)
                 w = pdfmetrics.stringWidth(link, used_font, fontsize)
-                canvas.linkURL(link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0)
+                canvas.linkURL(
+                    link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0
+                )
                 canvas.setFillColor(black)
         except Exception:
             logger.exception("failed to draw link for %s", getattr(data, "name", None))
@@ -264,25 +309,44 @@ def createPdf(supernovas, fromDate: str, observationDate: str, magnitude, site, 
                     from urllib.parse import quote
 
                     tnser = f"https://www.wis-tns.org/object/{quote(name)}"
-                    second_y = link_y - leading if 'link_y' in locals() else origin_y - ((len(lines) - 2) * leading)
+                    second_y = (
+                        link_y - leading
+                        if "link_y" in locals()
+                        else origin_y - ((len(lines) - 2) * leading)
+                    )
                     canvas.setFillColor(blue)
                     canvas.setFont(used_font, fontsize)
                     canvas.drawString(marginx, second_y, tnser)
                     w2 = pdfmetrics.stringWidth(tnser, used_font, fontsize)
-                    canvas.linkURL(tnser, (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2), relative=0)
+                    canvas.linkURL(
+                        tnser,
+                        (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2),
+                        relative=0,
+                    )
                     canvas.setFillColor(black)
                 except Exception:
-                    logger.exception("failed to draw tnser link for %s", getattr(data, "name", None))
+                    logger.exception(
+                        "failed to draw tnser link for %s", getattr(data, "name", None)
+                    )
         except Exception:
-            logger.exception("error while attempting to add tnser link for %s", getattr(data, "name", None))
+            logger.exception(
+                "error while attempting to add tnser link for %s", getattr(data, "name", None)
+            )
 
         try:
             sky_img = make_sky_chart(data, fmt="png")
         except Exception:
-            logger.exception("make_sky_chart raised an exception for %s", getattr(data, "name", None))
+            logger.exception(
+                "make_sky_chart raised an exception for %s", getattr(data, "name", None)
+            )
             sky_img = None
 
-        logger.info("adding images for %s: plot=%s skychart=%s", getattr(data, "name", None), "yes" if img else "no", "yes" if sky_img else "no")  
+        logger.info(
+            "adding images for %s: plot=%s skychart=%s",
+            getattr(data, "name", None),
+            "yes" if img else "no",
+            "yes" if sky_img else "no",
+        )
         if img or sky_img:
             try:
                 usable_width = (21.0 * cm) - (2 * marginx)

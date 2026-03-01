@@ -1,11 +1,12 @@
 import json
 import os
-import pytest
+
 import astropy.units as u
+import pytest
 from astropy.time import Time
 
 import app.reports.plotutils as plotutils
-from app.models.snmodels import AxCordInTime, Visibility, Supernova
+from app.models.snmodels import AxCordInTime, Supernova, Visibility
 
 HERE = os.path.dirname(__file__)
 FIXTURE = os.path.join(HERE, "fixtures", "sample_supernova.json")

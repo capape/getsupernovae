@@ -8,13 +8,12 @@ add, edit and persist observing site definitions (a simple mapping of name
 
 import json
 import os
-from typing import Dict, Optional
-
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Dict, Optional
 
-from app.i18n import _
 from app.config.snconfig import get_user_config_dir, load_sites
+from app.i18n import _
 
 
 class SitesDialog(tk.Toplevel):
@@ -78,7 +77,11 @@ class SitesDialog(tk.Toplevel):
             os.makedirs(cfgdir, exist_ok=True)
             return os.path.join(cfgdir, "sites.json") if self.path is None else self.path
         except Exception:
-            return os.path.join(os.path.dirname(__file__), "sites.json") if self.path is None else self.path
+            return (
+                os.path.join(os.path.dirname(__file__), "sites.json")
+                if self.path is None
+                else self.path
+            )
 
     def _load_current(self, path):
         """Load existing sites from `path` or fall back to `self._original_sites`.
@@ -89,9 +92,15 @@ class SitesDialog(tk.Toplevel):
             with open(path, "r", encoding="utf-8") as fh:
                 current = json.load(fh)
                 if not isinstance(current, dict):
-                    current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in self._original_sites.items()}
+                    current = {
+                        k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value}
+                        for k, v in self._original_sites.items()
+                    }
         except Exception:
-            current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in self._original_sites.items()}
+            current = {
+                k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value}
+                for k, v in self._original_sites.items()
+            }
 
         try:
             current = {k: self._normalize_site_info(v) for k, v in current.items()}
@@ -117,9 +126,18 @@ class SitesDialog(tk.Toplevel):
         try:
             style = ttk.Style()
             style.configure("SiteTreeview.Treeview", rowheight=28)
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", style="SiteTreeview.Treeview", height=12)
+            self.tree = ttk.Treeview(
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                style="SiteTreeview.Treeview",
+                height=12,
+            )
         except Exception:
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", height=12)
+            self.tree = ttk.Treeview(
+                frame_left, columns=self.columns, show="headings", selectmode="browse", height=12
+            )
 
         for col in self.columns:
             self.tree.heading(col, text=col.capitalize())
@@ -136,21 +154,37 @@ class SitesDialog(tk.Toplevel):
         frame_right = ttk.Frame(self)
         frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
 
-        ttk.Label(frame_right, text=_("Site name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Site name:")).grid(
+            column=0, row=0, sticky=tk.E, padx=5, pady=5
+        )
         self.name_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(
+            column=1, row=0, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Latitude (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Latitude (deg):")).grid(
+            column=0, row=1, sticky=tk.E, padx=5, pady=5
+        )
         self.lat_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.lat_var, width=20).grid(column=1, row=1, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.lat_var, width=20).grid(
+            column=1, row=1, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Longitude (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Longitude (deg):")).grid(
+            column=0, row=2, sticky=tk.E, padx=5, pady=5
+        )
         self.lon_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.lon_var, width=20).grid(column=1, row=2, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.lon_var, width=20).grid(
+            column=1, row=2, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Height (m):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Height (m):")).grid(
+            column=0, row=3, sticky=tk.E, padx=5, pady=5
+        )
         self.height_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.height_var, width=20).grid(column=1, row=3, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.height_var, width=20).grid(
+            column=1, row=3, padx=5, pady=5
+        )
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
@@ -210,6 +244,7 @@ class SitesDialog(tk.Toplevel):
     def _autosize_columns(self):
         try:
             from tkinter import font as tkfont
+
             font = tkfont.Font(font=self.tree.cget("font"))
         except Exception:
             font = None
@@ -253,7 +288,14 @@ class SitesDialog(tk.Toplevel):
         self._autosize_columns()
 
     def _persist_current(self):
-        normalized = {k: {"lat": float(v.get("lat", 0.0)), "lon": float(v.get("lon", 0.0)), "height": float(v.get("height", 0.0))} for k, v in self._current.items()}
+        normalized = {
+            k: {
+                "lat": float(v.get("lat", 0.0)),
+                "lon": float(v.get("lon", 0.0)),
+                "height": float(v.get("height", 0.0)),
+            }
+            for k, v in self._current.items()
+        }
         try:
             # Prefer an explicit path if the caller provided one (testable).
             if self.path:
@@ -312,7 +354,11 @@ class SitesDialog(tk.Toplevel):
 
         old = self._selected_name["value"]
         if nm in self._current and old is not None and nm != old:
-            if not messagebox.askyesno(_("Overwrite"), _("Site '{nm}' already exists. Overwrite?").format(nm=nm), parent=self):
+            if not messagebox.askyesno(
+                _("Overwrite"),
+                _("Site '{nm}' already exists. Overwrite?").format(nm=nm),
+                parent=self,
+            ):
                 return
 
         if old and old != nm and old in self._current:
@@ -368,14 +414,18 @@ class SitesDialog(tk.Toplevel):
         nm = self._selected_name["value"]
         if not nm:
             return
-        if not messagebox.askyesno(_("Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=self):
+        if not messagebox.askyesno(
+            _("Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=self
+        ):
             return
         try:
             if nm in self._current:
                 del self._current[nm]
             self._persist_current()
         except Exception as e:
-            messagebox.showerror(_("Error"), _("Failed to delete site: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Failed to delete site: {e}").format(e=e), parent=self
+            )
             return
         self._populate_tree()
         self.name_var.set("")

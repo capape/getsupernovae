@@ -3,17 +3,18 @@
 This builder encapsulates the multi-step initialization process for the
 SupernovasApp, separating setup concerns from the application class itself.
 """
+
 import os
 import tkinter as tk
-from typing import Optional, Any
+from typing import Any
 
-from app.utils.logger import log_exception, get_logger
+from app import __version__
 from app.config.ui_constants import (
-    UI_CONSTANTS,
     FILE_CONSTANTS,
+    UI_CONSTANTS,
 )
 from app.i18n import _, set_language
-from app import __version__
+from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,7 @@ class InitializationBuilder:
     def setup_state_management(self):
         """Initialize state managers and coordinator infrastructure."""
         from app.state import AppStateManager, PreferencesManager
-        
+
         self.app.state_manager = AppStateManager()
         self.app.preferences_manager = PreferencesManager()
         self.app._initializing = True
@@ -44,17 +45,23 @@ class InitializationBuilder:
     def setup_theme_and_language(self):
         """Initialize theme coordinator and set default language."""
         from app.coordinators.theme_coordinator import ThemeCoordinator
-        
+
         # Create dark_mode variable first (required by theme coordinator)
         self.app.dark_mode = tk.BooleanVar(value=True)
 
         # Initialize ThemeCoordinator (will get persist callback later from preferences coordinator)
         self.app.theme_coordinator = ThemeCoordinator(
             root_window=self.app,
-            get_results_tree=lambda: getattr(self.app, 'resultsTree', None),
-            get_supernova_data=lambda: getattr(self.app, 'supernova_data', {}),
-            get_dark_mode=lambda: self.app.dark_mode.get() if hasattr(self.app, 'dark_mode') else False,
-            on_persist_prefs=lambda: self.app.preferences_coordinator.persist_prefs() if hasattr(self.app, 'preferences_coordinator') else None,
+            get_results_tree=lambda: getattr(self.app, "resultsTree", None),
+            get_supernova_data=lambda: getattr(self.app, "supernova_data", {}),
+            get_dark_mode=lambda: (
+                self.app.dark_mode.get() if hasattr(self.app, "dark_mode") else False
+            ),
+            on_persist_prefs=lambda: (
+                self.app.preferences_coordinator.persist_prefs()
+                if hasattr(self.app, "preferences_coordinator")
+                else None
+            ),
         )
 
         # Set default language
@@ -98,24 +105,29 @@ class InitializationBuilder:
 
         self.app.results = tk.StringVar()
         self.app.results.trace_add(["write", "unset"], self.app.on_clear_results)
-        
+
         # Dark mode variable already created in setup_theme_and_language
         self.app.dark_mode.trace_add(["write", "unset"], lambda *a: None)
 
     def initialize_services(self, presenter, visibility_factory, provider_factory, reporter):
         """Initialize service layer components."""
+        from app.services.provider import NetworkRochesterProvider
         from app.ui.results_presenter import ResultsPresenter
         from app.ui.snvisibility import VisibilityWindow
-        from app.services.provider import NetworkRochesterProvider
-        
+
         # Set up dependency injection
         self.app.presenter = presenter if presenter is not None else ResultsPresenter()
-        self.app.visibility_factory = visibility_factory if visibility_factory is not None else VisibilityWindow
-        self.app.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
+        self.app.visibility_factory = (
+            visibility_factory if visibility_factory is not None else VisibilityWindow
+        )
+        self.app.provider_factory = (
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
+        )
         self.app.reporter = reporter
 
         # Initialize RochesterSupernova
         from getsupernovae import RochesterSupernova
+
         self.app.rochester_supernova = RochesterSupernova(
             visibility_factory=self.app.visibility_factory,
             provider_factory=self.app.provider_factory,
@@ -124,10 +136,10 @@ class InitializationBuilder:
 
     def initialize_coordinators(self):
         """Initialize all coordinator objects."""
-        from app.coordinators.search_coordinator import SearchCoordinator
-        from app.coordinators.report_coordinator import ReportCoordinator
         from app.coordinators.dialog_coordinator import DialogCoordinator
-        
+        from app.coordinators.report_coordinator import ReportCoordinator
+        from app.coordinators.search_coordinator import SearchCoordinator
+
         # SearchCoordinator
         self.app.search_coordinator = SearchCoordinator(
             rochester_supernova=self.app.rochester_supernova,
@@ -138,8 +150,12 @@ class InitializationBuilder:
             on_button_state_change=self.app._set_button_state,
             on_progress_start=self.app.start_progress_bar,
             on_progress_end=self.app.end_progress_bar,
-            on_pdf_invoke=lambda: self.app.pdfButton.invoke() if hasattr(self.app, 'pdfButton') else None,
-            on_txt_invoke=lambda: self.app.txtButton.invoke() if hasattr(self.app, 'txtButton') else None,
+            on_pdf_invoke=lambda: (
+                self.app.pdfButton.invoke() if hasattr(self.app, "pdfButton") else None
+            ),
+            on_txt_invoke=lambda: (
+                self.app.txtButton.invoke() if hasattr(self.app, "txtButton") else None
+            ),
             after_callback=self.app.after,
         )
 
@@ -163,10 +179,14 @@ class InitializationBuilder:
             on_search_async=lambda data, source: self.app.on_search_async(data, source),
             on_show_info=self.app._show_info_dialog,
             on_show_error=self.app._show_error_dialog,
-            on_get_current_site=lambda: self.app.site.get() if hasattr(self.app, 'site') else "",
-            on_get_current_visibility_window=lambda: self.app.visibilityWindow.get() if hasattr(self.app, 'visibilityWindow') else "",
-            get_combobox_site=lambda: self.app.cbSite if hasattr(self.app, 'cbSite') else None,
-            get_combobox_visibility=lambda: self.app.cbVisibility if hasattr(self.app, 'cbVisibility') else None,
+            on_get_current_site=lambda: self.app.site.get() if hasattr(self.app, "site") else "",
+            on_get_current_visibility_window=lambda: (
+                self.app.visibilityWindow.get() if hasattr(self.app, "visibilityWindow") else ""
+            ),
+            get_combobox_site=lambda: self.app.cbSite if hasattr(self.app, "cbSite") else None,
+            get_combobox_visibility=lambda: (
+                self.app.cbVisibility if hasattr(self.app, "cbVisibility") else None
+            ),
         )
 
     def configure_window_properties(self):
@@ -188,7 +208,7 @@ class InitializationBuilder:
         center_y = int(screen_height / 2 - window_height / 2)
 
         self.app.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
-        
+
         # Set minimum window size
         try:
             self.app.minsize(window_width, window_height)
@@ -198,12 +218,12 @@ class InitializationBuilder:
     def _setup_application_icon(self):
         """Load and set application icon (ICO, PNG, or SVG)."""
         try:
-            icon_dir = os.path.join(os.path.dirname(__file__), '..', '..', FILE_CONSTANTS.ICONS_DIR)
+            icon_dir = os.path.join(os.path.dirname(__file__), "..", "..", FILE_CONSTANTS.ICONS_DIR)
             ico = os.path.join(icon_dir, FILE_CONSTANTS.ICON_ICO)
             png = os.path.join(icon_dir, FILE_CONSTANTS.ICON_PNG)
             svg = os.path.join(icon_dir, FILE_CONSTANTS.ICON_SVG)
-            
-            if os.path.exists(ico) and os.name == 'nt':
+
+            if os.path.exists(ico) and os.name == "nt":
                 try:
                     self.app.iconbitmap(ico)
                 except Exception:
@@ -226,8 +246,9 @@ class InitializationBuilder:
     def set_initial_filter_values(self):
         """Set initial values for filter variables from configuration."""
         from app.config.snconfig import load_visibility_windows
+
         visibility_windows = load_visibility_windows()
-        
+
         self.app.magnitude.set(self.filters.magnitude)
         self.app.daysToSearch.set(self.filters.daysToSearch)
         self.app.observationDate.set(self.filters.observationDate.strftime("%Y-%m-%d"))
@@ -235,7 +256,7 @@ class InitializationBuilder:
         self.app.observationDuration.set(self.filters.observationHours)
         self.app.minLatitud.set(self.filters.minLatitude)
         self.app.site.set(self.filters.site)
-        
+
         # Set visibility window
         try:
             if getattr(self.filters, "visibilityWindowName", None):
@@ -252,7 +273,7 @@ class InitializationBuilder:
                 self.app.visibilityWindow.set("Default")
             except Exception:
                 log_exception(logger, "Failed to set default visibility window")
-        
+
         self.app.results.set("")
 
     def build_ui_panels(self):
@@ -272,57 +293,61 @@ class InitializationBuilder:
     def initialize_language_coordinator(self):
         """Initialize the language coordinator after UI panels are built."""
         from app.coordinators.language_coordinator import LanguageCoordinator
-        
+
         try:
             self.app.language_coordinator = LanguageCoordinator(
                 root_window=self.app,
-                get_langvar=lambda: getattr(self.app, 'langVar', None),
-                get_filter_panel_manager=lambda: getattr(self.app, 'filter_panel_manager', None),
-                get_results_panel_manager=lambda: getattr(self.app, 'results_panel_manager', None),
-                get_toolbar_manager=lambda: getattr(self.app, 'toolbar_manager', None),
+                get_langvar=lambda: getattr(self.app, "langVar", None),
+                get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
+                get_results_panel_manager=lambda: getattr(self.app, "results_panel_manager", None),
+                get_toolbar_manager=lambda: getattr(self.app, "toolbar_manager", None),
                 get_widgets=lambda: {
-                    'labelLatitud': getattr(self.app, 'labelLatitud', None),
-                    'ignoreSelectedButton': getattr(self.app, 'ignoreSelectedButton', None),
-                    'editOldButton': getattr(self.app, 'editOldButton', None),
-                    'pdfButton': getattr(self.app, 'pdfButton', None),
-                    'txtButton': getattr(self.app, 'txtButton', None),
-                    'searchButton': getattr(self.app, 'searchButton', None),
-                    'exitButton': getattr(self.app, 'exitButton', None),
+                    "labelLatitud": getattr(self.app, "labelLatitud", None),
+                    "ignoreSelectedButton": getattr(self.app, "ignoreSelectedButton", None),
+                    "editOldButton": getattr(self.app, "editOldButton", None),
+                    "pdfButton": getattr(self.app, "pdfButton", None),
+                    "txtButton": getattr(self.app, "txtButton", None),
+                    "searchButton": getattr(self.app, "searchButton", None),
+                    "exitButton": getattr(self.app, "exitButton", None),
                 },
                 on_configure_tree_styling=self.app.theme_coordinator.configure_results_tree_styling,
                 on_apply_theme=self.app.theme_coordinator.apply_theme,
-                on_update_visibility_ui=lambda: self.app.preferences_coordinator.update_visibility_ui() if hasattr(self.app, 'preferences_coordinator') else None,
+                on_update_visibility_ui=lambda: (
+                    self.app.preferences_coordinator.update_visibility_ui()
+                    if hasattr(self.app, "preferences_coordinator")
+                    else None
+                ),
             )
         except Exception:
             log_exception(logger, "Failed to initialize language coordinator")
 
     def initialize_preferences_coordinator(self):
         """Initialize the preferences coordinator before loading preferences."""
-        from app.coordinators.preferences_coordinator import PreferencesCoordinator
         import getsupernovae as gs
-        
+        from app.coordinators.preferences_coordinator import PreferencesCoordinator
+
         try:
             self.app.preferences_coordinator = PreferencesCoordinator(
                 state_manager=self.app.state_manager,
                 preferences_manager=self.app.preferences_manager,
-                get_initializing_flag=lambda: getattr(self.app, '_initializing', False),
+                get_initializing_flag=lambda: getattr(self.app, "_initializing", False),
                 get_tk_variables=lambda: {
-                    'magnitude': getattr(self.app, 'magnitude', None),
-                    'daysToSearch': getattr(self.app, 'daysToSearch', None),
-                    'observationDate': getattr(self.app, 'observationDate', None),
-                    'observationTime': getattr(self.app, 'observationTime', None),
-                    'observationDuration': getattr(self.app, 'observationDuration', None),
-                    'site': getattr(self.app, 'site', None),
-                    'visibilityWindow': getattr(self.app, 'visibilityWindow', None),
-                    'minLatitud': getattr(self.app, 'minLatitud', None),
-                    'langVar': getattr(self.app, 'langVar', None),
-                    'dark_mode': getattr(self.app, 'dark_mode', None),
+                    "magnitude": getattr(self.app, "magnitude", None),
+                    "daysToSearch": getattr(self.app, "daysToSearch", None),
+                    "observationDate": getattr(self.app, "observationDate", None),
+                    "observationTime": getattr(self.app, "observationTime", None),
+                    "observationDuration": getattr(self.app, "observationDuration", None),
+                    "site": getattr(self.app, "site", None),
+                    "visibilityWindow": getattr(self.app, "visibilityWindow", None),
+                    "minLatitud": getattr(self.app, "minLatitud", None),
+                    "langVar": getattr(self.app, "langVar", None),
+                    "dark_mode": getattr(self.app, "dark_mode", None),
                 },
                 get_sites=lambda: gs.sites,
                 get_visibility_windows=lambda: gs.visibility_windows,
-                get_filter_panel_manager=lambda: getattr(self.app, 'filter_panel_manager', None),
-                get_language_coordinator=lambda: getattr(self.app, 'language_coordinator', None),
-                get_theme_coordinator=lambda: getattr(self.app, 'theme_coordinator', None),
+                get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
+                get_language_coordinator=lambda: getattr(self.app, "language_coordinator", None),
+                get_theme_coordinator=lambda: getattr(self.app, "theme_coordinator", None),
             )
         except Exception:
             log_exception(logger, "Failed to initialize preferences coordinator")
@@ -349,5 +374,5 @@ class InitializationBuilder:
         self.initialize_language_coordinator()
         self.initialize_preferences_coordinator()
         self.build_ui_panels()
-        
+
         return self.app

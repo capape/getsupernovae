@@ -1,17 +1,18 @@
-from ast import List
 import os
 import sys
-from bs4 import BeautifulSoup
+from ast import List
 from datetime import datetime
 
+
 # Ensure package imports work when running this test standalone
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import astropy.units as u
+from astropy.coordinates import SkyCoord
 
 from app.models.dto import SupernovaDTO
-from app.models.snmodels import Visibility, AxCordInTime
+from app.models.snmodels import AxCordInTime, Visibility
 from getsupernovae import RochesterSupernova, sites
-from astropy.coordinates import SkyCoord
-import astropy.units as u
 
 
 class DummyVisibilityFactory:
@@ -29,7 +30,7 @@ class DummyVisibilityFactory:
 
 def test_rochester_uses_injected_visibility_factory():
     # Build a minimal HTML row similar to provider tests
-    snList : List[SupernovaDTO] = []
+    snList: List[SupernovaDTO] = []
     sn = SupernovaDTO(
         name="SN2025abc",
         host="NGC 1234",
@@ -38,13 +39,12 @@ def test_rochester_uses_injected_visibility_factory():
         mag=15.3,
         date="2025/12/01",
         date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
-        coordinates= SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
-        type="Ia"
+        coordinates=SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
+        type="Ia",
     )
     snList.append(sn)
 
-
-    html = '''
+    html = """
     <table>
     <tr>
         <td><a href="../snimages/sn2025abc.html">SN2025abc</a></td>
@@ -61,9 +61,7 @@ def test_rochester_uses_injected_visibility_factory():
         <td>2025/11/30</td>
     </tr>
     </table>
-    '''
-
-    
+    """
 
     # Instantiate RochesterSupernova with the dummy factory
     rv = RochesterSupernova(visibility_factory=DummyVisibilityFactory)
@@ -87,6 +85,6 @@ def test_rochester_uses_injected_visibility_factory():
     assert len(results) == 1
 
     sn = results[0]
-    assert getattr(sn, 'visibility', None) is not None
-    assert getattr(sn.visibility, 'visible', False) is True
-    assert len(getattr(sn.visibility, 'azCords', [])) == 1
+    assert getattr(sn, "visibility", None) is not None
+    assert getattr(sn.visibility, "visible", False) is True
+    assert len(getattr(sn.visibility, "azCords", [])) == 1
