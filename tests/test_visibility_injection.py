@@ -36,7 +36,7 @@ def test_rochester_uses_injected_visibility_factory():
         ra="12:34:56",
         decl="+12:34:56",
         mag=15.3,
-        date="2025/12/01",
+        last_observed_date="2025/12/01",
         date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
         coordinates=SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
         type="Ia",
@@ -86,4 +86,4 @@ def test_rochester_uses_injected_visibility_factory():
     sn = results[0]
     assert getattr(sn, "visibility", None) is not None
     assert getattr(sn.visibility, "visible", False) is True
-    assert len(getattr(sn.visibility, "azCords", [])) == 1
+    assert len(getattr(sn.visibility, "az_cords", [])) == 1

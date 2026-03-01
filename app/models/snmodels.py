@@ -19,7 +19,7 @@ class Visibility:
     """Visibility metadata for a target: list of `AxCordInTime` samples."""
 
     visible: bool
-    azCords: List[AxCordInTime] = field(default_factory=list)
+    az_cords: List[AxCordInTime] = field(default_factory=list)
     # Optional aggregated summary fields (degrees)
     min_alt: Optional[float] = None
     max_alt: Optional[float] = None
@@ -31,7 +31,7 @@ class Visibility:
 class Supernova:
     # Keep original field order for backward compatibility with existing callers/tests
     name: str
-    date: Optional[str]
+    last_observed_date: Optional[str]
     mag: Optional[float]
     host: Optional[str]
     ra: Optional[str]

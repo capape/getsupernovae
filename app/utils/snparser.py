@@ -105,7 +105,7 @@ def _parse_row_safe(row: Tag):
         mag_val, mag_limit = parse_magnitude(mag_text)
 
         raw_date_text = cols[6].get_text(strip=True)
-        date_obj, date_text = parse_date(raw_date_text)
+        last_observed_date_obj, last_observed_date_text = parse_date(raw_date_text)
 
         type_text = cols[7].get_text(strip=True)
         max_mag_text = cols[9].get_text(strip=True)
@@ -131,8 +131,8 @@ def _parse_row_safe(row: Tag):
             "decl": dec_text,
             "mag": mag_val,
             "mag_limit": mag_limit,
-            "date": date_text,
-            "date_obj": date_obj,
+            "last_observed_date": last_observed_date_text,
+            "last_observed_date_obj": last_observed_date_obj,
             "type": type_text,
             "max_magnitude": max_mag,
             "max_magnitude_date": max_mag_date,

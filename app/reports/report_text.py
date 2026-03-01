@@ -1,6 +1,6 @@
 from typing import List
 
-import app.i18n as i18n
+from app import i18n
 from app.config.snconfig import load_visibility_windows
 from app.models.snmodels import Supernova
 from app.utils.snparser import format_iso_datetime
@@ -23,12 +23,12 @@ RA:{ra}, DECL.{decl}
 """)
 
     # compute from/to and an observation time string
-    visible_from = format_iso_datetime(data.visibility.azCords[0].time)
-    visible_to = format_iso_datetime(data.visibility.azCords[-1].time)
+    visible_from = format_iso_datetime(data.visibility.az_cords[0].time)
+    visible_to = format_iso_datetime(data.visibility.az_cords[-1].time)
     observation_time = f"{visible_from} - {visible_to}"
 
     return tpl.format(
-        date=data.date,
+        date=data.last_observed_date,
         mag=data.mag,
         type=data.type,
         name=data.name,
@@ -39,10 +39,10 @@ RA:{ra}, DECL.{decl}
         observation_time=observation_time,
         visible_from=visible_from,
         visible_to=visible_to,
-        az0=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-        alt0=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
-        az1=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
-        alt1=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+        az0=data.visibility.az_cords[0].coord.az.to_string(sep=" ", precision=2),
+        alt0=data.visibility.az_cords[0].coord.alt.to_string(sep=" ", precision=2),
+        az1=data.visibility.az_cords[-1].coord.az.to_string(sep=" ", precision=2),
+        alt1=data.visibility.az_cords[-1].coord.alt.to_string(sep=" ", precision=2),
         first_observed=data.first_observed,
         max_magnitude=data.max_magnitude,
         max_magnitude_date=data.max_magnitude_date,
@@ -129,32 +129,32 @@ def print_supernova(data: Supernova):
     print("-------------------------------------------------")
     print(
         i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(
-            date=data.date, mag=data.mag, type=data.type, name=data.name
+            date=data.last_observed_date, mag=data.mag, type=data.type, name=data.name
         )
     )
     print(i18n._("  Const: {const}, Host: {host}").format(const=data.constellation, host=data.host))
     print(i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl))
     print("")
     # observation time
-    obs_start = format_iso_datetime(data.visibility.azCords[0].time)
-    obs_end = format_iso_datetime(data.visibility.azCords[-1].time)
+    obs_start = format_iso_datetime(data.visibility.az_cords[0].time)
+    obs_end = format_iso_datetime(data.visibility.az_cords[-1].time)
     print(i18n._("  Observation time: {obs}").format(obs=f"{obs_start} - {obs_end}"))
     print(
         i18n._("  Visible from : {from_} to: {to}").format(
-            from_=format_iso_datetime(data.visibility.azCords[0].time),
-            to=format_iso_datetime(data.visibility.azCords[-1].time),
+            from_=format_iso_datetime(data.visibility.az_cords[0].time),
+            to=format_iso_datetime(data.visibility.az_cords[-1].time),
         )
     )
     print(
         i18n._("  AzCoords az: {az}, lat: {lat}").format(
-            az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-            lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+            az=data.visibility.az_cords[0].coord.az.to_string(sep=" ", precision=2),
+            lat=data.visibility.az_cords[0].coord.alt.to_string(sep=" ", precision=2),
         )
     )
     print(
         i18n._("  Last azCoords az: {az}, lat: {lat}").format(
-            az=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
-            lat=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+            az=data.visibility.az_cords[-1].coord.az.to_string(sep=" ", precision=2),
+            lat=data.visibility.az_cords[-1].coord.alt.to_string(sep=" ", precision=2),
         )
     )
     print("")
@@ -180,14 +180,14 @@ def print_supernova_short(data: Supernova):
         )
     )
     print(
-        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(date=data.date, ra=data.ra, dec=data.decl)
+        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(date=data.last_observed_date, ra=data.ra, dec=data.decl)
     )
     print(
         i18n._("Observation time: {from_} - {to} az: {az}, LAT: {lat}").format(
-            from_=format_iso_datetime(data.visibility.azCords[0].time),
-            to=format_iso_datetime(data.visibility.azCords[-1].time),
-            az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-            lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+            from_=format_iso_datetime(data.visibility.az_cords[0].time),
+            to=format_iso_datetime(data.visibility.az_cords[-1].time),
+            az=data.visibility.az_cords[0].coord.az.to_string(sep=" ", precision=2),
+            lat=data.visibility.az_cords[0].coord.alt.to_string(sep=" ", precision=2),
         )
     )
     print("")

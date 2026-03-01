@@ -158,8 +158,8 @@ class SupernovaSelectionService:
         def get_observation_times(sn: Supernova) -> tuple[float, float]:
             """Extract start and end times from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
-                    az_coords = sn.visibility.azCords
+                if sn.visibility and hasattr(sn.visibility, "az_cords") and sn.visibility.az_cords:
+                    az_coords = sn.visibility.az_cords
                     if len(az_coords) > 0:
                         start_time = (
                             az_coords[0].time if hasattr(az_coords[0], "time") else float("inf")
@@ -192,9 +192,9 @@ class SupernovaSelectionService:
         def get_max_altitude(sn: Supernova) -> float:
             """Extract maximum altitude from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
+                if sn.visibility and hasattr(sn.visibility, "az_cords") and sn.visibility.az_cords:
                     altitudes = []
-                    for coord in sn.visibility.azCords:
+                    for coord in sn.visibility.az_cords:
                         if hasattr(coord, "coord") and hasattr(coord.coord, "alt"):
                             altitudes.append(coord.coord.alt.degree)
 
@@ -249,10 +249,10 @@ class SupernovaSelectionService:
         filtered = []
         for sn in supernovae:
             try:
-                if not sn.visibility or not hasattr(sn.visibility, "azCords"):
+                if not sn.visibility or not hasattr(sn.visibility, "az_cords"):
                     continue
 
-                az_coords = sn.visibility.azCords
+                az_coords = sn.visibility.az_cords
                 if not az_coords or len(az_coords) == 0:
                     continue
 

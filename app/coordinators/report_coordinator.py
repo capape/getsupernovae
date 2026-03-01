@@ -194,9 +194,9 @@ class ReportCoordinator:
                 os.startfile(file_path)
             elif os.name == "posix":  # Linux/Mac
                 if "linux" in os.sys.platform:
-                    subprocess.run(["xdg-open", file_path])
+                    subprocess.run(["xdg-open", file_path], check=False)
                 else:
-                    subprocess.run(["open", file_path])
+                    subprocess.run(["open", file_path], check=False)
         except (OSError, subprocess.CalledProcessError, FileNotFoundError) as ex:
             if self.on_show_warning:
                 from app.i18n import _

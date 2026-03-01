@@ -41,8 +41,8 @@ class RochesterProvider:  # pylint: disable=too-few-public-methods
 
             sn = SupernovaDTO(
                 parsed.get("name", ""),
-                parsed.get("date"),
-                parsed.get("date_obj"),
+                parsed.get("last_observed_date"),
+                parsed.get("last_observed_date_obj"),
                 parsed.get("mag"),
                 parsed.get("host"),
                 parsed.get("ra"),

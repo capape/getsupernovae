@@ -58,7 +58,7 @@ def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00
         ra=ra,
         decl=dec,
         mag=mag,
-        date=date_str,
+        last_observed_date=date_str,
         date_obj=date_obj,
         coordinates=coords,
         type="Ia",
@@ -179,7 +179,7 @@ def test_sort_by_observation_time():
     # Create mock supernovae with different observation times
     sn1 = Supernova(
         name="SN2025a",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host1",
         ra="12:00:00",
@@ -204,7 +204,7 @@ def test_sort_by_observation_time():
 
     sn2 = Supernova(
         name="SN2025b",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host2",
         ra="12:00:00",
@@ -229,7 +229,7 @@ def test_sort_by_observation_time():
 
     sn3 = Supernova(
         name="SN2025c",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host3",
         ra="12:00:00",
@@ -277,7 +277,7 @@ def test_sort_by_max_altitude():
 
     sn1 = Supernova(
         name="SN2025a",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host1",
         ra="12:00:00",
@@ -302,7 +302,7 @@ def test_sort_by_max_altitude():
 
     sn2 = Supernova(
         name="SN2025b",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host2",
         ra="12:00:00",
@@ -339,7 +339,7 @@ def test_group_by_constellation():
 
     sn1 = Supernova(
         name="SN2025a",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host1",
         ra="12:00:00",
@@ -358,7 +358,7 @@ def test_group_by_constellation():
 
     sn2 = Supernova(
         name="SN2025b",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host2",
         ra="12:00:00",
@@ -377,7 +377,7 @@ def test_group_by_constellation():
 
     sn3 = Supernova(
         name="SN2025c",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host3",
         ra="12:00:00",
@@ -421,7 +421,7 @@ def test_filter_by_observation_quality():
     # Low altitude - should be filtered out
     sn1 = Supernova(
         name="SN2025a",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host1",
         ra="12:00:00",
@@ -447,7 +447,7 @@ def test_filter_by_observation_quality():
     # Good altitude and duration
     sn2 = Supernova(
         name="SN2025b",
-        date="2025/01/01",
+        last_observed_date="2025/01/01",
         mag="14.0",
         host="Host2",
         ra="12:00:00",

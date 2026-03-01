@@ -59,7 +59,7 @@ def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00
         ra=ra,
         decl=dec,
         mag=mag,
-        date=date_str,
+        last_observed_date=date_str,
         date_obj=date_obj,
         coordinates=coords,
         type="Ia",

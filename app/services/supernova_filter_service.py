@@ -97,11 +97,11 @@ class SupernovaFilterService:
 
         filtered: List[SupernovaDTO] = []
         for sn in supernovae:
-            if sn.date is None:
+            if sn.last_observed_date is None:
                 # Skip entries without a valid date
                 continue
 
-            if sn.date_obj is not None and sn.date_obj > from_date_obj:
+            if sn.last_observed_date_obj is not None and sn.last_observed_date_obj > from_date_obj:
                 filtered.append(sn)
 
         return filtered
@@ -252,7 +252,7 @@ class SupernovaFilterService:
             try:
                 supernova = Supernova(
                     name=sn_dto.name,
-                    date=sn_dto.date,
+                    last_observed_date=sn_dto.last_observed_date,
                     mag=sn_dto.mag,
                     host=sn_dto.host,
                     ra=sn_dto.ra,
@@ -334,8 +334,8 @@ class SupernovaFilterService:
 
         def date_key(sn: Supernova) -> datetime:
             try:
-                if sn.date:
-                    return parse_date(sn.date)[0] or datetime.min
+                if sn.last_observed_date:
+                    return parse_date(sn.last_observed_date)[0] or datetime.min
             except (ValueError, TypeError, AttributeError, IndexError):
                 pass
             return datetime.min

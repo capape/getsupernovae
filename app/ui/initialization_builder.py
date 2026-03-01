@@ -173,7 +173,7 @@ class InitializationBuilder:
             on_update_sites=self.app._update_sites_combobox,
             on_update_visibility_windows=self.app._update_visibility_windows_combobox,
             on_refilter=lambda: self.app.refilter_from_cache("REFRESH"),
-            on_search_async=lambda data, source: self.app.on_search_async(data, source),
+            on_search_async=self.app.on_search_async,
             on_show_info=self.app._show_info_dialog,
             on_show_error=self.app._show_error_dialog,
             on_get_current_site=lambda: (self.app.site.get() if hasattr(self.app, "site") else ""),

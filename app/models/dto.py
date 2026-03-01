@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Optional
-
 
 @dataclass
 class SupernovaDTO:
@@ -11,8 +11,8 @@ class SupernovaDTO:
     """
 
     name: str
-    date: Optional[str] = None
-    date_obj: Optional[date] = None
+    last_observed_date: Optional[str] = None
+    last_observed_date_obj: Optional[date] = None
     mag: Optional[float] = None
     host: Optional[str] = None
     ra: Optional[str] = None

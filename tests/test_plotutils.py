@@ -25,7 +25,7 @@ def test_visibility_plotter_offline_fixture():
         def __init__(self, alt):
             self.alt = alt
 
-    for item in payload["visibility"]["azCords"]:
+    for item in payload["visibility"]["az_cords"]:
         t = Time(item["time"])
         coord = SimpleCoord(item["alt"] * u.deg)
         az_list.append(AxCordInTime(t, coord))
@@ -34,7 +34,7 @@ def test_visibility_plotter_offline_fixture():
 
     sn = Supernova(
         name=payload.get("name", "test"),
-        date=None,
+        last_observed_date=None,
         mag=None,
         host=None,
         ra=None,

@@ -95,7 +95,7 @@ class ResultsTreeCoordinator:
                 )
 
             # Rearrange items in sorted order
-            for index, (val, item) in enumerate(items):
+            for index, (_val, item) in enumerate(items):
                 self.tree.move(item, "", index)
 
                 # Reapply alternating row colors and brightness after sorting
@@ -270,7 +270,7 @@ class ResultsTreeCoordinator:
                         tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
 
                         # Get altitude/azimuth coordinates if available
-                        az_coords = getattr(visibility, "azCords", None)
+                        az_coords = getattr(visibility, "az_cords", None)
                         if az_coords and len(az_coords) > 0:
                             # Show first and last altitudes
                             try:
