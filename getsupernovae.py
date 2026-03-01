@@ -281,7 +281,7 @@ class SupernovasApp(tk.Tk):
     cb_site: Any
     cb_visibility: Any
     entry_latitud: Any
-    label_days_to_Search: Any
+    label_days_to_search: Any
     label_duration: Any
     label_init_time: Any
     label_lang: Any
@@ -683,7 +683,9 @@ class SupernovasApp(tk.Tk):
 
             # Store widget references for language change updates
             self.label_magnitude = self.filter_panel_manager.widgets.get("label_magnitude")
-            self.label_days_to_Search = self.filter_panel_manager.widgets.get("label_days_to_search")
+            self.label_days_to_search = self.filter_panel_manager.widgets.get(
+                "label_days_to_search"
+            )
             self.label_observation_date = self.filter_panel_manager.widgets.get(
                 "label_observation_date"
             )
