@@ -15,7 +15,7 @@ class ThemeColors:
 
     Using frozen=True to make these immutable and prevent accidental modification.
     """
-
+# pylint: disable=invalid-name
     # Dark theme colors
     DARK_BG: str = "#2e2e2e"
     DARK_FG: str = "#eaeaea"
@@ -45,12 +45,13 @@ class ThemeColors:
     # Highlight colors for bright supernovae (magnitude < 15)
     BRIGHT_FG_DARK: str = "#ff4444"
     BRIGHT_FG_LIGHT: str = "#cc0000"
-
+# pylint: enable=invalid-name
 
 @dataclass(frozen=True)
 class UIConstants:
     """General UI layout and sizing constants."""
 
+    # pylint: disable=invalid-name
     # Window dimensions
     WINDOW_WIDTH: int = 1400
     WINDOW_HEIGHT: int = 1200
@@ -97,12 +98,13 @@ class UIConstants:
 
     # Monitoring interval (milliseconds)
     MONITOR_INTERVAL_MS: int = 100
-
+    # pylint: enable=invalid-name
 
 @dataclass(frozen=True)
 class DefaultValues:
     """Default values for search filters and UI controls."""
 
+    # pylint: disable=invalid-name
     MAGNITUDE: str = "17"
     DAYS_TO_SEARCH: int = 21
     OBSERVATION_TIME: str = "21:00"
@@ -113,12 +115,13 @@ class DefaultValues:
 
     # Brightness threshold for highlighting
     BRIGHT_MAGNITUDE_THRESHOLD: float = 15.0
-
+    # pylint: enable=invalid-name
 
 @dataclass(frozen=True)
 class NetworkConstants:
     """Network-related constants."""
 
+    # pylint: disable=invalid-name
     TIMEOUT_SECONDS: int = 20
 
     # URLs
@@ -131,12 +134,13 @@ class NetworkConstants:
     SIMBAD_MAX_VMAG: float = 17.0
     SIMBAD_MAIN_TYPE: str = "*"  # stellar objects
     SIMBAD_MAX_OBJECTS: int = 100
-
+    # pylint: enable=invalid-name
 
 @dataclass(frozen=True)
 class FileConstants:
     """File and directory related constants."""
 
+    # pylint: disable=invalid-name
     OLD_SUPERNOVAE_FILE: str = "old_supernovae.txt"
     SITES_CONFIG_FILE: str = "sites.json"
     VISIBILITY_WINDOWS_FILE: str = "visibility_windows.json"
@@ -150,12 +154,12 @@ class FileConstants:
     # Directories
     ICONS_DIR: str = "assets/icons"
     LOCALES_DIR: str = "locales"
-
+    # pylint: enable=invalid-name
 
 @dataclass(frozen=True)
 class UIStrings:
     """UI string constants (icons, symbols, etc.)."""
-
+    # pylint: disable=invalid-name
     # Unicode symbols
     EDIT_ICON: str = "✎"
     LINK_ICON: str = "🔗"
@@ -168,8 +172,9 @@ class UIStrings:
     TAG_ODD_ROW: str = "oddrow"
     TAG_EVEN_ROW_BRIGHT: str = "evenrow_bright"
     TAG_ODD_ROW_BRIGHT: str = "oddrow_bright"
+    # pylint: enable=invalid-name
 
-
+# pylint: disable=invalid-name
 # Convenience instances for easy import
 THEME_COLORS: Final[ThemeColors] = ThemeColors()
 UI_CONSTANTS: Final[UIConstants] = UIConstants()
@@ -177,3 +182,4 @@ DEFAULT_VALUES: Final[DefaultValues] = DefaultValues()
 NETWORK_CONSTANTS: Final[NetworkConstants] = NetworkConstants()
 FILE_CONSTANTS: Final[FileConstants] = FileConstants()
 UI_STRINGS: Final[UIStrings] = UIStrings()
+# pylint: enable=invalid-name

@@ -63,7 +63,7 @@ class SupernovaFilterService:
                 # Skip entries with invalid magnitude but log the reason
                 try:
                     log_exception(self.logger, f"Invalid magnitude for supernova {getattr(sn, 'name', 'unknown')}")
-                except Exception:
+                except (AttributeError, OSError, IOError):
                     # Ensure filtering doesn't raise due to logging
                     pass
                 continue
@@ -87,7 +87,7 @@ class SupernovaFilterService:
             # If date parsing fails, log and return all supernovae
             try:
                 log_exception(self.logger, f"Failed to parse from_date '{from_date}'")
-            except Exception:
+            except (AttributeError, OSError, IOError):
                 pass
             return supernovae
 
@@ -171,7 +171,7 @@ class SupernovaFilterService:
                         self.logger,
                         f"Visibility calculation failed for supernova {getattr(sn, 'name', 'unknown')}: {ex}",
                     )
-                except Exception:
+                except (AttributeError, OSError, IOError):
                     pass
                 continue
 
@@ -276,7 +276,7 @@ class SupernovaFilterService:
                         self.logger,
                         f"Failed to convert SupernovaDTO {getattr(sn_dto, 'name', 'unknown')} to domain model",
                     )
-                except Exception:
+                except (AttributeError, OSError, IOError):
                     pass
                 continue
 
