@@ -163,9 +163,11 @@ def create_pdf(
             )
             if visibility_window_name and visibility_window_name in vis:
                 cfg = vis.get(visibility_window_name, {})
-                site_info = site_info + i18n._(
-                    " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º min_az {min_az:.1f}º max_az {max_az:.1f}º"
-                ).format(
+                window_msg = (
+                    " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
+                    "min_az {min_az:.1f}º max_az {max_az:.1f}º"
+                )
+                site_info = site_info + i18n._(window_msg).format(
                     min_alt=float(cfg.get("min_alt", 0.0)),
                     max_alt=float(cfg.get("max_alt", 90.0)),
                     min_az=float(cfg.get("min_az", 0.0)),

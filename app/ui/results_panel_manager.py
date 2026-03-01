@@ -369,7 +369,8 @@ class ResultsPanelManager:
         """Refresh all label texts after language change."""
         try:
             if "label_results" in self.widgets:
-                self.widgets["label_results"].config(text=_("Results: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_results"]
+                widget.config(text=_("Results: "))  # type: ignore[attr-defined]
 
             # Action buttons
             if "button_pdf" in self.widgets:
@@ -377,7 +378,8 @@ class ResultsPanelManager:
             if "button_txt" in self.widgets:
                 self.widgets["button_txt"].config(text=_("TXT"))  # type: ignore[attr-defined]
             if "button_refresh" in self.widgets:
-                self.widgets["button_refresh"].config(text=_("Refresh Search"))  # type: ignore[attr-defined]
+                widget = self.widgets["button_refresh"]
+                widget.config(text=_("Refresh Search"))  # type: ignore[attr-defined]
             if "button_exit" in self.widgets:
                 self.widgets["button_exit"].config(text=_("Exit"))  # type: ignore[attr-defined]
 

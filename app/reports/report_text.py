@@ -55,9 +55,12 @@ def text_site(site, min_latitude, visibility_window_name=None):
         vis = load_visibility_windows()
         if visibility_window_name and visibility_window_name in vis:
             cfg = vis.get(visibility_window_name, {})
-            return i18n._(
-                "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º min_az {min_az:.1f}º max_az {max_az:.1f}º"
-            ).format(
+            msg = (
+                "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . "
+                "Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
+                "min_az {min_az:.1f}º max_az {max_az:.1f}º"
+            )
+            return i18n._(msg).format(
                 lon=site.lon.value,
                 lat=site.lat.value,
                 height=site.height.value,
@@ -133,9 +136,11 @@ def print_supernova(data: Supernova):
     print(i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl))
     print("")
     # observation time
+    obs_start = format_iso_datetime(data.visibility.azCords[0].time)
+    obs_end = format_iso_datetime(data.visibility.azCords[-1].time)
     print(
         i18n._("  Observation time: {obs}").format(
-            obs=f"{format_iso_datetime(data.visibility.azCords[0].time)} - {format_iso_datetime(data.visibility.azCords[-1].time)}"
+            obs=f"{obs_start} - {obs_end}"
         )
     )
     print(

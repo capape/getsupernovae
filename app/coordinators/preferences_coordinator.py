@@ -94,7 +94,10 @@ class PreferencesCoordinator:
                 max_alt = cfg.get("max_alt", 90.0)
                 min_az = cfg.get("min_az", 0.0)
                 max_az = cfg.get("max_az", 360.0)
-                txt = f"min_alt: {min_alt:.1f}°  max_alt: {max_alt:.1f}°  min_az: {min_az:.1f}°  max_az: {max_az:.1f}°"
+                txt = (
+                    f"min_alt: {min_alt:.1f}°  max_alt: {max_alt:.1f}°  "
+                    f"min_az: {min_az:.1f}°  max_az: {max_az:.1f}°"
+                )
 
                 filter_panel_manager.update_visibility_values_label(txt)
                 filter_panel_manager.set_min_latitude_state("disabled")

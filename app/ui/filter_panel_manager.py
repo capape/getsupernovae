@@ -365,7 +365,8 @@ class FilterPanelManager:
         """
         try:
             if "label_visibility_values" in self.widgets:
-                self.widgets["label_visibility_values"].config(text=text)  # type: ignore[attr-defined]
+                widget = self.widgets["label_visibility_values"]
+                widget.config(text=text)  # type: ignore[attr-defined]
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update visibility values label")
 
@@ -409,23 +410,32 @@ class FilterPanelManager:
         """Refresh all label texts after language change."""
         try:
             if "label_magnitude" in self.widgets:
-                self.widgets["label_magnitude"].config(text=_("Max. magnitude: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_magnitude"]
+                widget.config(text=_("Max. magnitude: "))  # type: ignore[attr-defined]
             if "label_days_to_search" in self.widgets:
-                self.widgets["label_days_to_search"].config(text=_("Find the n previous days: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_days_to_search"]
+                widget.config(text=_("Find the n previous days: "))  # type: ignore[attr-defined]
             if "label_observation_date" in self.widgets:
-                self.widgets["label_observation_date"].config(text=_("Observation date: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_observation_date"]
+                widget.config(text=_("Observation date: "))  # type: ignore[attr-defined]
             if "label_init_time" in self.widgets:
-                self.widgets["label_init_time"].config(text=_("Init time in observation date: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_init_time"]
+                text = _("Init time in observation date: ")
+                widget.config(text=text)  # type: ignore[attr-defined]
             if "label_duration" in self.widgets:
-                self.widgets["label_duration"].config(text=_("Hours of observation: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_duration"]
+                widget.config(text=_("Hours of observation: "))  # type: ignore[attr-defined]
             if "label_site" in self.widgets:
                 self.widgets["label_site"].config(text=_("Site: "))  # type: ignore[attr-defined]
             if "label_visibility" in self.widgets:
-                self.widgets["label_visibility"].config(text=_("Visibility window:"))  # type: ignore[attr-defined]
+                widget = self.widgets["label_visibility"]
+                widget.config(text=_("Visibility window:"))  # type: ignore[attr-defined]
             if "label_min_latitude" in self.widgets:
-                self.widgets["label_min_latitude"].config(text=_("Min latitude: "))  # type: ignore[attr-defined]
+                widget = self.widgets["label_min_latitude"]
+                widget.config(text=_("Min latitude: "))  # type: ignore[attr-defined]
             if "label_language" in self.widgets:
-                self.widgets["label_language"].config(text=_("Language:"))  # type: ignore[attr-defined]
+                widget = self.widgets["label_language"]
+                widget.config(text=_("Language:"))  # type: ignore[attr-defined]
 
             # Update Rochester attribution text
             if "text_rochester" in self.widgets:
@@ -452,6 +462,7 @@ class FilterPanelManager:
                 bg_color = (
                     THEME_COLORS.DARK_ROCHESTER_BG if dark_mode else THEME_COLORS.LIGHT_ROCHESTER_BG
                 )
-                self.widgets["text_rochester"].config(background=bg_color)  # type: ignore[attr-defined]
+                widget = self.widgets["text_rochester"]
+                widget.config(background=bg_color)  # type: ignore[attr-defined]
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to apply filter panel theme")

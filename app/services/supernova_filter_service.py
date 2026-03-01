@@ -62,7 +62,8 @@ class SupernovaFilterService:
             except (TypeError, ValueError):
                 # Skip entries with invalid magnitude but log the reason
                 try:
-                    log_exception(self.logger, f"Invalid magnitude for supernova {getattr(sn, 'name', 'unknown')}")
+                    sn_name = getattr(sn, 'name', 'unknown')
+                    log_exception(self.logger, f"Invalid magnitude for supernova {sn_name}")
                 except (AttributeError, OSError, IOError):
                     # Ensure filtering doesn't raise due to logging
                     pass
@@ -167,9 +168,10 @@ class SupernovaFilterService:
             except (AttributeError, TypeError, ValueError) as ex:
                 # Skip supernovae with invalid coordinates or visibility calculation errors
                 try:
+                    sn_name = getattr(sn, 'name', 'unknown')
                     log_exception(
                         self.logger,
-                        f"Visibility calculation failed for supernova {getattr(sn, 'name', 'unknown')}: {ex}",
+                        f"Visibility calculation failed for supernova {sn_name}: {ex}",
                     )
                 except (AttributeError, OSError, IOError):
                     pass
@@ -272,10 +274,9 @@ class SupernovaFilterService:
             except (AttributeError, TypeError, ValueError):
                 # Skip entries that can't be converted and log the issue
                 try:
-                    log_exception(
-                        self.logger,
-                        f"Failed to convert SupernovaDTO {getattr(sn_dto, 'name', 'unknown')} to domain model",
-                    )
+                    sn_name = getattr(sn_dto, 'name', 'unknown')
+                    msg = f"Failed to convert SupernovaDTO {sn_name} to domain model"
+                    log_exception(self.logger, msg)
                 except (AttributeError, OSError, IOError):
                     pass
                 continue
