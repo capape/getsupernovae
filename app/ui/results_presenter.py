@@ -75,7 +75,9 @@ class ResultsPresenter:
     ROCH_ICON = "🔗"
     TNS_ICON = "🔗"
 
-    def present(self, sn: Any) -> Tuple[str, str, str, str, str, str, str, str, str, str, str]:
+    def present(
+        self, sn: Any
+    ) -> Tuple[str, str, str, str, str, str, str, str, str, str, str]:
         name = getattr(sn, "name", "") or ""
         sn_type = getattr(sn, "type", "") or ""
         mag_str = format_magnitude(getattr(sn, "mag", ""))

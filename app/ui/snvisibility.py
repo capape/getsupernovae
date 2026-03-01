@@ -9,7 +9,13 @@ from app.services.visibility import visibility_summary
 
 
 class VisibilityWindow:
-    def __init__(self, minAlt: float = 0, maxAlt: float = 90, minAz: float = 0, maxAz: float = 360):
+    def __init__(
+        self,
+        minAlt: float = 0,
+        maxAlt: float = 90,
+        minAz: float = 0,
+        maxAz: float = 360,
+    ):
         self.minAlt = minAlt
         self.maxAlt = maxAlt
         self.minAz = minAz

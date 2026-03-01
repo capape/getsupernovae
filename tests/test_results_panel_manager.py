@@ -89,7 +89,9 @@ class TestResultsPanelManager(unittest.TestCase):
         ]
 
         for widget_name in expected_widgets:
-            self.assertIn(widget_name, manager.widgets, f"Missing widget: {widget_name}")
+            self.assertIn(
+                widget_name, manager.widgets, f"Missing widget: {widget_name}"
+            )
 
     def test_results_label_created(self):
         """Test that results label is created."""

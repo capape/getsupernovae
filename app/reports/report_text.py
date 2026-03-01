@@ -88,9 +88,9 @@ def createText(
     minLatitude,
     visibilityWindowName=None,
 ):
-    header = i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-        fromDate=fromDate, to=observationDate, magnitude=magnitude
-    )
+    header = i18n._(
+        "Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}"
+    ).format(fromDate=fromDate, to=observationDate, magnitude=magnitude)
     siteInfo = textSite(site, minLatitude, visibilityWindowName)
     print(header)
     print(siteInfo)
@@ -108,12 +108,14 @@ def createTextAsString(
     minLatitude,
     visibilityWindowName=None,
 ) -> str:
-    header = i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-        fromDate=fromDate, to=observationDate, magnitude=magnitude
-    )
+    header = i18n._(
+        "Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}"
+    ).format(fromDate=fromDate, to=observationDate, magnitude=magnitude)
     siteInfo = textSite(site, minLatitude, visibilityWindowName)
 
-    fulltext = i18n._("{header}\n{siteInfo}\n\n").format(header=header, siteInfo=siteInfo)
+    fulltext = i18n._("{header}\n{siteInfo}\n\n").format(
+        header=header, siteInfo=siteInfo
+    )
 
     for data in supernovas:
         fulltext += i18n._("\n{sn}\n").format(sn=textSupernova(data))
@@ -129,7 +131,11 @@ def printSupernova(data: Supernova):
             date=data.date, mag=data.mag, type=data.type, name=data.name
         )
     )
-    print(i18n._("  Const: {const}, Host: {host}").format(const=data.constellation, host=data.host))
+    print(
+        i18n._("  Const: {const}, Host: {host}").format(
+            const=data.constellation, host=data.host
+        )
+    )
     print(i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl))
     print("")
     # observation time
@@ -171,11 +177,17 @@ def printSupernovaShort(data: Supernova):
     print("-------------------------------------------------")
     print(
         i18n._("Const: {const} - {host} S: {name}, M: {mag}, T: {type}").format(
-            const=data.constellation, host=data.host, name=data.name, mag=data.mag, type=data.type
+            const=data.constellation,
+            host=data.host,
+            name=data.name,
+            mag=data.mag,
+            type=data.type,
         )
     )
     print(
-        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(date=data.date, ra=data.ra, dec=data.decl)
+        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(
+            date=data.date, ra=data.ra, dec=data.decl
+        )
     )
     print(
         i18n._("Observation time: {from_} - {to} az: {az}, LAT: {lat}").format(

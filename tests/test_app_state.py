@@ -1,6 +1,11 @@
 """Unit tests for app_state module."""
 
+import os
+import sys
 import unittest
+
+# Make the package root importable when running tests
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.state.app_state import (
     AppState,
@@ -52,7 +57,9 @@ class TestSearchState(unittest.TestCase):
 
     def test_to_dict(self):
         """Test serialization to dictionary."""
-        state = SearchState(magnitude="16.0", site="Test Site", visibility_window="Evening")
+        state = SearchState(
+            magnitude="16.0", site="Test Site", visibility_window="Evening"
+        )
         result = state.to_dict()
 
         self.assertIsInstance(result, dict)
@@ -176,7 +183,12 @@ class TestUIState(unittest.TestCase):
 
     def test_from_dict(self):
         """Test deserialization from dictionary."""
-        data = {"language": "es", "dark_mode": True, "window_width": 1280, "window_height": 720}
+        data = {
+            "language": "es",
+            "dark_mode": True,
+            "window_width": 1280,
+            "window_height": 720,
+        }
         state = UIState.from_dict(data)
 
         self.assertEqual(state.language, "es")
@@ -239,7 +251,9 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_initial_custom_state(self):
         """Test manager can start with custom state."""
-        custom_state = AppState(search=SearchState(magnitude="16.0"), ui=UIState(language="es"))
+        custom_state = AppState(
+            search=SearchState(magnitude="16.0"), ui=UIState(language="es")
+        )
         manager = AppStateManager(initial_state=custom_state)
 
         self.assertEqual(manager.state.search.magnitude, "16.0")
@@ -343,7 +357,9 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_update_search_state(self):
         """Test updating search state."""
-        self.manager.update_search_state(magnitude="16.0", days_to_search="45", site="Observatory")
+        self.manager.update_search_state(
+            magnitude="16.0", days_to_search="45", site="Observatory"
+        )
 
         self.assertEqual(self.manager.state.search.magnitude, "16.0")
         self.assertEqual(self.manager.state.search.days_to_search, "45")

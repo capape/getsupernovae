@@ -41,7 +41,8 @@ class MockVisibilityFactory:
 
         if is_visible:
             return Visibility(
-                True, [AxCordInTime(t1, None), AxCordInTime(t1 + timedelta(hours=1), None)]
+                True,
+                [AxCordInTime(t1, None), AxCordInTime(t1 + timedelta(hours=1), None)],
             )
         else:
             return Visibility(False, [])
@@ -145,9 +146,15 @@ def test_filter_by_visibility():
 
     # Create supernovae with different RAs (> 12h will be visible in mock)
     supernovae = [
-        create_test_supernova_dto("SN2025a", 15.0, "2025/01/01", ra="10:00:00"),  # Not visible
-        create_test_supernova_dto("SN2025b", 15.0, "2025/01/02", ra="14:00:00"),  # Visible
-        create_test_supernova_dto("SN2025c", 15.0, "2025/01/03", ra="18:00:00"),  # Visible
+        create_test_supernova_dto(
+            "SN2025a", 15.0, "2025/01/01", ra="10:00:00"
+        ),  # Not visible
+        create_test_supernova_dto(
+            "SN2025b", 15.0, "2025/01/02", ra="14:00:00"
+        ),  # Visible
+        create_test_supernova_dto(
+            "SN2025c", 15.0, "2025/01/03", ra="18:00:00"
+        ),  # Visible
     ]
 
     site = EarthLocation(lat=41.5 * u.deg, lon=2.0 * u.deg, height=200 * u.m)
@@ -179,11 +186,21 @@ def test_apply_all_filters():
     service = SupernovaFilterService(visibility_factory=MockVisibilityFactory)
 
     supernovae = [
-        create_test_supernova_dto("SN2025a", 14.0, "2025/01/01", ra="14:00:00"),  # Pass all
-        create_test_supernova_dto("SN2025b", 16.0, "2025/01/02", ra="14:00:00"),  # Fail mag
-        create_test_supernova_dto("SN2025c", 14.0, "2024/12/01", ra="14:00:00"),  # Fail date
-        create_test_supernova_dto("SN2025d", 14.0, "2025/01/03", ra="10:00:00"),  # Fail visibility
-        create_test_supernova_dto("SN2025e", 14.0, "2025/01/04", ra="14:00:00"),  # Excluded
+        create_test_supernova_dto(
+            "SN2025a", 14.0, "2025/01/01", ra="14:00:00"
+        ),  # Pass all
+        create_test_supernova_dto(
+            "SN2025b", 16.0, "2025/01/02", ra="14:00:00"
+        ),  # Fail mag
+        create_test_supernova_dto(
+            "SN2025c", 14.0, "2024/12/01", ra="14:00:00"
+        ),  # Fail date
+        create_test_supernova_dto(
+            "SN2025d", 14.0, "2025/01/03", ra="10:00:00"
+        ),  # Fail visibility
+        create_test_supernova_dto(
+            "SN2025e", 14.0, "2025/01/04", ra="14:00:00"
+        ),  # Excluded
     ]
 
     site = EarthLocation(lat=41.5 * u.deg, lon=2.0 * u.deg, height=200 * u.m)
@@ -270,7 +287,9 @@ def test_sort_by_magnitude_reverse():
     dto2 = create_test_supernova_dto("SN2025b", 16.0, "2025/01/02")
 
     visibility = Visibility(True, [AxCordInTime(Time.now(), None)])
-    supernovae = service.convert_to_domain_models([(dto1, visibility), (dto2, visibility)])
+    supernovae = service.convert_to_domain_models(
+        [(dto1, visibility), (dto2, visibility)]
+    )
 
     sorted_sn = service.sort_by_magnitude(supernovae, reverse=True)
 

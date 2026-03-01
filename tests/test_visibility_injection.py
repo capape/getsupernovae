@@ -3,7 +3,6 @@ import sys
 from ast import List
 from datetime import datetime
 
-
 # Ensure package imports work when running this test standalone
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -39,7 +38,9 @@ def test_rochester_uses_injected_visibility_factory():
         mag=15.3,
         date="2025/12/01",
         date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
-        coordinates=SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
+        coordinates=SkyCoord(
+            "12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)
+        ),
         type="Ia",
     )
     snList.append(sn)

@@ -159,14 +159,22 @@ class SupernovaSelectionService:
         def get_observation_times(sn: Supernova) -> tuple[float, float]:
             """Extract start and end times from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
+                if (
+                    sn.visibility
+                    and hasattr(sn.visibility, "azCords")
+                    and sn.visibility.azCords
+                ):
                     az_coords = sn.visibility.azCords
                     if len(az_coords) > 0:
                         start_time = (
-                            az_coords[0].time if hasattr(az_coords[0], "time") else float("inf")
+                            az_coords[0].time
+                            if hasattr(az_coords[0], "time")
+                            else float("inf")
                         )
                         end_time = (
-                            az_coords[-1].time if hasattr(az_coords[-1], "time") else float("inf")
+                            az_coords[-1].time
+                            if hasattr(az_coords[-1], "time")
+                            else float("inf")
                         )
                         return (start_time, end_time)
             except (AttributeError, IndexError, TypeError):
@@ -193,7 +201,11 @@ class SupernovaSelectionService:
         def get_max_altitude(sn: Supernova) -> float:
             """Extract maximum altitude from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
+                if (
+                    sn.visibility
+                    and hasattr(sn.visibility, "azCords")
+                    and sn.visibility.azCords
+                ):
                     altitudes = []
                     for coord in sn.visibility.azCords:
                         if hasattr(coord, "coord") and hasattr(coord.coord, "alt"):
@@ -207,7 +219,9 @@ class SupernovaSelectionService:
 
         return sorted(supernovae, key=get_max_altitude, reverse=reverse)
 
-    def group_by_constellation(self, supernovae: List[Supernova]) -> Dict[str, List[Supernova]]:
+    def group_by_constellation(
+        self, supernovae: List[Supernova]
+    ) -> Dict[str, List[Supernova]]:
         """Group supernovae by constellation.
 
         This can be useful for planning observations or creating finding charts

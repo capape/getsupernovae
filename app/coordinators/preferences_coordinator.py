@@ -120,9 +120,13 @@ class PreferencesCoordinator:
                 days_to_search=self._get_var_value(tk_vars, "daysToSearch", "30"),
                 observation_date=self._get_var_value(tk_vars, "observationDate", ""),
                 observation_time=self._get_var_value(tk_vars, "observationTime", ""),
-                observation_duration=self._get_var_value(tk_vars, "observationDuration", ""),
+                observation_duration=self._get_var_value(
+                    tk_vars, "observationDuration", ""
+                ),
                 site=self._get_var_value(tk_vars, "site", None),
-                visibility_window=self._get_var_value(tk_vars, "visibilityWindow", None),
+                visibility_window=self._get_var_value(
+                    tk_vars, "visibilityWindow", None
+                ),
                 min_latitude=self._get_var_value(tk_vars, "minLatitud", ""),
             )
 
@@ -163,11 +167,16 @@ class PreferencesCoordinator:
             try:
                 self.update_visibility_ui()
             except Exception:
-                log_exception(logger, "Failed to refresh visibility UI after restoring preferences")
+                log_exception(
+                    logger,
+                    "Failed to refresh visibility UI after restoring preferences",
+                )
         except Exception:
             log_exception(logger, "Failed to load and apply preferences")
 
-    def _get_var_value(self, tk_vars: Dict[str, tk.Variable], key: str, default: Any) -> Any:
+    def _get_var_value(
+        self, tk_vars: Dict[str, tk.Variable], key: str, default: Any
+    ) -> Any:
         """Safely get value from Tk variable."""
         var = tk_vars.get(key)
         if var:
@@ -195,13 +204,17 @@ class PreferencesCoordinator:
                 if "observationTime" in old_prefs:
                     loaded_state.search.observation_time = old_prefs["observationTime"]
                 if "observationHours" in old_prefs:
-                    loaded_state.search.observation_duration = old_prefs["observationHours"]
+                    loaded_state.search.observation_duration = old_prefs[
+                        "observationHours"
+                    ]
                 if "minLatitude" in old_prefs:
                     loaded_state.search.min_latitude = old_prefs["minLatitude"]
                 if "site" in old_prefs:
                     loaded_state.search.site = old_prefs["site"]
                 if "visibilityWindow" in old_prefs:
-                    loaded_state.search.visibility_window = old_prefs["visibilityWindow"]
+                    loaded_state.search.visibility_window = old_prefs[
+                        "visibilityWindow"
+                    ]
                 if "language" in old_prefs:
                     loaded_state.ui.language = old_prefs["language"]
 
@@ -313,7 +326,9 @@ class PreferencesCoordinator:
                         if lang_coordinator:
                             lang_coordinator.on_language_change()
                     except Exception:
-                        log_exception(logger, "Failed to refresh UI after language restoration")
+                        log_exception(
+                            logger, "Failed to refresh UI after language restoration"
+                        )
                 except Exception:
                     log_exception(logger, "Failed to apply restored language")
         except Exception:
@@ -333,6 +348,8 @@ class PreferencesCoordinator:
                         if theme_coordinator:
                             theme_coordinator.apply_theme()
                     except Exception:
-                        log_exception(logger, "Failed to apply restored dark mode theme")
+                        log_exception(
+                            logger, "Failed to apply restored dark mode theme"
+                        )
         except Exception:
             log_exception(logger, "Failed to restore dark mode preference")

@@ -75,7 +75,9 @@ class SitesDialog(tk.Toplevel):
         try:
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
-            return os.path.join(cfgdir, "sites.json") if self.path is None else self.path
+            return (
+                os.path.join(cfgdir, "sites.json") if self.path is None else self.path
+            )
         except Exception:
             return (
                 os.path.join(os.path.dirname(__file__), "sites.json")
@@ -93,7 +95,11 @@ class SitesDialog(tk.Toplevel):
                 current = json.load(fh)
                 if not isinstance(current, dict):
                     current = {
-                        k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value}
+                        k: {
+                            "lat": v.lat.value,
+                            "lon": v.lon.value,
+                            "height": v.height.value,
+                        }
                         for k, v in self._original_sites.items()
                     }
         except Exception:
@@ -136,7 +142,11 @@ class SitesDialog(tk.Toplevel):
             )
         except Exception:
             self.tree = ttk.Treeview(
-                frame_left, columns=self.columns, show="headings", selectmode="browse", height=12
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                height=12,
             )
 
         for col in self.columns:
@@ -346,10 +356,16 @@ class SitesDialog(tk.Toplevel):
         try:
             lat = float(self.lat_var.get())
             lon = float(self.lon_var.get())
-            height = float(self.height_var.get()) if self.height_var.get().strip() != "" else 0.0
+            height = (
+                float(self.height_var.get())
+                if self.height_var.get().strip() != ""
+                else 0.0
+            )
             self._validate_coords(lat, lon, height)
         except ValueError as e:
-            messagebox.showerror(_("Error"), _("Invalid input: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Invalid input: {e}").format(e=e), parent=self
+            )
             return
 
         old = self._selected_name["value"]
@@ -372,11 +388,13 @@ class SitesDialog(tk.Toplevel):
             self._persist_current()
             try:
                 # attempt to refresh global sites mapping if available
-                global_sites = load_sites()
+                load_sites()
             except Exception:
-                global_sites = None
+                pass
         except Exception as e:
-            messagebox.showerror(_("Error"), _("Failed to save site: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Failed to save site: {e}").format(e=e), parent=self
+            )
             return
 
         # Reload from disk to ensure UI reflects the persisted representation

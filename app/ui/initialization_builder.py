@@ -9,10 +9,7 @@ import tkinter as tk
 from typing import Any
 
 from app import __version__
-from app.config.ui_constants import (
-    FILE_CONSTANTS,
-    UI_CONSTANTS,
-)
+from app.config.ui_constants import FILE_CONSTANTS, UI_CONSTANTS
 from app.i18n import _, set_language
 from app.utils.logger import get_logger, log_exception
 
@@ -86,22 +83,30 @@ class InitializationBuilder:
         self.app.daysToSearch.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.observationDate = tk.StringVar()
-        self.app.observationDate.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observationDate.trace_add(
+            ["write", "unset"], self.app.on_clear_results
+        )
 
         self.app.observationDuration = tk.StringVar()
-        self.app.observationDuration.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observationDuration.trace_add(
+            ["write", "unset"], self.app.on_clear_results
+        )
 
         self.app.minLatitud = tk.StringVar()
         self.app.minLatitud.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.observationTime = tk.StringVar()
-        self.app.observationTime.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observationTime.trace_add(
+            ["write", "unset"], self.app.on_clear_results
+        )
 
         self.app.site = tk.StringVar()
         self.app.site.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.visibilityWindow = tk.StringVar()
-        self.app.visibilityWindow.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.visibilityWindow.trace_add(
+            ["write", "unset"], self.app.on_clear_results
+        )
 
         self.app.results = tk.StringVar()
         self.app.results.trace_add(["write", "unset"], self.app.on_clear_results)
@@ -109,7 +114,9 @@ class InitializationBuilder:
         # Dark mode variable already created in setup_theme_and_language
         self.app.dark_mode.trace_add(["write", "unset"], lambda *a: None)
 
-    def initialize_services(self, presenter, visibility_factory, provider_factory, reporter):
+    def initialize_services(
+        self, presenter, visibility_factory, provider_factory, reporter
+    ):
         """Initialize service layer components."""
         from app.services.provider import NetworkRochesterProvider
         from app.ui.results_presenter import ResultsPresenter
@@ -121,7 +128,9 @@ class InitializationBuilder:
             visibility_factory if visibility_factory is not None else VisibilityWindow
         )
         self.app.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
+            provider_factory
+            if provider_factory is not None
+            else NetworkRochesterProvider
         )
         self.app.reporter = reporter
 
@@ -179,11 +188,17 @@ class InitializationBuilder:
             on_search_async=lambda data, source: self.app.on_search_async(data, source),
             on_show_info=self.app._show_info_dialog,
             on_show_error=self.app._show_error_dialog,
-            on_get_current_site=lambda: self.app.site.get() if hasattr(self.app, "site") else "",
-            on_get_current_visibility_window=lambda: (
-                self.app.visibilityWindow.get() if hasattr(self.app, "visibilityWindow") else ""
+            on_get_current_site=lambda: (
+                self.app.site.get() if hasattr(self.app, "site") else ""
             ),
-            get_combobox_site=lambda: self.app.cbSite if hasattr(self.app, "cbSite") else None,
+            on_get_current_visibility_window=lambda: (
+                self.app.visibilityWindow.get()
+                if hasattr(self.app, "visibilityWindow")
+                else ""
+            ),
+            get_combobox_site=lambda: (
+                self.app.cbSite if hasattr(self.app, "cbSite") else None
+            ),
             get_combobox_visibility=lambda: (
                 self.app.cbVisibility if hasattr(self.app, "cbVisibility") else None
             ),
@@ -218,7 +233,9 @@ class InitializationBuilder:
     def _setup_application_icon(self):
         """Load and set application icon (ICO, PNG, or SVG)."""
         try:
-            icon_dir = os.path.join(os.path.dirname(__file__), "..", "..", FILE_CONSTANTS.ICONS_DIR)
+            icon_dir = os.path.join(
+                os.path.dirname(__file__), "..", "..", FILE_CONSTANTS.ICONS_DIR
+            )
             ico = os.path.join(icon_dir, FILE_CONSTANTS.ICON_ICO)
             png = os.path.join(icon_dir, FILE_CONSTANTS.ICON_PNG)
             svg = os.path.join(icon_dir, FILE_CONSTANTS.ICON_SVG)
@@ -298,12 +315,18 @@ class InitializationBuilder:
             self.app.language_coordinator = LanguageCoordinator(
                 root_window=self.app,
                 get_langvar=lambda: getattr(self.app, "langVar", None),
-                get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
-                get_results_panel_manager=lambda: getattr(self.app, "results_panel_manager", None),
+                get_filter_panel_manager=lambda: getattr(
+                    self.app, "filter_panel_manager", None
+                ),
+                get_results_panel_manager=lambda: getattr(
+                    self.app, "results_panel_manager", None
+                ),
                 get_toolbar_manager=lambda: getattr(self.app, "toolbar_manager", None),
                 get_widgets=lambda: {
                     "labelLatitud": getattr(self.app, "labelLatitud", None),
-                    "ignoreSelectedButton": getattr(self.app, "ignoreSelectedButton", None),
+                    "ignoreSelectedButton": getattr(
+                        self.app, "ignoreSelectedButton", None
+                    ),
                     "editOldButton": getattr(self.app, "editOldButton", None),
                     "pdfButton": getattr(self.app, "pdfButton", None),
                     "txtButton": getattr(self.app, "txtButton", None),
@@ -336,7 +359,9 @@ class InitializationBuilder:
                     "daysToSearch": getattr(self.app, "daysToSearch", None),
                     "observationDate": getattr(self.app, "observationDate", None),
                     "observationTime": getattr(self.app, "observationTime", None),
-                    "observationDuration": getattr(self.app, "observationDuration", None),
+                    "observationDuration": getattr(
+                        self.app, "observationDuration", None
+                    ),
                     "site": getattr(self.app, "site", None),
                     "visibilityWindow": getattr(self.app, "visibilityWindow", None),
                     "minLatitud": getattr(self.app, "minLatitud", None),
@@ -345,14 +370,26 @@ class InitializationBuilder:
                 },
                 get_sites=lambda: gs.sites,
                 get_visibility_windows=lambda: gs.visibility_windows,
-                get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
-                get_language_coordinator=lambda: getattr(self.app, "language_coordinator", None),
-                get_theme_coordinator=lambda: getattr(self.app, "theme_coordinator", None),
+                get_filter_panel_manager=lambda: getattr(
+                    self.app, "filter_panel_manager", None
+                ),
+                get_language_coordinator=lambda: getattr(
+                    self.app, "language_coordinator", None
+                ),
+                get_theme_coordinator=lambda: getattr(
+                    self.app, "theme_coordinator", None
+                ),
             )
         except Exception:
             log_exception(logger, "Failed to initialize preferences coordinator")
 
-    def build(self, presenter=None, visibility_factory=None, provider_factory=None, reporter=None):
+    def build(
+        self,
+        presenter=None,
+        visibility_factory=None,
+        provider_factory=None,
+        reporter=None,
+    ):
         """Execute the full initialization sequence.
 
         Args:
@@ -367,7 +404,9 @@ class InitializationBuilder:
         self.setup_state_management()
         self.setup_theme_and_language()
         self.create_tk_variables()
-        self.initialize_services(presenter, visibility_factory, provider_factory, reporter)
+        self.initialize_services(
+            presenter, visibility_factory, provider_factory, reporter
+        )
         self.initialize_coordinators()
         self.configure_window_properties()
         self.set_initial_filter_values()

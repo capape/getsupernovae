@@ -42,7 +42,9 @@ class MockVisibilityFactory:
             start_time = t1.datetime + timedelta(hours=offset_hours)
             end_time = start_time + timedelta(hours=1)
 
-            return Visibility(True, [AxCordInTime(start_time, None), AxCordInTime(end_time, None)])
+            return Visibility(
+                True, [AxCordInTime(start_time, None), AxCordInTime(end_time, None)]
+            )
         else:
             return Visibility(False, [])
 
@@ -110,9 +112,15 @@ def test_select_and_sort_supernovae():
 
     # Create test data with different RAs (affects observation time in mock)
     supernovae = [
-        create_test_supernova_dto("SN2025a", 14.0, "2025/01/01", ra="14:00:00"),  # Later start
-        create_test_supernova_dto("SN2025b", 14.0, "2025/01/02", ra="16:00:00"),  # Latest start
-        create_test_supernova_dto("SN2025c", 14.0, "2025/01/03", ra="13:00:00"),  # Earlier start
+        create_test_supernova_dto(
+            "SN2025a", 14.0, "2025/01/01", ra="14:00:00"
+        ),  # Later start
+        create_test_supernova_dto(
+            "SN2025b", 14.0, "2025/01/02", ra="16:00:00"
+        ),  # Latest start
+        create_test_supernova_dto(
+            "SN2025c", 14.0, "2025/01/03", ra="13:00:00"
+        ),  # Earlier start
     ]
 
     site = EarthLocation(lat=41.5 * u.deg, lon=2.0 * u.deg, height=200 * u.m)
@@ -150,7 +158,9 @@ def test_select_and_sort_with_named_window():
         filter_service=filter_service, visibility_windows=visibility_windows
     )
 
-    supernovae = [create_test_supernova_dto("SN2025a", 14.0, "2025/01/01", ra="14:00:00")]
+    supernovae = [
+        create_test_supernova_dto("SN2025a", 14.0, "2025/01/01", ra="14:00:00")
+    ]
 
     site = EarthLocation(lat=41.5 * u.deg, lon=2.0 * u.deg, height=200 * u.m)
     obs_start = Time("2025-01-01T21:00:00")

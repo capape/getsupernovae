@@ -142,7 +142,9 @@ class SupernovaFilterService:
                 "visibility_factory must be provided either in __init__ or as parameter"
             )
 
-        visibility_calculator = factory(min_altitude, max_altitude, min_azimuth, max_azimuth)
+        visibility_calculator = factory(
+            min_altitude, max_altitude, min_azimuth, max_azimuth
+        )
 
         visible = []
         for sn in supernovae:
@@ -293,7 +295,9 @@ class SupernovaFilterService:
 
         return sorted(supernovae, key=magnitude_key, reverse=reverse)
 
-    def sort_by_date(self, supernovae: List[Supernova], reverse: bool = True) -> List[Supernova]:
+    def sort_by_date(
+        self, supernovae: List[Supernova], reverse: bool = True
+    ) -> List[Supernova]:
         """Sort supernovae by discovery date.
 
         Args:

@@ -18,7 +18,9 @@ class PreferencesManager:
     DEFAULT_PREFS_DIR = Path(get_user_config_dir())
     DEFAULT_PREFS_FILE = "preferences.json"
 
-    def __init__(self, prefs_dir: Optional[Path] = None, prefs_file: str = DEFAULT_PREFS_FILE):
+    def __init__(
+        self, prefs_dir: Optional[Path] = None, prefs_file: str = DEFAULT_PREFS_FILE
+    ):
         """Initialize preferences manager.
 
         Args:

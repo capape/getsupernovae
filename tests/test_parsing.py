@@ -42,7 +42,9 @@ class TestParsing(unittest.TestCase):
         parsed = _parse_row_safe(tr)
         self.assertIsNotNone(parsed)
         self.assertEqual(parsed["name"], "SN2025abc")
-        self.assertTrue(parsed["link"].startswith("https://www.rochesterastronomy.org/"))
+        self.assertTrue(
+            parsed["link"].startswith("https://www.rochesterastronomy.org/")
+        )
         self.assertEqual(parsed["host"], "NGC 1234")
         self.assertAlmostEqual(parsed["mag"], 15.3)
         self.assertIsNone(parsed["mag_limit"])

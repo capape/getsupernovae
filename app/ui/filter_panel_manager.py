@@ -11,11 +11,7 @@ from dataclasses import dataclass
 from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
-from app.config.ui_constants import (
-    THEME_COLORS,
-    UI_CONSTANTS,
-    UI_STRINGS,
-)
+from app.config.ui_constants import THEME_COLORS, UI_CONSTANTS, UI_STRINGS
 from app.i18n import _, get_language, set_language
 from app.utils.logger import get_logger, log_exception
 
@@ -83,7 +79,9 @@ class FilterPanelManager:
             ttk.Frame containing all filter panel widgets
         """
         self.frame = ttk.Frame(self.parent)
-        self.frame.grid(column=0, row=1, rowspan=11, columnspan=3, sticky="nw", padx=5, pady=5)
+        self.frame.grid(
+            column=0, row=1, rowspan=11, columnspan=3, sticky="nw", padx=5, pady=5
+        )
 
         # Configure columns
         try:
@@ -157,7 +155,9 @@ class FilterPanelManager:
         label.grid(column=0, row=row, padx=5, pady=5, sticky=tk.W)
         self.widgets["label_duration"] = label
 
-        entry = ttk.Entry(self.frame, textvariable=self.variables["observation_duration"])
+        entry = ttk.Entry(
+            self.frame, textvariable=self.variables["observation_duration"]
+        )
         entry.grid(column=1, row=row, padx=5, pady=5, sticky=tk.W)
         self.widgets["entry_duration"] = entry
 
@@ -168,7 +168,9 @@ class FilterPanelManager:
         self.widgets["label_site"] = label
 
         site_values = sorted(list(self.sites.keys()))
-        combobox = ttk.Combobox(self.frame, values=site_values, textvariable=self.variables["site"])
+        combobox = ttk.Combobox(
+            self.frame, values=site_values, textvariable=self.variables["site"]
+        )
         combobox.grid(column=1, row=row, padx=5, pady=5, sticky=tk.W)
         self.widgets["combobox_site"] = combobox
 
@@ -189,7 +191,9 @@ class FilterPanelManager:
 
         vis_values = [""] + sorted(list(self.visibility_windows.keys()))
         combobox = ttk.Combobox(
-            self.frame, values=vis_values, textvariable=self.variables["visibility_window"]
+            self.frame,
+            values=vis_values,
+            textvariable=self.variables["visibility_window"],
         )
         combobox.grid(column=1, row=row, padx=5, pady=5, sticky=tk.W)
         self.widgets["combobox_visibility"] = combobox
@@ -197,7 +201,8 @@ class FilterPanelManager:
         # Bind selection event
         try:
             combobox.bind(
-                "<<ComboboxSelected>>", lambda ev: self.callbacks.on_update_visibility_ui()
+                "<<ComboboxSelected>>",
+                lambda ev: self.callbacks.on_update_visibility_ui(),
             )
         except Exception:
             try:
@@ -244,7 +249,9 @@ class FilterPanelManager:
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "locales"
             )
             lang_values = [
-                d for d in os.listdir(locales_dir) if os.path.isdir(os.path.join(locales_dir, d))
+                d
+                for d in os.listdir(locales_dir)
+                if os.path.isdir(os.path.join(locales_dir, d))
             ]
         except Exception:
             lang_values = ["en", "es"]
@@ -279,7 +286,9 @@ class FilterPanelManager:
             log_exception(logger, "Failed to set language combobox initial value")
 
         try:
-            combobox.bind("<<ComboboxSelected>>", lambda ev: self.callbacks.on_language_change())
+            combobox.bind(
+                "<<ComboboxSelected>>", lambda ev: self.callbacks.on_language_change()
+            )
         except Exception:
             log_exception(logger, "Failed to bind language change callback")
 
@@ -308,7 +317,9 @@ class FilterPanelManager:
             )
             text_widget.config(state="disabled", background=bg_color)
 
-            text_widget.grid(column=0, row=row, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
+            text_widget.grid(
+                column=0, row=row, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W
+            )
             self.widgets["text_rochester"] = text_widget
         except Exception:
             log_exception(logger, "Failed to build Rochester attribution text")
@@ -328,7 +339,9 @@ class FilterPanelManager:
             self._safe_trace_add(self.variables["days_to_search"], clear_and_persist)
             self._safe_trace_add(self.variables["observation_date"], clear_and_persist)
             self._safe_trace_add(self.variables["observation_time"], clear_and_persist)
-            self._safe_trace_add(self.variables["observation_duration"], clear_and_persist)
+            self._safe_trace_add(
+                self.variables["observation_duration"], clear_and_persist
+            )
             self._safe_trace_add(self.variables["site"], clear_and_persist)
             self._safe_trace_add(self.variables["min_latitude"], clear_and_persist)
 
@@ -344,7 +357,8 @@ class FilterPanelManager:
             try:
                 if "language" in self.variables:
                     self._safe_trace_add(
-                        self.variables["language"], lambda *a: self.callbacks.on_persist_prefs(*a)
+                        self.variables["language"],
+                        lambda *a: self.callbacks.on_persist_prefs(*a),
                     )
             except Exception:
                 log_exception(logger, "Failed to add language trace callback")
@@ -412,11 +426,17 @@ class FilterPanelManager:
             if "label_magnitude" in self.widgets:
                 self.widgets["label_magnitude"].config(text=_("Max. magnitude: "))
             if "label_days_to_search" in self.widgets:
-                self.widgets["label_days_to_search"].config(text=_("Find the n previous days: "))
+                self.widgets["label_days_to_search"].config(
+                    text=_("Find the n previous days: ")
+                )
             if "label_observation_date" in self.widgets:
-                self.widgets["label_observation_date"].config(text=_("Observation date: "))
+                self.widgets["label_observation_date"].config(
+                    text=_("Observation date: ")
+                )
             if "label_init_time" in self.widgets:
-                self.widgets["label_init_time"].config(text=_("Init time in observation date: "))
+                self.widgets["label_init_time"].config(
+                    text=_("Init time in observation date: ")
+                )
             if "label_duration" in self.widgets:
                 self.widgets["label_duration"].config(text=_("Hours of observation: "))
             if "label_site" in self.widgets:
@@ -451,7 +471,9 @@ class FilterPanelManager:
         try:
             if "text_rochester" in self.widgets:
                 bg_color = (
-                    THEME_COLORS.DARK_ROCHESTER_BG if dark_mode else THEME_COLORS.LIGHT_ROCHESTER_BG
+                    THEME_COLORS.DARK_ROCHESTER_BG
+                    if dark_mode
+                    else THEME_COLORS.LIGHT_ROCHESTER_BG
                 )
                 self.widgets["text_rochester"].config(background=bg_color)
         except Exception:

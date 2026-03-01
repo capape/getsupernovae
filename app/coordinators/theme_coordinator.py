@@ -11,11 +11,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
-from app.config.ui_constants import (
-    THEME_COLORS,
-    UI_CONSTANTS,
-    UI_STRINGS,
-)
+from app.config.ui_constants import THEME_COLORS, UI_CONSTANTS, UI_STRINGS
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -56,13 +52,19 @@ class ThemeCoordinator:
 
             # Configure row height - must use root as the first argument
             style = ttk.Style(self.root)
-            style.configure(UI_STRINGS.RESULTS_TREE_STYLE, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
+            style.configure(
+                UI_STRINGS.RESULTS_TREE_STYLE, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT
+            )
 
             # Configure alternating row colors based on current theme
             dark = self.get_dark_mode()
             if dark:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW
+                )
                 tree.tag_configure(
                     UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
                     background=THEME_COLORS.DARK_EVEN_ROW,
@@ -74,8 +76,12 @@ class ThemeCoordinator:
                     foreground=THEME_COLORS.BRIGHT_FG_DARK,
                 )
             else:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW
+                )
                 tree.tag_configure(
                     UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
                     background=THEME_COLORS.LIGHT_EVEN_ROW,
@@ -112,7 +118,9 @@ class ThemeCoordinator:
                             is_bright = False
 
                         if is_bright:
-                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            tag = (
+                                "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            )
                         else:
                             tag = "evenrow" if index % 2 == 0 else "oddrow"
 
@@ -129,7 +137,9 @@ class ThemeCoordinator:
             try:
                 self.on_persist_prefs()
             except Exception:
-                log_exception(logger, "Failed to persist preferences during theme apply")
+                log_exception(
+                    logger, "Failed to persist preferences during theme apply"
+                )
 
             style = ttk.Style()
             try:
@@ -180,7 +190,9 @@ class ThemeCoordinator:
                 # selection highlight for treeview — choose a subtle color per theme
                 try:
                     sel_color = (
-                        THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
+                        THEME_COLORS.DARK_SELECTION
+                        if dark
+                        else THEME_COLORS.LIGHT_SELECTION
                     )
                     style.map("Treeview", background=[("selected", sel_color)])
                 except Exception:
@@ -190,7 +202,9 @@ class ThemeCoordinator:
                     try:
                         self.root.configure(background=bg)
                     except Exception:
-                        log_exception(logger, "Failed to configure root window background")
+                        log_exception(
+                            logger, "Failed to configure root window background"
+                        )
                     # Treeview styling
                     try:
                         tree = self.get_results_tree()
@@ -207,7 +221,9 @@ class ThemeCoordinator:
         try:
             self.configure_results_tree_styling()
         except Exception:
-            log_exception(logger, "Failed to reconfigure results tree after theme change")
+            log_exception(
+                logger, "Failed to reconfigure results tree after theme change"
+            )
 
         try:
             if bg:

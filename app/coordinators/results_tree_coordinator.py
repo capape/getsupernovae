@@ -13,11 +13,7 @@ import urllib.parse
 import webbrowser
 from typing import Any, Callable, Dict
 
-from app.config.ui_constants import (
-    NETWORK_CONSTANTS,
-    THEME_COLORS,
-    UI_CONSTANTS,
-)
+from app.config.ui_constants import NETWORK_CONSTANTS, THEME_COLORS, UI_CONSTANTS
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -76,10 +72,12 @@ class ResultsTreeCoordinator:
                 self._sort_reverse = False
 
             # Get column index
-            col_idx = self.tree["columns"].index(col)
+            self.tree["columns"].index(col)
 
             # Get all items with their values
-            items = [(self.tree.set(item, col), item) for item in self.tree.get_children("")]
+            items = [
+                (self.tree.set(item, col), item) for item in self.tree.get_children("")
+            ]
 
             # Sort items
             if is_numeric:
@@ -93,7 +91,10 @@ class ResultsTreeCoordinator:
                 items.sort(key=sort_key, reverse=self._sort_reverse)
             else:
                 # Alphabetic sort
-                items.sort(key=lambda x: x[0].lower() if x[0] else "", reverse=self._sort_reverse)
+                items.sort(
+                    key=lambda x: x[0].lower() if x[0] else "",
+                    reverse=self._sort_reverse,
+                )
 
             # Rearrange items in sorted order
             for index, (val, item) in enumerate(items):
@@ -110,7 +111,9 @@ class ResultsTreeCoordinator:
                             is_bright = False
 
                         if is_bright:
-                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            tag = (
+                                "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            )
                         else:
                             tag = "evenrow" if index % 2 == 0 else "oddrow"
 
@@ -133,7 +136,9 @@ class ResultsTreeCoordinator:
             else:
                 self.on_disable_button("find_stars")
         except Exception:
-            log_exception(logger, "Failed to update Find Stars button state on selection change")
+            log_exception(
+                logger, "Failed to update Find Stars button state on selection change"
+            )
 
     def find_stars_in_simbad(self):
         """Query SIMBAD for objects near the selected supernova."""
@@ -155,7 +160,9 @@ class ResultsTreeCoordinator:
             coord = getattr(sn, "coordinates", None)
             if coord is not None:
                 ra_str = coord.ra.to_string(unit="hour", sep=":", precision=1)
-                dec_str = coord.dec.to_string(unit="degree", sep=":", precision=1, alwayssign=True)
+                dec_str = coord.dec.to_string(
+                    unit="degree", sep=":", precision=1, alwayssign=True
+                )
             else:
                 ra_str = dec_str = ""
 
@@ -268,7 +275,9 @@ class ResultsTreeCoordinator:
                     visibility = getattr(sn, "visibility", None)
                     if visibility:
                         is_visible = getattr(visibility, "visible", False)
-                        tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
+                        tooltip_lines.append(
+                            f"Visible: {'Yes' if is_visible else 'No'}"
+                        )
 
                         # Get altitude/azimuth coordinates if available
                         az_coords = getattr(visibility, "azCords", None)
@@ -301,12 +310,18 @@ class ResultsTreeCoordinator:
                                     key=lambda a: a.degree if a is not None else -999,
                                 )
                                 if max_alt is not None:
-                                    tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
+                                    tooltip_lines.append(
+                                        f"Max altitude: {max_alt.degree:.1f}°"
+                                    )
                             except Exception:
-                                log_exception(logger, "Failed to compute tooltip altitude values")
+                                log_exception(
+                                    logger, "Failed to compute tooltip altitude values"
+                                )
 
                     if tooltip_lines:
-                        self.show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
+                        self.show_tooltip(
+                            event.x_root, event.y_root, "\n".join(tooltip_lines)
+                        )
         except Exception:
             log_exception(logger, "Failed to process results hover tooltip")
 
@@ -340,8 +355,12 @@ class ResultsTreeCoordinator:
 
             # Style tooltip based on dark mode
             dark = self.get_dark_mode()
-            bg_color = THEME_COLORS.DARK_TOOLTIP_BG if dark else THEME_COLORS.LIGHT_TOOLTIP_BG
-            fg_color = THEME_COLORS.DARK_TOOLTIP_FG if dark else THEME_COLORS.LIGHT_TOOLTIP_FG
+            bg_color = (
+                THEME_COLORS.DARK_TOOLTIP_BG if dark else THEME_COLORS.LIGHT_TOOLTIP_BG
+            )
+            fg_color = (
+                THEME_COLORS.DARK_TOOLTIP_FG if dark else THEME_COLORS.LIGHT_TOOLTIP_FG
+            )
 
             label = tk.Label(
                 self.tooltip_window,

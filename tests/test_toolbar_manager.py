@@ -76,7 +76,9 @@ class TestToolbarManager(unittest.TestCase):
 
     def test_initialization_without_dark_mode(self):
         """Test ToolbarManager initialization without dark mode variable."""
-        manager = ToolbarManager(parent=self.root, callbacks=self.callbacks, dark_mode=None)
+        manager = ToolbarManager(
+            parent=self.root, callbacks=self.callbacks, dark_mode=None
+        )
 
         self.assertIsNone(manager.dark_mode)
 
@@ -143,7 +145,9 @@ class TestToolbarManager(unittest.TestCase):
 
     def test_build_without_dark_mode_skips_toggle(self):
         """Test that build() skips dark mode toggle when dark_mode is None."""
-        manager = ToolbarManager(parent=self.root, callbacks=self.callbacks, dark_mode=None)
+        manager = ToolbarManager(
+            parent=self.root, callbacks=self.callbacks, dark_mode=None
+        )
 
         manager.build()
 
@@ -368,7 +372,12 @@ class TestToolbarManager(unittest.TestCase):
             manager.refresh_labels()
 
             # Verify _ was called with expected strings
-            expected_calls = ["Find stars", "Ignore selected SN", "Edit Ignored SN", "Dark mode"]
+            expected_calls = [
+                "Find stars",
+                "Ignore selected SN",
+                "Edit Ignored SN",
+                "Dark mode",
+            ]
             actual_calls = [call[0][0] for call in mock_gettext.call_args_list]
 
             for expected in expected_calls:

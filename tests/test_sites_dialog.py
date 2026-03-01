@@ -4,7 +4,6 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 
-
 # Ensure package imports work when running this test standalone
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 

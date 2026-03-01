@@ -21,7 +21,9 @@ from app.utils.snparser import format_iso_datetime
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
     _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
     logger.addHandler(_handler)
 logger.setLevel(logging.INFO)
 
@@ -133,7 +135,9 @@ def createPdf(
             if not docs.exists():
                 docs = Path.home()
         except Exception:
-            logger.exception("failed to determine Documents/home path; falling back to cwd")
+            logger.exception(
+                "failed to determine Documents/home path; falling back to cwd"
+            )
             docs = Path.cwd()
 
     pdf_filename = docs / f"{observationDate}.pdf"
@@ -152,15 +156,15 @@ def createPdf(
         # full header (printed only on first page)
         if full:
             txtobj.textLine(
-                i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-                    fromDate=fromDate, to=observationDate, magnitude=magnitude
-                )
+                i18n._(
+                    "Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}"
+                ).format(fromDate=fromDate, to=observationDate, magnitude=magnitude)
             )
             # reuse local visibility windows loader for header/site summary
             vis = _load_visibility_windows()
-            site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
-                lon=site.lon.value, lat=site.lat.value, height=site.height.value
-            )
+            site_info = i18n._(
+                "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m"
+            ).format(lon=site.lon.value, lat=site.lat.value, height=site.height.value)
             if visibilityWindowName and visibilityWindowName in vis:
                 cfg = vis.get(visibilityWindowName, {})
                 site_info = site_info + i18n._(
@@ -204,15 +208,21 @@ def createPdf(
             ),
             i18n._("  AzCoords az: {az}, lat: {lat}").format(
                 az=data.visibility.azCords[0].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
+                lat=data.visibility.azCords[0].coord.alt.to_string(
+                    sep=" ", precision=2
+                ),
             ),
             i18n._("  Last azCoords az: {az}, lat: {lat}").format(
                 az=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
+                lat=data.visibility.azCords[-1].coord.alt.to_string(
+                    sep=" ", precision=2
+                ),
             ),
             "",
             i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
-                first=data.firstObserved, max=data.maxMagnitude, on=data.maxMagnitudeDate
+                first=data.firstObserved,
+                max=data.maxMagnitude,
+                on=data.maxMagnitudeDate,
             ),
             "",
             "",
@@ -250,7 +260,9 @@ def createPdf(
             rect_height = rect_top - rect_bottom
             canvas.saveState()
             canvas.setFillColor(Color(0.95, 0.95, 0.95))
-            canvas.rect(marginx, rect_bottom, usable_width, rect_height, fill=1, stroke=0)
+            canvas.rect(
+                marginx, rect_bottom, usable_width, rect_height, fill=1, stroke=0
+            )
             # draw a subtle top border on the highlight box
             try:
                 canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
@@ -258,11 +270,14 @@ def createPdf(
                 canvas.line(marginx, rect_top, marginx + usable_width, rect_top)
             except Exception:
                 logger.exception(
-                    "failed drawing highlight top border for %s", getattr(data, "name", None)
+                    "failed drawing highlight top border for %s",
+                    getattr(data, "name", None),
                 )
             canvas.restoreState()
         except Exception:
-            logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
+            logger.exception(
+                "failed drawing highlight box for %s", getattr(data, "name", None)
+            )
 
         for line in lines:
             if textObject.getY() - leading < bottom_threshold:
@@ -296,7 +311,9 @@ def createPdf(
                 canvas.drawString(marginx, link_y, link)
                 w = pdfmetrics.stringWidth(link, used_font, fontsize)
                 canvas.linkURL(
-                    link, (marginx, link_y - 2, marginx + w, link_y + fontsize + 2), relative=0
+                    link,
+                    (marginx, link_y - 2, marginx + w, link_y + fontsize + 2),
+                    relative=0,
                 )
                 canvas.setFillColor(black)
         except Exception:
@@ -330,7 +347,8 @@ def createPdf(
                     )
         except Exception:
             logger.exception(
-                "error while attempting to add tnser link for %s", getattr(data, "name", None)
+                "error while attempting to add tnser link for %s",
+                getattr(data, "name", None),
             )
 
         try:
@@ -381,7 +399,9 @@ def createPdf(
                         sky_w = marginx + usable_width - sky_x
                     canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
             except Exception:
-                logger.exception("failed to draw images for %s", getattr(data, "name", None))
+                logger.exception(
+                    "failed to draw images for %s", getattr(data, "name", None)
+                )
 
         textObject = canvas.beginText()
         textObject.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)

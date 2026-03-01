@@ -10,10 +10,7 @@ from dataclasses import dataclass
 from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
-from app.config.ui_constants import (
-    UI_CONSTANTS,
-    UI_STRINGS,
-)
+from app.config.ui_constants import UI_CONSTANTS, UI_STRINGS
 from app.i18n import _
 from app.utils.logger import get_logger, log_exception
 
@@ -107,7 +104,9 @@ class ResultsPanelManager:
         try:
             # Create frame to hold treeview and scrollbars
             results_frame = ttk.Frame(self.parent)
-            results_frame.grid(column=3, row=1, rowspan=9, sticky="nsew", padx=5, pady=5)
+            results_frame.grid(
+                column=3, row=1, rowspan=9, sticky="nsew", padx=5, pady=5
+            )
             results_frame.grid_rowconfigure(0, weight=1)
             results_frame.grid_columnconfigure(0, weight=1)
             self.widgets["results_frame"] = results_frame
@@ -139,10 +138,14 @@ class ResultsPanelManager:
 
             # Configure column headings with sort commands
             tree.heading(
-                "name", text=_("Name"), command=lambda: self.callbacks.on_sort_column("name", False)
+                "name",
+                text=_("Name"),
+                command=lambda: self.callbacks.on_sort_column("name", False),
             )
             tree.heading(
-                "type", text=_("Type"), command=lambda: self.callbacks.on_sort_column("type", False)
+                "type",
+                text=_("Type"),
+                command=lambda: self.callbacks.on_sort_column("type", False),
             )
             tree.heading(
                 "magnitude",
@@ -150,15 +153,21 @@ class ResultsPanelManager:
                 command=lambda: self.callbacks.on_sort_column("magnitude", True),
             )
             tree.heading(
-                "date", text=_("Date"), command=lambda: self.callbacks.on_sort_column("date", False)
+                "date",
+                text=_("Date"),
+                command=lambda: self.callbacks.on_sort_column("date", False),
             )
             tree.heading(
                 "observation_time",
                 text=_("Observation time"),
-                command=lambda: self.callbacks.on_sort_column("observation_time", False),
+                command=lambda: self.callbacks.on_sort_column(
+                    "observation_time", False
+                ),
             )
             tree.heading(
-                "host", text=_("Host"), command=lambda: self.callbacks.on_sort_column("host", False)
+                "host",
+                text=_("Host"),
+                command=lambda: self.callbacks.on_sort_column("host", False),
             )
             tree.heading(
                 "constellation",
@@ -166,10 +175,14 @@ class ResultsPanelManager:
                 command=lambda: self.callbacks.on_sort_column("constellation", False),
             )
             tree.heading(
-                "ra", text=_("RA"), command=lambda: self.callbacks.on_sort_column("ra", False)
+                "ra",
+                text=_("RA"),
+                command=lambda: self.callbacks.on_sort_column("ra", False),
             )
             tree.heading(
-                "dec", text=_("Dec"), command=lambda: self.callbacks.on_sort_column("dec", False)
+                "dec",
+                text=_("Dec"),
+                command=lambda: self.callbacks.on_sort_column("dec", False),
             )
             tree.heading(
                 "rochester",
@@ -177,20 +190,30 @@ class ResultsPanelManager:
                 command=lambda: self.callbacks.on_sort_column("rochester", False),
             )
             tree.heading(
-                "tns", text=_("TNS"), command=lambda: self.callbacks.on_sort_column("tns", False)
+                "tns",
+                text=_("TNS"),
+                command=lambda: self.callbacks.on_sort_column("tns", False),
             )
 
             # Configure column widths
             tree.column("name", width=UI_CONSTANTS.COL_WIDTH_NAME, anchor=tk.W)
             tree.column("type", width=UI_CONSTANTS.COL_WIDTH_TYPE, anchor=tk.W)
-            tree.column("magnitude", width=UI_CONSTANTS.COL_WIDTH_MAGNITUDE, anchor=tk.E)
+            tree.column(
+                "magnitude", width=UI_CONSTANTS.COL_WIDTH_MAGNITUDE, anchor=tk.E
+            )
             tree.column("date", width=UI_CONSTANTS.COL_WIDTH_DATE, anchor=tk.E)
-            tree.column("observation_time", width=UI_CONSTANTS.COL_WIDTH_OBS_TIME, anchor=tk.E)
+            tree.column(
+                "observation_time", width=UI_CONSTANTS.COL_WIDTH_OBS_TIME, anchor=tk.E
+            )
             tree.column("host", width=UI_CONSTANTS.COL_WIDTH_HOST, anchor=tk.W)
-            tree.column("constellation", width=UI_CONSTANTS.COL_WIDTH_CONSTELLATION, anchor=tk.W)
+            tree.column(
+                "constellation", width=UI_CONSTANTS.COL_WIDTH_CONSTELLATION, anchor=tk.W
+            )
             tree.column("ra", width=UI_CONSTANTS.COL_WIDTH_RA, anchor=tk.E)
             tree.column("dec", width=UI_CONSTANTS.COL_WIDTH_DEC, anchor=tk.E)
-            tree.column("rochester", width=UI_CONSTANTS.COL_WIDTH_ROCHESTER, anchor=tk.CENTER)
+            tree.column(
+                "rochester", width=UI_CONSTANTS.COL_WIDTH_ROCHESTER, anchor=tk.CENTER
+            )
             tree.column("tns", width=UI_CONSTANTS.COL_WIDTH_TNS, anchor=tk.CENTER)
 
             # Create scrollbars
@@ -219,12 +242,16 @@ class ResultsPanelManager:
         """Build bottom action buttons (PDF, TXT, Refresh, Exit)."""
         try:
             # PDF button
-            pdf_btn = ttk.Button(self.parent, text=_("PDF"), command=self.callbacks.on_pdf)
+            pdf_btn = ttk.Button(
+                self.parent, text=_("PDF"), command=self.callbacks.on_pdf
+            )
             pdf_btn.grid(column=0, row=12, sticky=tk.E)
             self.widgets["button_pdf"] = pdf_btn
 
             # TXT button
-            txt_btn = ttk.Button(self.parent, text=_("TXT"), command=self.callbacks.on_txt)
+            txt_btn = ttk.Button(
+                self.parent, text=_("TXT"), command=self.callbacks.on_txt
+            )
             txt_btn.grid(column=1, row=12, sticky=tk.W)
             self.widgets["button_txt"] = txt_btn
 
@@ -236,7 +263,9 @@ class ResultsPanelManager:
             self.widgets["button_refresh"] = refresh_btn
 
             # Exit button
-            exit_btn = ttk.Button(self.parent, text=_("Exit"), command=self.callbacks.on_exit)
+            exit_btn = ttk.Button(
+                self.parent, text=_("Exit"), command=self.callbacks.on_exit
+            )
 
             # Add spacing above exit button
             try:
@@ -261,7 +290,9 @@ class ResultsPanelManager:
         """Build progress bar (initially hidden)."""
         try:
             progress = ttk.Progressbar(
-                self.parent, mode="indeterminate", length=UI_CONSTANTS.PROGRESS_BAR_LENGTH
+                self.parent,
+                mode="indeterminate",
+                length=UI_CONSTANTS.PROGRESS_BAR_LENGTH,
             )
             self.widgets["progress_bar"] = progress
         except Exception:

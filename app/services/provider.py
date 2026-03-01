@@ -98,7 +98,9 @@ class NetworkRochesterProvider(RochesterProvider):
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
-            with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
+            with urllib.request.urlopen(
+                source, context=ctx, timeout=self.timeout
+            ) as resp:
                 html = resp.read()
 
         except Exception:

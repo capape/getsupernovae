@@ -59,7 +59,9 @@ class VisibilityDialog(tk.Toplevel):
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
             return (
-                os.path.join(cfgdir, "visibility_windows.json") if self.path is None else self.path
+                os.path.join(cfgdir, "visibility_windows.json")
+                if self.path is None
+                else self.path
             )
         except Exception:
             return (
@@ -108,7 +110,11 @@ class VisibilityDialog(tk.Toplevel):
             )
         except Exception:
             self.tree = ttk.Treeview(
-                frame_left, columns=self.columns, show="headings", selectmode="browse", height=12
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                height=12,
             )
         for col in self.columns:
             self.tree.heading(col, text=col.capitalize())
@@ -122,7 +128,9 @@ class VisibilityDialog(tk.Toplevel):
         frame_right = ttk.Frame(self)
         frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
 
-        ttk.Label(frame_right, text=_("Name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Name:")).grid(
+            column=0, row=0, sticky=tk.E, padx=5, pady=5
+        )
         self.name_var = tk.StringVar()
         ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(
             column=1, row=0, padx=5, pady=5
@@ -183,7 +191,9 @@ class VisibilityDialog(tk.Toplevel):
                 mz = float(info.get("minAz", 0.0))
                 xz = float(info.get("maxAz", 360.0))
                 self.tree.insert(
-                    "", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}")
+                    "",
+                    "end",
+                    values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}"),
                 )
             except Exception:
                 self.tree.insert("", "end", values=(nm, "", "", "", ""))
@@ -259,13 +269,20 @@ class VisibilityDialog(tk.Toplevel):
             except Exception:
                 pass
 
-        self._current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+        self._current[nm] = {
+            "minAlt": mina,
+            "maxAlt": maxa,
+            "minAz": minz,
+            "maxAz": maxz,
+        }
         try:
             self._persist_current()
-            global_visibility = load_visibility_windows()
+            load_visibility_windows()
         except Exception as e:
             messagebox.showerror(
-                _("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=self
+                _("Error"),
+                _("Failed to save visibility windows: {e}").format(e=e),
+                parent=self,
             )
             return
 
@@ -276,7 +293,9 @@ class VisibilityDialog(tk.Toplevel):
     def _on_add(self):
         nm = self.name_var.get().strip()
         if not nm:
-            messagebox.showerror(_("Invalid input"), _("Name is required."), parent=self)
+            messagebox.showerror(
+                _("Invalid input"), _("Name is required."), parent=self
+            )
             return
         try:
             mina = float(self.minalt_var.get())
@@ -285,15 +304,24 @@ class VisibilityDialog(tk.Toplevel):
             maxz = float(self.maxaz_var.get())
         except Exception:
             messagebox.showerror(
-                _("Invalid input"), _("Numeric fields must be valid numbers."), parent=self
+                _("Invalid input"),
+                _("Numeric fields must be valid numbers."),
+                parent=self,
             )
             return
         if nm in self._current:
             messagebox.showerror(
-                _("Invalid input"), _("A window with that name already exists."), parent=self
+                _("Invalid input"),
+                _("A window with that name already exists."),
+                parent=self,
             )
             return
-        self._current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+        self._current[nm] = {
+            "minAlt": mina,
+            "maxAlt": maxa,
+            "minAz": minz,
+            "maxAz": maxz,
+        }
         try:
             self._persist_current()
         except Exception as e:
@@ -309,7 +337,9 @@ class VisibilityDialog(tk.Toplevel):
         if not nm:
             return
         if not messagebox.askyesno(
-            _("Delete"), _("Delete visibility window '{nm}'?").format(nm=nm), parent=self
+            _("Delete"),
+            _("Delete visibility window '{nm}'?").format(nm=nm),
+            parent=self,
         ):
             return
         try:

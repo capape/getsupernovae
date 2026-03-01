@@ -172,7 +172,9 @@ class ReportCoordinator:
 
             msg = _("PDF report saved to:\n{path}").format(path=pdf_path)
             should_open = self.on_show_message(
-                _("PDF Created"), msg + "\n\n" + _("Do you want to open it?"), "question"
+                _("PDF Created"),
+                msg + "\n\n" + _("Do you want to open it?"),
+                "question",
             )
 
             if should_open:
@@ -201,9 +203,9 @@ class ReportCoordinator:
 
                 self.on_show_warning(
                     _("Cannot open file"),
-                    _("File saved but could not be opened automatically: {error}").format(
-                        error=str(ex)
-                    ),
+                    _(
+                        "File saved but could not be opened automatically: {error}"
+                    ).format(error=str(ex)),
                 )
             else:
                 log_exception(logger, f"Failed to open file {file_path}")

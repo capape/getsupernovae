@@ -1,11 +1,19 @@
-import json
-import os
-import shutil
-import sys
-from collections import OrderedDict
+"""Configuration loading utilities for the Get Supernovae application.
 
-import astropy.units as u
+This module provides functions to load configuration from various sources:
+- Old supernova names from text files
+- Observing sites from JSON files
+- Visibility windows for observations
+- Bootstrap configuration and directory management
+"""
+
+import os
+import sys
+import json
+import shutil
+from collections import OrderedDict
 from astropy.coordinates import EarthLocation
+import astropy.units as u
 
 
 def load_old_supernovae(path=None):
@@ -87,21 +95,19 @@ def load_sites(path=None):
 
     return result
 
-
-def get_config_candidates(path: str, config_file: str):
+def get_config_candidates(path:str, config_file:str):
     candidates = []
     if path:
         candidates.append(path)
     config_path = get_user_config_dir()
     candidates.append(os.path.join(config_path, config_file))
-    xdg = os.environ.get("XDG_CONFIG_HOME")
+    os.environ.get("XDG_CONFIG_HOME")
     return candidates
-
 
 def load_visibility_windows(path=None):
     defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
 
-    candidates = get_config_candidates(None, "visibility_windows.json")
+    candidates = get_config_candidates(None,"visibility_windows.json")
 
     for p in candidates:
         try:
@@ -155,7 +161,9 @@ def bootstrap_config():
     old_path = os.path.join(cfg, "old_supernovae.txt")
 
     # default sites
-    default_sites = {"Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}}
+    default_sites = {
+        "Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}
+    }
 
     # default old list
     default_old = []
@@ -222,7 +230,9 @@ def save_user_prefs(prefs: dict):
         pass
 
     # default visibility windows
-    default_visibility = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
+    default_visibility = {
+        "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+    }
     vis_path = os.path.join(cfg, "visibility_windows.json")
     try:
         if not os.path.exists(vis_path):

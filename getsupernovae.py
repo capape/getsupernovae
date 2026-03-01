@@ -1,4 +1,10 @@
 #!/usr/bin/python
+"""Get Supernovae - Desktop application for tracking supernova discoveries.
+
+This is the main entry point for the Get Supernovae application, a tkinter-based
+desktop application that fetches and displays supernova data from online sources,
+calculates visibility windows, and generates observation reports.
+"""
 # Check supernova data
 #
 
@@ -9,6 +15,7 @@ from datetime import datetime, timedelta
 from tkinter import messagebox
 from typing import List
 
+import astropy.units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
@@ -16,7 +23,6 @@ from app.models.dto import SupernovaDTO
 
 # ensure local modules in this directory can be imported when script run directly
 sys.path.insert(0, os.path.dirname(__file__))
-import astropy.units as u
 
 from app.config.snconfig import (
     bootstrap_config,

@@ -80,7 +80,9 @@ class DialogCoordinator:
         # Get selected supernova from UI
         sn = self.get_selected_supernova()
         if sn is None:
-            self.on_show_info(_("No selection"), _("No supernova selected in the Results table."))
+            self.on_show_info(
+                _("No selection"), _("No supernova selected in the Results table.")
+            )
             return
 
         name = getattr(sn, "name", "").strip()
@@ -100,13 +102,16 @@ class DialogCoordinator:
         existing = []
         try:
             with open(path, "r", encoding="utf-8") as fh:
-                existing = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
+                existing = [
+                    l.strip() for l in fh if l.strip() and not l.strip().startswith("#")
+                ]
         except Exception:
             existing = []
 
         if name in existing:
             self.on_show_info(
-                _("Already present"), _("'{name}' is already ignored.").format(name=name)
+                _("Already present"),
+                _("'{name}' is already ignored.").format(name=name),
             )
             return
 
@@ -139,7 +144,9 @@ class DialogCoordinator:
                 try:
                     self.on_search_async({}, "REFRESH")
                 except Exception:
-                    log_exception(logger, "Failed to refresh after adding ignored supernova")
+                    log_exception(
+                        logger, "Failed to refresh after adding ignored supernova"
+                    )
         except Exception as ex:
             self.on_show_error(
                 _("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex)
@@ -167,7 +174,9 @@ class DialogCoordinator:
             try:
                 import getsupernovae
 
-                current = "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
+                current = (
+                    "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
+                )
             except Exception:
                 current = ""
 
@@ -246,7 +255,9 @@ class DialogCoordinator:
 
                     getsupernovae.old = load_old_supernovae(path)
                 except Exception:
-                    log_exception(logger, "Failed to reload ignored supernovae after edit")
+                    log_exception(
+                        logger, "Failed to reload ignored supernovae after edit"
+                    )
 
                 editor.destroy()
 
@@ -257,9 +268,13 @@ class DialogCoordinator:
                     try:
                         self.on_search_async({}, "REFRESH")
                     except Exception:
-                        log_exception(logger, "Failed to refresh after editing ignored supernovae")
+                        log_exception(
+                            logger, "Failed to refresh after editing ignored supernovae"
+                        )
             except Exception as ex:
-                self.on_show_error(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
+                self.on_show_error(
+                    _("Save error"), _("Failed to save file: {ex}").format(ex=ex)
+                )
 
         # Close handler
         def do_close():
@@ -321,7 +336,9 @@ class DialogCoordinator:
                     sel_name = None
                     try:
                         old_keys = (
-                            set(current_sites.keys()) if isinstance(current_sites, dict) else set()
+                            set(current_sites.keys())
+                            if isinstance(current_sites, dict)
+                            else set()
                         )
                         new_keys = set(vals)
                         added = sorted(new_keys - old_keys)
@@ -353,9 +370,13 @@ class DialogCoordinator:
                             if cb:
                                 cb.update_idletasks()
                         except Exception:
-                            log_exception(logger, "Failed to update site combobox after dialog")
+                            log_exception(
+                                logger, "Failed to update site combobox after dialog"
+                            )
                 except Exception:
-                    log_exception(logger, "Failed to refresh site values after site dialog")
+                    log_exception(
+                        logger, "Failed to refresh site values after site dialog"
+                    )
         except Exception:
             log_exception(logger, "Failed to process site dialog result")
 
@@ -402,7 +423,9 @@ class DialogCoordinator:
                     # Prefer newly added window
                     sel_name = None
                     try:
-                        old_keys = set(current.keys()) if isinstance(current, dict) else set()
+                        old_keys = (
+                            set(current.keys()) if isinstance(current, dict) else set()
+                        )
                         new_keys = set(new_vis.keys())
                         added = sorted(new_keys - old_keys)
                         if added:
@@ -434,9 +457,13 @@ class DialogCoordinator:
                                 cb.update_idletasks()
                         except Exception:
                             log_exception(
-                                logger, "Failed to update visibility window combobox after dialog"
+                                logger,
+                                "Failed to update visibility window combobox after dialog",
                             )
                 except Exception:
-                    log_exception(logger, "Failed to refresh visibility window values after dialog")
+                    log_exception(
+                        logger,
+                        "Failed to refresh visibility window values after dialog",
+                    )
         except Exception:
             log_exception(logger, "Failed to process visibility window dialog result")

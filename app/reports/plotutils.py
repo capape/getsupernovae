@@ -51,7 +51,9 @@ class VisibilityPlotter:
         self.height_cm = height_cm
         self.dpi = dpi
 
-    def make_image(self, data, fmt: str = "png", show_moon: bool = False, location=None):
+    def make_image(
+        self, data, fmt: str = "png", show_moon: bool = False, location=None
+    ):
         """Render the visibility plot.
 
         Args:
@@ -75,7 +77,9 @@ class VisibilityPlotter:
                 try:
                     dt = ac.time.to_datetime()
                 except Exception:
-                    dt = datetime.strptime(format_iso_datetime(ac.time), "%Y-%m-%dT%H:%M:%SZ")
+                    dt = datetime.strptime(
+                        format_iso_datetime(ac.time), "%Y-%m-%dT%H:%M:%SZ"
+                    )
                 times.append(dt)
                 alts.append(ac.coord.alt.to_value(u.deg))
 
@@ -98,7 +102,12 @@ class VisibilityPlotter:
                     moon_altaz = moon_coord.transform_to(aa)
                     moon_alts = [ma.alt.to_value(u.deg) for ma in moon_altaz]
                     ax.plot(
-                        times, moon_alts, color="#666666", linestyle="--", linewidth=1, label="Moon"
+                        times,
+                        moon_alts,
+                        color="#666666",
+                        linestyle="--",
+                        linewidth=1,
+                        label="Moon",
                     )
                     # shade when moon above horizon
                     try:
@@ -106,7 +115,12 @@ class VisibilityPlotter:
 
                         moon_arr = _np.array(moon_alts)
                         ax.fill_between(
-                            times, moon_arr, 0, where=moon_arr > 0, color="#999999", alpha=0.12
+                            times,
+                            moon_arr,
+                            0,
+                            where=moon_arr > 0,
+                            color="#999999",
+                            alpha=0.12,
                         )
                     except Exception:
                         pass

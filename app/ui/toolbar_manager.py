@@ -127,7 +127,9 @@ class ToolbarManager:
         """Build the Edit Ignored SN button."""
         try:
             button = ttk.Button(
-                self.toolbar_frame, text=_("Edit Ignored SN"), command=self.callbacks.on_edit_old
+                self.toolbar_frame,
+                text=_("Edit Ignored SN"),
+                command=self.callbacks.on_edit_old,
             )
             button.grid(column=2, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
             self.widgets["button_edit_old"] = button

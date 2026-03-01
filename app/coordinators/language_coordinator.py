@@ -188,14 +188,18 @@ class LanguageCoordinator:
         try:
             self.root_window.title(_("Find latest supernovae"))
         except Exception:
-            log_exception(logger, "Failed to refresh window title after language change")
+            log_exception(
+                logger, "Failed to refresh window title after language change"
+            )
 
     def _reapply_theme_and_styling(self):
         """Reapply results tree styling and theme after language change."""
         try:
             self.on_configure_tree_styling()
         except Exception:
-            log_exception(logger, "Failed to reconfigure results tree after language change")
+            log_exception(
+                logger, "Failed to reconfigure results tree after language change"
+            )
 
         try:
             # Re-apply theme in case translations affected widget styles
@@ -208,4 +212,6 @@ class LanguageCoordinator:
         try:
             self.on_update_visibility_ui()
         except Exception:
-            log_exception(logger, "Failed to refresh visibility UI after language change")
+            log_exception(
+                logger, "Failed to refresh visibility UI after language change"
+            )

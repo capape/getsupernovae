@@ -18,7 +18,9 @@ class SearchState:
     observation_time: str = ""
     observation_duration: str = "6"
     site: Optional[str] = None  # Site name (e.g., "Home", "Sabadell")
-    visibility_window: Optional[str] = None  # Visibility window name (e.g., "Default", "Evening")
+    visibility_window: Optional[str] = (
+        None  # Visibility window name (e.g., "Default", "Evening")
+    )
     min_latitude: str = ""
 
     def to_dict(self) -> dict:
