@@ -31,20 +31,20 @@ sn = Supernova(
     link="https://www.rochesterastronomy.org/supernova.html#2025aftz",
     constellation="Ori",
     coordinates=None,
-    firstObserved="2025-01-01",
-    maxMagnitude="16.0",
-    maxMagnitudeDate="2025-01-02",
+    first_observed="2025-01-01",
+    max_magnitude="16.0",
+    max_magnitude_date="2025-01-02",
     type="Ia",
     visibility=vis,
 )
 
 outname = gs.createPdf(
     [sn],
-    fromDate="2025-01-01",
-    observationDate="sample",
+    from_date="2025-01-01",
+    observation_date="sample",
     magnitude="17",
     site=gs.sites.get("Sabadell"),
-    minLatitude=25,
-    visibilityWindowName=None,
+    min_latitude=25,
+    visibility_window_name=None,
 )
 print(_("Created PDF: {name}").format(name=outname))

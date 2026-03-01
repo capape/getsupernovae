@@ -75,9 +75,7 @@ class SitesDialog(tk.Toplevel):
         try:
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
-            return (
-                os.path.join(cfgdir, "sites.json") if self.path is None else self.path
-            )
+            return os.path.join(cfgdir, "sites.json") if self.path is None else self.path
         except (OSError, IOError):
             return (
                 os.path.join(os.path.dirname(__file__), "sites.json")
@@ -356,16 +354,10 @@ class SitesDialog(tk.Toplevel):
         try:
             lat = float(self.lat_var.get())
             lon = float(self.lon_var.get())
-            height = (
-                float(self.height_var.get())
-                if self.height_var.get().strip() != ""
-                else 0.0
-            )
+            height = float(self.height_var.get()) if self.height_var.get().strip() != "" else 0.0
             self._validate_coords(lat, lon, height)
         except ValueError as e:
-            messagebox.showerror(
-                _("Error"), _("Invalid input: {e}").format(e=e), parent=self
-            )
+            messagebox.showerror(_("Error"), _("Invalid input: {e}").format(e=e), parent=self)
             return
 
         old = self._selected_name["value"]
@@ -392,9 +384,7 @@ class SitesDialog(tk.Toplevel):
             except (OSError, IOError, ValueError, TypeError):
                 pass
         except (OSError, IOError, PermissionError, ValueError, TypeError) as e:
-            messagebox.showerror(
-                _("Error"), _("Failed to save site: {e}").format(e=e), parent=self
-            )
+            messagebox.showerror(_("Error"), _("Failed to save site: {e}").format(e=e), parent=self)
             return
 
         # Reload from disk to ensure UI reflects the persisted representation

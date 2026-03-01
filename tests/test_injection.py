@@ -27,12 +27,12 @@ def test_async_uses_injected_provider():
     # minimal valid callback data
     e = SupernovaCallBackData(
         magnitude="20",
-        observationDate="2025-01-01",
-        observationTime="00:00",
-        observationHours="1",
-        daysToSearch="1",
+        observation_date="2025-01-01",
+        observation_time="00:00",
+        observation_hours="1",
+        days_to_search="1",
         site=sites[list(sites.keys())[0]],
-        minLatitude="0",
+        min_latitude="0",
     )
 
     # Create RochesterSupernova for the async downloader

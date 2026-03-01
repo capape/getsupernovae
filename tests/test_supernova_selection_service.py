@@ -25,13 +25,13 @@ from app.services.supernova_selection_service import SupernovaSelectionService
 class MockVisibilityFactory:
     """Mock visibility calculator with configurable start times."""
 
-    def __init__(self, minAlt, maxAlt, minAz, maxAz):
-        self.minAlt = minAlt
-        self.maxAlt = maxAlt
-        self.minAz = minAz
-        self.maxAz = maxAz
+    def __init__(self, min_alt, max_alt, min_az, max_az):
+        self.min_alt = min_alt
+        self.max_alt = max_alt
+        self.min_az = min_az
+        self.max_az = max_az
 
-    def getVisibility(self, site, coord, t1, t2):
+    def get_visibility(self, site, coord, t1, t2):
         """Return mock visibility with staggered observation times."""
         # Create different start times based on RA
         ra_hours = coord.ra.hour
@@ -62,12 +62,12 @@ def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00
         date_obj=date_obj,
         coordinates=coords,
         type="Ia",
-        firstObserved=date_str,
-        maxMagnitude=mag,
-        maxMagnitudeDate=date_str,
+        first_observed=date_str,
+        max_magnitude=mag,
+        max_magnitude_date=date_str,
         link=f"http://example.com/{name}",
-        firstObserved_obj=date_obj,
-        maxMagnitudeDate_obj=date_obj,
+        first_observed_obj=date_obj,
+        max_magnitude_date_obj=date_obj,
     )
 
 
@@ -83,7 +83,7 @@ def test_get_visibility_window_params_fallback():
 def test_get_visibility_window_params_named():
     """Test visibility window parameter extraction from named config."""
     visibility_windows = {
-        "MyWindow": {"minAlt": 30.0, "maxAlt": 85.0, "minAz": 45.0, "maxAz": 315.0}
+        "MyWindow": {"min_alt": 30.0, "max_alt": 85.0, "min_az": 45.0, "max_az": 315.0}
     }
 
     service = SupernovaSelectionService(visibility_windows=visibility_windows)
@@ -94,7 +94,7 @@ def test_get_visibility_window_params_named():
 
 def test_get_visibility_window_params_missing_window():
     """Test fallback when named window doesn't exist."""
-    visibility_windows = {"OtherWindow": {"minAlt": 30.0}}
+    visibility_windows = {"OtherWindow": {"min_alt": 30.0}}
 
     service = SupernovaSelectionService(visibility_windows=visibility_windows)
     params = service.get_visibility_window_params("NonExistent", 25.0)
@@ -142,7 +142,7 @@ def test_select_and_sort_supernovae():
 def test_select_and_sort_with_named_window():
     """Test selection with named visibility window."""
     visibility_windows = {
-        "HighAltitude": {"minAlt": 40.0, "maxAlt": 85.0, "minAz": 0.0, "maxAz": 360.0}
+        "HighAltitude": {"min_alt": 40.0, "max_alt": 85.0, "min_az": 0.0, "max_az": 360.0}
     }
 
     filter_service = SupernovaFilterService(visibility_factory=MockVisibilityFactory)
@@ -187,9 +187,9 @@ def test_sort_by_observation_time():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -198,8 +198,8 @@ def test_sort_by_observation_time():
                 AxCordInTime(datetime(2025, 1, 1, 23, 0, 0), None),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     sn2 = Supernova(
@@ -212,9 +212,9 @@ def test_sort_by_observation_time():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -223,8 +223,8 @@ def test_sort_by_observation_time():
                 AxCordInTime(datetime(2025, 1, 1, 22, 30, 0), None),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     sn3 = Supernova(
@@ -237,9 +237,9 @@ def test_sort_by_observation_time():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -248,8 +248,8 @@ def test_sort_by_observation_time():
                 AxCordInTime(datetime(2025, 1, 2, 0, 0, 0), None),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     supernovae = [sn1, sn2, sn3]
@@ -285,9 +285,9 @@ def test_sort_by_max_altitude():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -296,8 +296,8 @@ def test_sort_by_max_altitude():
                 MockAxCord(datetime.now(), 50.0),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     sn2 = Supernova(
@@ -310,9 +310,9 @@ def test_sort_by_max_altitude():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -321,8 +321,8 @@ def test_sort_by_max_altitude():
                 MockAxCord(datetime.now(), 75.0),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     supernovae = [sn1, sn2]
@@ -347,13 +347,13 @@ def test_group_by_constellation():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=None,
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     sn2 = Supernova(
@@ -366,13 +366,13 @@ def test_group_by_constellation():
         link="",
         constellation="Virgo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=None,
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     sn3 = Supernova(
@@ -385,13 +385,13 @@ def test_group_by_constellation():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=None,
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     supernovae = [sn1, sn2, sn3]
@@ -429,9 +429,9 @@ def test_filter_by_observation_quality():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -440,8 +440,8 @@ def test_filter_by_observation_quality():
                 MockAxCord(0.1, 25.0),
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     # Good altitude and duration
@@ -455,9 +455,9 @@ def test_filter_by_observation_quality():
         link="",
         constellation="Leo",
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type="Ia",
         visibility=Visibility(
             True,
@@ -466,8 +466,8 @@ def test_filter_by_observation_quality():
                 MockAxCord(0.05, 50.0),  # ~1 hour duration
             ],
         ),
-        maxMagnitudeDate_obj=None,
-        firstObserved_obj=None,
+        max_magnitude_date_obj=None,
+        first_observed_obj=None,
     )
 
     supernovae = [sn1, sn2]

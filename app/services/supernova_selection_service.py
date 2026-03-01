@@ -62,10 +62,10 @@ class SupernovaSelectionService:
         if visibility_window_name and visibility_window_name in self.visibility_windows:
             cfg = self.visibility_windows[visibility_window_name]
             try:
-                min_alt = float(cfg.get("minAlt", fallback_min_latitude))
-                max_alt = float(cfg.get("maxAlt", 90.0))
-                min_az = float(cfg.get("minAz", 0.0))
-                max_az = float(cfg.get("maxAz", 360.0))
+                min_alt = float(cfg.get("min_alt", fallback_min_latitude))
+                max_alt = float(cfg.get("max_alt", 90.0))
+                min_az = float(cfg.get("min_az", 0.0))
+                max_az = float(cfg.get("max_az", 360.0))
                 return (min_alt, max_alt, min_az, max_az)
             except (ValueError, TypeError, KeyError):
                 pass

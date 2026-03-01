@@ -47,12 +47,12 @@ class RochesterProvider:
                 parsed.get("decl"),
                 parsed.get("link", "") or "",
                 parsed.get("coord"),
-                parsed.get("firstObserved"),
-                parsed.get("maxMagnitude"),
-                parsed.get("maxMagnitudeDate"),
+                parsed.get("first_observed"),
+                parsed.get("max_magnitude"),
+                parsed.get("max_magnitude_date"),
                 parsed.get("type"),
-                parsed.get("maxMagnitudeDate_obj"),
-                parsed.get("firstObserved_obj"),
+                parsed.get("max_magnitude_date_obj"),
+                parsed.get("first_observed_obj"),
             )
             result.append(sn)
 

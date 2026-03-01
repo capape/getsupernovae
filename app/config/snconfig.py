@@ -108,7 +108,7 @@ def get_config_candidates(path: str | None, config_file: str):
 
 
 def load_visibility_windows(path: str | None = None):
-    defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
+    defaults = {"Default": {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}}
 
     candidates = get_config_candidates(path, "visibility_windows.json")
 
@@ -231,7 +231,9 @@ def save_user_prefs(prefs: dict):
         pass
 
     # default visibility windows
-    default_visibility = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
+    default_visibility = {
+        "Default": {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}
+    }
     vis_path = os.path.join(cfg, "visibility_windows.json")
     try:
         if not os.path.exists(vis_path):

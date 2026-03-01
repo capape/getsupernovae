@@ -11,51 +11,51 @@ from app.services.visibility import visibility_summary
 class VisibilityWindow:
     def __init__(
         self,
-        minAlt: float = 0,
-        maxAlt: float = 90,
-        minAz: float = 0,
-        maxAz: float = 360,
+        min_alt: float = 0,
+        max_alt: float = 90,
+        min_az: float = 0,
+        max_az: float = 360,
     ):
-        self.minAlt = minAlt
-        self.maxAlt = maxAlt
-        self.minAz = minAz
-        self.maxAz = maxAz
+        self.min_alt = min_alt
+        self.max_alt = max_alt
+        self.min_az = min_az
+        self.max_az = max_az
 
-    def getVisibility(self, site, coord, time1, time2):
+    def get_visibility(self, site, coord, time1, time2):
         """
         Compute visibility samples for `coord` between `time1` and `time2` at `site`.
 
         Returns a `Visibility` object (from `snmodels`).
         """
         visible = False
-        loopTime = time1
-        azVisibles = []
-        while loopTime < time2:
-            altaz = coord.transform_to(AltAz(obstime=loopTime, location=site))
+        loop_time = time1
+        az_visibles = []
+        while loop_time < time2:
+            altaz = coord.transform_to(AltAz(obstime=loop_time, location=site))
             if (
-                altaz.alt.dms.d >= self.minAlt
-                and altaz.alt.dms.d <= self.maxAlt
-                and altaz.az.dms.d >= self.minAz
-                and altaz.az.dms.d <= self.maxAz
+                altaz.alt.dms.d >= self.min_alt
+                and altaz.alt.dms.d <= self.max_alt
+                and altaz.az.dms.d >= self.min_az
+                and altaz.az.dms.d <= self.max_az
             ):
                 visible = True
-                azVisibles.append(AxCordInTime(loopTime, altaz))
-            loopTime = loopTime + timedelta(hours=0.5)
+                az_visibles.append(AxCordInTime(loop_time, altaz))
+            loop_time = loop_time + timedelta(hours=0.5)
 
-        azVisibles.sort(key=lambda x: x.time)
+        az_visibles.sort(key=lambda x: x.time)
 
         # Compute optional summary and pass into Visibility constructor
-        minAlt = maxAlt = minAz = maxAz = None
+        min_alt = max_alt = min_az = max_az = None
         try:
-            summary = visibility_summary(azVisibles)
+            summary = visibility_summary(az_visibles)
             if summary:
-                minAlt = summary.get("minAlt")
-                maxAlt = summary.get("maxAlt")
-                minAz = summary.get("minAz")
-                maxAz = summary.get("maxAz")
+                min_alt = summary.get("min_alt")
+                max_alt = summary.get("max_alt")
+                min_az = summary.get("min_az")
+                max_az = summary.get("max_az")
         except (AttributeError, TypeError, KeyError, ValueError):
             pass
 
         return Visibility(
-            visible, azVisibles, minAlt=minAlt, maxAlt=maxAlt, minAz=minAz, maxAz=maxAz
+            visible, az_visibles, min_alt=min_alt, max_alt=max_alt, min_az=min_az, max_az=max_az
         )

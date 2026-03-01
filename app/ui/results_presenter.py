@@ -85,13 +85,13 @@ class ResultsPresenter:
         obs_time = format_observation_time(visibility)
         # If a visibility summary is available, append max altitude for quick glance
         try:
-            max_alt = getattr(visibility, "maxAlt", None)
+            max_alt = getattr(visibility, "max_alt", None)
             if max_alt is None and getattr(visibility, "azCords", None):
                 summary = visibility_summary(visibility.azCords)
                 if summary:
-                    max_alt = summary.get("maxAlt")
+                    max_alt = summary.get("max_alt")
             if max_alt is not None:
-                obs_time = f"{obs_time} (maxAlt: {float(max_alt):.1f}°)"
+                obs_time = f"{obs_time} (max_alt: {float(max_alt):.1f}°)"
         except (AttributeError, TypeError, KeyError, ValueError):
             pass
         host = getattr(sn, "host", "") or ""

@@ -132,11 +132,11 @@ def _parse_row_safe(row: Tag):
             "date": date_text,
             "date_obj": date_obj,
             "type": type_text,
-            "maxMagnitude": max_mag,
-            "maxMagnitudeDate": max_mag_date,
-            "maxMagnitudeDate_obj": max_mag_date_obj,
-            "firstObserved": first_observed,
-            "firstObserved_obj": first_observed_obj,
+            "max_magnitude": max_mag,
+            "max_magnitude_date": max_mag_date,
+            "max_magnitude_date_obj": max_mag_date_obj,
+            "first_observed": first_observed,
+            "first_observed_obj": first_observed_obj,
             "coord": coord,
         }
 

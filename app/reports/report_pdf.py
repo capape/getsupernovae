@@ -26,7 +26,7 @@ if not logger.hasHandlers():
 logger.setLevel(logging.INFO)
 
 
-def addSupernovaToPdf(textObject, data: Supernova):
+def add_supernova_to_pdf(text_object, data: Supernova):
     lines = [
         i18n.i18n._("-------------------------------------------------"),
         i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(
@@ -51,28 +51,28 @@ def addSupernovaToPdf(textObject, data: Supernova):
         ),
         "",
         i18n._(
-            "  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}"
+            "  Discovered: {first_observed}, MAX Mag: {max_magnitude} on: {max_magnitude_date}"
         ).format(
-            firstObserved=data.firstObserved,
-            maxMagnitude=data.maxMagnitude,
-            maxMagnitudeDate=data.maxMagnitudeDate,
+            first_observed=data.first_observed,
+            max_magnitude=data.max_magnitude,
+            max_magnitude_date=data.max_magnitude_date,
         ),
         " " + (getattr(data, "link", "") or ""),
         "",
     ]
 
     for line in lines:
-        textObject.textLine(line)
+        text_object.textLine(line)
 
 
-def createPdf(
+def create_pdf(
     supernovas,
-    fromDate: str,
-    observationDate: str,
+    from_date: str,
+    observation_date: str,
     magnitude,
     site,
-    minLatitude,
-    visibilityWindowName=None,
+    min_latitude,
+    visibility_window_name=None,
 ):
     logger.info("Creating pdf")
 
@@ -136,7 +136,7 @@ def createPdf(
             logger.exception("failed to determine Documents/home path; falling back to cwd")
             docs = Path.cwd()
 
-    pdf_filename = docs / f"{observationDate}.pdf"
+    pdf_filename = docs / f"{observation_date}.pdf"
     canvas = Canvas(str(pdf_filename), pagesize=A4)
     try:
         canvas.setPageCompression(0)
@@ -152,8 +152,8 @@ def createPdf(
         # full header (printed only on first page)
         if full:
             txtobj.textLine(
-                i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-                    fromDate=fromDate, to=observationDate, magnitude=magnitude
+                i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
+                    from_date=from_date, to=observation_date, magnitude=magnitude
                 )
             )
             # reuse local visibility windows loader for header/site summary
@@ -161,15 +161,15 @@ def createPdf(
             site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
                 lon=site.lon.value, lat=site.lat.value, height=site.height.value
             )
-            if visibilityWindowName and visibilityWindowName in vis:
-                cfg = vis.get(visibilityWindowName, {})
+            if visibility_window_name and visibility_window_name in vis:
+                cfg = vis.get(visibility_window_name, {})
                 site_info = site_info + i18n._(
-                    " . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º"
+                    " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º min_az {min_az:.1f}º max_az {max_az:.1f}º"
                 ).format(
-                    minAlt=float(cfg.get("minAlt", 0.0)),
-                    maxAlt=float(cfg.get("maxAlt", 90.0)),
-                    minAz=float(cfg.get("minAz", 0.0)),
-                    maxAz=float(cfg.get("maxAz", 360.0)),
+                    min_alt=float(cfg.get("min_alt", 0.0)),
+                    max_alt=float(cfg.get("max_alt", 90.0)),
+                    min_az=float(cfg.get("min_az", 0.0)),
+                    max_az=float(cfg.get("max_az", 360.0)),
                 )
 
             # place site info on two lines if it contains window details
@@ -184,8 +184,8 @@ def createPdf(
             # minimal header on continued pages: leave a blank line for spacing
             txtobj.textLine("")
 
-    textObject = canvas.beginText()
-    write_header(textObject)
+    text_object = canvas.beginText()
+    write_header(text_object)
 
     def supernova_lines(data):
         lines = [
@@ -212,9 +212,9 @@ def createPdf(
             ),
             "",
             i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
-                first=data.firstObserved,
-                max=data.maxMagnitude,
-                on=data.maxMagnitudeDate,
+                first=data.first_observed,
+                max=data.max_magnitude,
+                on=data.max_magnitude_date,
             ),
             "",
             "",
@@ -231,16 +231,16 @@ def createPdf(
         lines_height = len(lines) * leading
         required_space = lines_height + img_height_pts + leading
 
-        if textObject.getY() - required_space < bottom_threshold:
-            canvas.drawText(textObject)
+        if text_object.getY() - required_space < bottom_threshold:
+            canvas.drawText(text_object)
             canvas.showPage()
-            textObject = canvas.beginText()
+            text_object = canvas.beginText()
             # on subsequent pages print only a minimal header
-            write_header(textObject, full=False)
+            write_header(text_object, full=False)
             canvas.setFont(used_font, fontsize)
             canvas.setFillColor(black)
 
-        origin_y = textObject.getY()
+        origin_y = text_object.getY()
 
         # draw highlight behind first four lines
         try:
@@ -268,18 +268,18 @@ def createPdf(
             logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
 
         for line in lines:
-            if textObject.getY() - leading < bottom_threshold:
-                canvas.drawText(textObject)
+            if text_object.getY() - leading < bottom_threshold:
+                canvas.drawText(text_object)
                 canvas.showPage()
-                textObject = canvas.beginText()
-                write_header(textObject, full=False)
+                text_object = canvas.beginText()
+                write_header(text_object, full=False)
                 canvas.setFont(used_font, fontsize)
                 canvas.setFillColor(black)
 
-            textObject.textLine(line)
+            text_object.textLine(line)
 
-        y_after_text = textObject.getY()
-        canvas.drawText(textObject)
+        y_after_text = text_object.getY()
+        canvas.drawText(text_object)
 
         try:
             link = getattr(data, "link", None) or ""
@@ -371,12 +371,12 @@ def createPdf(
                 if img_y < marginbotton:
                     canvas.showPage()
                     # start a fresh text object and print only the minimal header
-                    textObject = canvas.beginText()
-                    write_header(textObject, full=False)
+                    text_object = canvas.beginText()
+                    write_header(text_object, full=False)
                     canvas.setFont(used_font, fontsize)
                     canvas.setFillColor(black)
                     # compute image origin below header
-                    img_y = textObject.getY() - img_h - (0.2 * cm)
+                    img_y = text_object.getY() - img_h - (0.2 * cm)
 
                 if img:
                     canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
@@ -389,14 +389,14 @@ def createPdf(
             except (AttributeError, TypeError, ValueError, OSError):
                 logger.exception("failed to draw images for %s", getattr(data, "name", None))
 
-        textObject = canvas.beginText()
-        textObject.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
-        textObject.setFont(used_font, fontsize)
-        textObject.setLeading(leading)
+        text_object = canvas.beginText()
+        text_object.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
+        text_object.setFont(used_font, fontsize)
+        text_object.setLeading(leading)
         canvas.setFont(used_font, fontsize)
         canvas.setFillColor(black)
 
-    canvas.drawText(textObject)
+    canvas.drawText(text_object)
     canvas.save()
 
     return str(pdf_filename)

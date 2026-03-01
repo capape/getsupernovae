@@ -251,12 +251,12 @@ class ResultsTreeCoordinator:
                     tooltip_lines = []
 
                     # Discovery information
-                    first_obs = getattr(sn, "firstObserved", None)
+                    first_obs = getattr(sn, "first_observed", None)
                     if first_obs:
                         tooltip_lines.append(f"First observed: {first_obs}")
 
-                    max_mag = getattr(sn, "maxMagnitude", None)
-                    max_mag_date = getattr(sn, "maxMagnitudeDate", None)
+                    max_mag = getattr(sn, "max_magnitude", None)
+                    max_mag_date = getattr(sn, "max_magnitude_date", None)
                     if max_mag:
                         mag_line = f"Max magnitude: {max_mag}"
                         if max_mag_date:

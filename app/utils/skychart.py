@@ -1,4 +1,5 @@
 """Sky chart generation module for supernova reports."""
+
 import io
 import logging
 
@@ -21,9 +22,7 @@ from astropy.coordinates import SkyCoord
 logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
     _handler = logging.StreamHandler()
-    _handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-    )
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logger.addHandler(_handler)
 logger.setLevel(logging.INFO)
 
@@ -63,9 +62,7 @@ def make_sky_chart(
                     )
                     center = None
     except (AttributeError, TypeError):
-        logger.exception(
-            "error obtaining center coordinates for %s", getattr(data, "name", None)
-        )
+        logger.exception("error obtaining center coordinates for %s", getattr(data, "name", None))
         center = None
 
     if center is None:
@@ -99,9 +96,7 @@ def make_sky_chart(
                     stars = t
                     break
         if stars is None:
-            logger.info(
-                "no stars found for sky chart of %s", getattr(data, "name", None)
-            )
+            logger.info("no stars found for sky chart of %s", getattr(data, "name", None))
             return None
 
         ras = stars["RAJ2000"] if "RAJ2000" in stars.colnames else stars["RAJ2000"]
@@ -145,26 +140,20 @@ def make_sky_chart(
         ax.set_xlim(center_ra - half, center_ra + half)
         ax.set_ylim(center_dec - half, center_dec + half)
 
-        ax.scatter(
-            ra_vals, dec_vals, s=_mag_to_marker_size(tbl["mag"]), c="k", alpha=0.7
-        )
+        ax.scatter(ra_vals, dec_vals, s=_mag_to_marker_size(tbl["mag"]), c="k", alpha=0.7)
         ax.scatter([center_ra], [center_dec], s=30, c="red", marker="+", linewidths=1.2)
 
         def ra_formatter(x, pos=None):
             try:
                 # show hours and minutes only (no seconds)
-                return Angle(x * u.deg).to_string(
-                    unit=u.hourangle, sep=":", precision=0
-                )
+                return Angle(x * u.deg).to_string(unit=u.hourangle, sep=":", precision=0)
             except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
         def dec_formatter(x, pos=None):
             try:
                 # show degrees and arcminutes only (no seconds)
-                return Angle(x * u.deg).to_string(
-                    unit=u.deg, sep=":", precision=0, alwayssign=True
-                )
+                return Angle(x * u.deg).to_string(unit=u.deg, sep=":", precision=0, alwayssign=True)
             except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
@@ -194,9 +183,7 @@ def make_sky_chart(
             bio.seek(0)
             return ImageReader(bio)
     except (OSError, ValueError, TypeError):
-        logger.exception(
-            "failed to generate sky chart for %s", getattr(data, "name", None)
-        )
+        logger.exception("failed to generate sky chart for %s", getattr(data, "name", None))
         return None
 
 

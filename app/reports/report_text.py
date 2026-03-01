@@ -6,7 +6,7 @@ from app.models.snmodels import Supernova
 from app.utils.snparser import format_iso_datetime
 
 
-def textSupernova(data: Supernova) -> str:
+def text_supernova(data: Supernova) -> str:
     tpl = i18n._("""
 Date: {date}, Mag: {mag}, T: {type}, Name:{name}
 Const: {constellation}, Host:{host}
@@ -17,7 +17,7 @@ RA:{ra}, DECL.{decl}
     AzCoords az:{az0}, lat: {alt0}
     Last azCoords az:{az1}, lat: {alt1}
 
-  Discovered: {firstObserved}, MAX Mag: {maxMagnitude} on: {maxMagnitudeDate}
+  Discovered: {first_observed}, MAX Mag: {max_magnitude} on: {max_magnitude_date}
   {link}
 
 """)
@@ -43,85 +43,85 @@ RA:{ra}, DECL.{decl}
         alt0=data.visibility.azCords[0].coord.alt.to_string(sep=" ", precision=2),
         az1=data.visibility.azCords[-1].coord.az.to_string(sep=" ", precision=2),
         alt1=data.visibility.azCords[-1].coord.alt.to_string(sep=" ", precision=2),
-        firstObserved=data.firstObserved,
-        maxMagnitude=data.maxMagnitude,
-        maxMagnitudeDate=data.maxMagnitudeDate,
+        first_observed=data.first_observed,
+        max_magnitude=data.max_magnitude,
+        max_magnitude_date=data.max_magnitude_date,
         link=getattr(data, "link", ""),
     )
 
 
-def textSite(site, minLatitude, visibilityWindowName=None):
+def text_site(site, min_latitude, visibility_window_name=None):
     try:
         vis = load_visibility_windows()
-        if visibilityWindowName and visibilityWindowName in vis:
-            cfg = vis.get(visibilityWindowName, {})
+        if visibility_window_name and visibility_window_name in vis:
+            cfg = vis.get(visibility_window_name, {})
             return i18n._(
-                "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Window: minAlt {minAlt:.1f}º maxAlt {maxAlt:.1f}º minAz {minAz:.1f}º maxAz {maxAz:.1f}º"
+                "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º min_az {min_az:.1f}º max_az {max_az:.1f}º"
             ).format(
                 lon=site.lon.value,
                 lat=site.lat.value,
                 height=site.height.value,
-                minAlt=float(cfg.get("minAlt", 0.0)),
-                maxAlt=float(cfg.get("maxAlt", 90.0)),
-                minAz=float(cfg.get("minAz", 0.0)),
-                maxAz=float(cfg.get("maxAz", 360.0)),
+                min_alt=float(cfg.get("min_alt", 0.0)),
+                max_alt=float(cfg.get("max_alt", 90.0)),
+                min_az=float(cfg.get("min_az", 0.0)),
+                max_az=float(cfg.get("max_az", 360.0)),
             )
     except (AttributeError, TypeError, ValueError, KeyError):
         pass
 
     return i18n._(
-        "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Min alt {minAlt}º"
+        "Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m . Min alt {min_alt}º"
     ).format(
         lon=site.lon.value,
         lat=site.lat.value,
         height=site.height.value,
-        minAlt=minLatitude,
+        min_alt=min_latitude,
     )
 
 
-def createText(
+def create_text(
     supernovas: List[Supernova],
-    fromDate: str,
-    observationDate: str,
+    from_date: str,
+    observation_date: str,
     magnitude,
     site,
-    minLatitude,
-    visibilityWindowName=None,
+    min_latitude,
+    visibility_window_name=None,
 ):
-    header = i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-        fromDate=fromDate, to=observationDate, magnitude=magnitude
+    header = i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
+        from_date=from_date, to=observation_date, magnitude=magnitude
     )
-    siteInfo = textSite(site, minLatitude, visibilityWindowName)
+    site_info = text_site(site, min_latitude, visibility_window_name)
     print(header)
-    print(siteInfo)
+    print(site_info)
 
     for data in supernovas:
-        print(textSupernova(data))
+        print(text_supernova(data))
 
 
-def createTextAsString(
+def create_text_as_string(
     supernovas: List[Supernova],
-    fromDate: str,
-    observationDate: str,
+    from_date: str,
+    observation_date: str,
     magnitude,
     site,
-    minLatitude,
-    visibilityWindowName=None,
+    min_latitude,
+    visibility_window_name=None,
 ) -> str:
-    header = i18n._("Supernovae from: {fromDate} to {to}. Magnitud <= {magnitude}").format(
-        fromDate=fromDate, to=observationDate, magnitude=magnitude
+    header = i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
+        from_date=from_date, to=observation_date, magnitude=magnitude
     )
-    siteInfo = textSite(site, minLatitude, visibilityWindowName)
+    site_info = text_site(site, min_latitude, visibility_window_name)
 
-    fulltext = i18n._("{header}\n{siteInfo}\n\n").format(header=header, siteInfo=siteInfo)
+    fulltext = i18n._("{header}\n{site_info}\n\n").format(header=header, site_info=site_info)
 
     for data in supernovas:
-        fulltext += i18n._("\n{sn}\n").format(sn=textSupernova(data))
+        fulltext += i18n._("\n{sn}\n").format(sn=text_supernova(data))
 
     return fulltext
 
 
-def printSupernova(data: Supernova):
+def print_supernova(data: Supernova):
     """Print a verbose supernova report to stdout (legacy helper)."""
     print("-------------------------------------------------")
     print(
@@ -159,14 +159,14 @@ def printSupernova(data: Supernova):
     print("")
     print(
         i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
-            first=data.firstObserved, max=data.maxMagnitude, on=data.maxMagnitudeDate
+            first=data.first_observed, max=data.max_magnitude, on=data.max_magnitude_date
         )
     )
     print(" ", data.link)
     print("")
 
 
-def printSupernovaShort(data: Supernova):
+def print_supernova_short(data: Supernova):
     """Print a compact single-line summary for the supernova."""
     print("-------------------------------------------------")
     print(

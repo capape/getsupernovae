@@ -46,10 +46,10 @@ class TestFilterPanelManager(unittest.TestCase):
 
         self.visibility_windows = {
             "Night Window": {
-                "minAlt": 30.0,
-                "maxAlt": 85.0,
-                "minAz": 0.0,
-                "maxAz": 360.0,
+                "min_alt": 30.0,
+                "max_alt": 85.0,
+                "min_az": 0.0,
+                "max_az": 360.0,
             }
         }
 
@@ -260,7 +260,7 @@ class TestFilterPanelManager(unittest.TestCase):
 
         manager.build()
 
-        test_text = "minAlt: 30.0° maxAlt: 85.0°"
+        test_text = "min_alt: 30.0° max_alt: 85.0°"
         manager.update_visibility_values_label(test_text)
 
         label = manager.widgets["label_visibility_values"]
@@ -496,7 +496,7 @@ class TestFilterPanelManager(unittest.TestCase):
 
         # Create a mock variable that raises exception on trace_add
         bad_var = Mock()
-        bad_var.trace_add.side_effect = Exception("Test exception")
+        bad_var.trace_add.side_effect = AttributeError("Test exception")
 
         # Should not raise exception
         manager._safe_trace_add(bad_var, lambda: None)

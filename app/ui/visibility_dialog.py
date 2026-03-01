@@ -71,13 +71,13 @@ class VisibilityDialog(tk.Toplevel):
     def _normalize(self, v):
         try:
             return {
-                "minAlt": float(v.get("minAlt", 0.0)),
-                "maxAlt": float(v.get("maxAlt", 90.0)),
-                "minAz": float(v.get("minAz", 0.0)),
-                "maxAz": float(v.get("maxAz", 360.0)),
+                "min_alt": float(v.get("min_alt", 0.0)),
+                "max_alt": float(v.get("max_alt", 90.0)),
+                "min_az": float(v.get("min_az", 0.0)),
+                "max_az": float(v.get("max_az", 360.0)),
             }
         except (ValueError, TypeError, KeyError, AttributeError):
-            return {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+            return {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}
 
     def _load_current(self, current):
         try:
@@ -94,7 +94,7 @@ class VisibilityDialog(tk.Toplevel):
         frame_left.grid_rowconfigure(0, weight=1)
         frame_left.grid_columnconfigure(0, weight=1)
 
-        self.columns = ("name", "minAlt", "maxAlt", "minAz", "maxAz")
+        self.columns = ("name", "min_alt", "max_alt", "min_az", "max_az")
         try:
             style = ttk.Style()
             style.configure("VisTreeview.Treeview", rowheight=26)
@@ -131,32 +131,32 @@ class VisibilityDialog(tk.Toplevel):
         ttk.Label(frame_right, text=_("Min Alt (deg):")).grid(
             column=0, row=1, sticky=tk.E, padx=5, pady=5
         )
-        self.minalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.minalt_var, width=20).grid(
+        self.min_alt_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=self.min_alt_var, width=20).grid(
             column=1, row=1, padx=5, pady=5
         )
 
         ttk.Label(frame_right, text=_("Max Alt (deg):")).grid(
             column=0, row=2, sticky=tk.E, padx=5, pady=5
         )
-        self.maxalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.maxalt_var, width=20).grid(
+        self.max_alt_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=self.max_alt_var, width=20).grid(
             column=1, row=2, padx=5, pady=5
         )
 
         ttk.Label(frame_right, text=_("Min Az (deg):")).grid(
             column=0, row=3, sticky=tk.E, padx=5, pady=5
         )
-        self.minaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.minaz_var, width=20).grid(
+        self.min_az_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=self.min_az_var, width=20).grid(
             column=1, row=3, padx=5, pady=5
         )
 
         ttk.Label(frame_right, text=_("Max Az (deg):")).grid(
             column=0, row=4, sticky=tk.E, padx=5, pady=5
         )
-        self.maxaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.maxaz_var, width=20).grid(
+        self.max_az_var = tk.StringVar()
+        ttk.Entry(frame_right, textvariable=self.max_az_var, width=20).grid(
             column=1, row=4, padx=5, pady=5
         )
 
@@ -178,10 +178,10 @@ class VisibilityDialog(tk.Toplevel):
         self.tree.delete(*self.tree.get_children())
         for nm, info in sorted(self._current.items(), key=lambda kv: kv[0].lower()):
             try:
-                ma = float(info.get("minAlt", 0.0))
-                xa = float(info.get("maxAlt", 90.0))
-                mz = float(info.get("minAz", 0.0))
-                xz = float(info.get("maxAz", 360.0))
+                ma = float(info.get("min_alt", 0.0))
+                xa = float(info.get("max_alt", 90.0))
+                mz = float(info.get("min_az", 0.0))
+                xz = float(info.get("max_az", 360.0))
                 self.tree.insert(
                     "", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}")
                 )
@@ -191,10 +191,10 @@ class VisibilityDialog(tk.Toplevel):
     def _persist_current(self):
         normalized = {
             k: {
-                "minAlt": float(v.get("minAlt", 0.0)),
-                "maxAlt": float(v.get("maxAlt", 90.0)),
-                "minAz": float(v.get("minAz", 0.0)),
-                "maxAz": float(v.get("maxAz", 360.0)),
+                "min_alt": float(v.get("min_alt", 0.0)),
+                "max_alt": float(v.get("max_alt", 90.0)),
+                "min_az": float(v.get("min_az", 0.0)),
+                "max_az": float(v.get("max_az", 360.0)),
             }
             for k, v in self._current.items()
         }
@@ -223,10 +223,10 @@ class VisibilityDialog(tk.Toplevel):
         nm, mina, maxa, minz, maxz = vals
         self._selected_name["value"] = nm
         self.name_var.set(nm)
-        self.minalt_var.set(str(mina))
-        self.maxalt_var.set(str(maxa))
-        self.minaz_var.set(str(minz))
-        self.maxaz_var.set(str(maxz))
+        self.min_alt_var.set(str(mina))
+        self.max_alt_var.set(str(maxa))
+        self.min_az_var.set(str(minz))
+        self.max_az_var.set(str(maxz))
 
     def _on_save(self):
         nm = self.name_var.get().strip()
@@ -234,10 +234,10 @@ class VisibilityDialog(tk.Toplevel):
             messagebox.showerror(_("Error"), _("Name is required"), parent=self)
             return
         try:
-            mina = float(self.minalt_var.get())
-            maxa = float(self.maxalt_var.get())
-            minz = float(self.minaz_var.get())
-            maxz = float(self.maxaz_var.get())
+            mina = float(self.min_alt_var.get())
+            maxa = float(self.max_alt_var.get())
+            minz = float(self.min_az_var.get())
+            maxz = float(self.max_az_var.get())
         except (ValueError, TypeError) as e:
             messagebox.showerror(
                 _("Error"), _("Invalid numeric input: {e}").format(e=e), parent=self
@@ -259,7 +259,7 @@ class VisibilityDialog(tk.Toplevel):
             except (KeyError, TypeError):
                 pass
 
-        self._current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+        self._current[nm] = {"min_alt": mina, "max_alt": maxa, "min_az": minz, "max_az": maxz}
         try:
             self._persist_current()
             global_visibility = load_visibility_windows()
@@ -279,10 +279,10 @@ class VisibilityDialog(tk.Toplevel):
             messagebox.showerror(_("Invalid input"), _("Name is required."), parent=self)
             return
         try:
-            mina = float(self.minalt_var.get())
-            maxa = float(self.maxalt_var.get())
-            minz = float(self.minaz_var.get())
-            maxz = float(self.maxaz_var.get())
+            mina = float(self.min_alt_var.get())
+            maxa = float(self.max_alt_var.get())
+            minz = float(self.min_az_var.get())
+            maxz = float(self.max_az_var.get())
         except (ValueError, TypeError):
             messagebox.showerror(
                 _("Invalid input"), _("Numeric fields must be valid numbers."), parent=self
@@ -293,7 +293,7 @@ class VisibilityDialog(tk.Toplevel):
                 _("Invalid input"), _("A window with that name already exists."), parent=self
             )
             return
-        self._current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
+        self._current[nm] = {"min_alt": mina, "max_alt": maxa, "min_az": minz, "max_az": maxz}
         try:
             self._persist_current()
         except (OSError, IOError, TypeError) as e:

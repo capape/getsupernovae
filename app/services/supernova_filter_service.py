@@ -18,6 +18,7 @@ from app.config.ui_constants import DEFAULT_VALUES
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
 from app.utils.snparser import parse_date
+from app.utils.logger import get_logger, log_exception
 
 if TYPE_CHECKING:
     from app.ui.snvisibility import Visibility
@@ -39,6 +40,7 @@ class SupernovaFilterService:
                                If None, must be provided to filter_by_visibility.
         """
         self.visibility_factory = visibility_factory
+        self.logger = get_logger(__name__)
 
     def filter_by_magnitude(
         self, supernovae: List[SupernovaDTO], max_magnitude: float
@@ -58,7 +60,12 @@ class SupernovaFilterService:
                 if sn.mag is not None and sn.mag <= max_magnitude:
                     filtered.append(sn)
             except (TypeError, ValueError):
-                # Skip entries with invalid magnitude
+                # Skip entries with invalid magnitude but log the reason
+                try:
+                    log_exception(self.logger, f"Invalid magnitude for supernova {getattr(sn, 'name', 'unknown')}")
+                except Exception:
+                    # Ensure filtering doesn't raise due to logging
+                    pass
                 continue
         return filtered
 
@@ -77,7 +84,11 @@ class SupernovaFilterService:
         try:
             from_date_obj = parse_date(from_date)[0]
         except (ValueError, TypeError, AttributeError):
-            # If date parsing fails, return all supernovae
+            # If date parsing fails, log and return all supernovae
+            try:
+                log_exception(self.logger, f"Failed to parse from_date '{from_date}'")
+            except Exception:
+                pass
             return supernovae
 
         if from_date_obj is None:
@@ -147,14 +158,21 @@ class SupernovaFilterService:
         visible = []
         for sn in supernovae:
             try:
-                visibility = visibility_calculator.getVisibility(
+                visibility = visibility_calculator.get_visibility(
                     site, sn.coordinates, observation_start, observation_end
                 )
 
                 if visibility.visible:
                     visible.append((sn, visibility))
-            except (AttributeError, TypeError, ValueError):
+            except (AttributeError, TypeError, ValueError) as ex:
                 # Skip supernovae with invalid coordinates or visibility calculation errors
+                try:
+                    log_exception(
+                        self.logger,
+                        f"Visibility calculation failed for supernova {getattr(sn, 'name', 'unknown')}: {ex}",
+                    )
+                except Exception:
+                    pass
                 continue
 
         return visible
@@ -242,17 +260,24 @@ class SupernovaFilterService:
                         sn_dto.coordinates.get_constellation() if sn_dto.coordinates else "Unknown"
                     ),
                     coordinates=sn_dto.coordinates,
-                    firstObserved=sn_dto.firstObserved,
-                    maxMagnitude=sn_dto.maxMagnitude,
-                    maxMagnitudeDate=sn_dto.maxMagnitudeDate,
+                    first_observed=sn_dto.first_observed,
+                    max_magnitude=sn_dto.max_magnitude,
+                    max_magnitude_date=sn_dto.max_magnitude_date,
                     type=sn_dto.type,
                     visibility=visibility,
-                    maxMagnitudeDate_obj=sn_dto.maxMagnitudeDate_obj,
-                    firstObserved_obj=sn_dto.firstObserved_obj,
+                    max_magnitude_date_obj=sn_dto.max_magnitude_date_obj,
+                    first_observed_obj=sn_dto.first_observed_obj,
                 )
                 supernovas.append(supernova)
             except (AttributeError, TypeError, ValueError):
-                # Skip entries that can't be converted
+                # Skip entries that can't be converted and log the issue
+                try:
+                    log_exception(
+                        self.logger,
+                        f"Failed to convert SupernovaDTO {getattr(sn_dto, 'name', 'unknown')} to domain model",
+                    )
+                except Exception:
+                    pass
                 continue
 
         return supernovas

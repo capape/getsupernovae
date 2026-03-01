@@ -90,11 +90,11 @@ class PreferencesCoordinator:
 
             if sel and sel in visibility_windows:
                 cfg = visibility_windows.get(sel, {})
-                minAlt = cfg.get("minAlt", 0.0)
-                maxAlt = cfg.get("maxAlt", 90.0)
-                minAz = cfg.get("minAz", 0.0)
-                maxAz = cfg.get("maxAz", 360.0)
-                txt = f"minAlt: {minAlt:.1f}°  maxAlt: {maxAlt:.1f}°  minAz: {minAz:.1f}°  maxAz: {maxAz:.1f}°"
+                min_alt = cfg.get("min_alt", 0.0)
+                max_alt = cfg.get("max_alt", 90.0)
+                min_az = cfg.get("min_az", 0.0)
+                max_az = cfg.get("max_az", 360.0)
+                txt = f"min_alt: {min_alt:.1f}°  max_alt: {max_alt:.1f}°  min_az: {min_az:.1f}°  max_az: {max_az:.1f}°"
 
                 filter_panel_manager.update_visibility_values_label(txt)
                 filter_panel_manager.set_min_latitude_state("disabled")
@@ -117,17 +117,17 @@ class PreferencesCoordinator:
             # Update state manager with current UI values (store names, not computed values)
             self.state_manager.update_search_state(
                 magnitude=self._get_var_value(tk_vars, "magnitude", ""),
-                days_to_search=self._get_var_value(tk_vars, "daysToSearch", "30"),
-                observation_date=self._get_var_value(tk_vars, "observationDate", ""),
-                observation_time=self._get_var_value(tk_vars, "observationTime", ""),
-                observation_duration=self._get_var_value(tk_vars, "observationDuration", ""),
+                days_to_search=self._get_var_value(tk_vars, "days_to_search", "30"),
+                observation_date=self._get_var_value(tk_vars, "observation_date", ""),
+                observation_time=self._get_var_value(tk_vars, "observation_time", ""),
+                observation_duration=self._get_var_value(tk_vars, "observation_duration", ""),
                 site=self._get_var_value(tk_vars, "site", None),
-                visibility_window=self._get_var_value(tk_vars, "visibilityWindow", None),
-                min_latitude=self._get_var_value(tk_vars, "minLatitud", ""),
+                visibility_window=self._get_var_value(tk_vars, "visibility_window", None),
+                min_latitude=self._get_var_value(tk_vars, "min_latitud", ""),
             )
 
             self.state_manager.update_ui_state(
-                language=self._get_var_value(tk_vars, "langVar", "en"),
+                language=self._get_var_value(tk_vars, "lang_var", "en"),
                 dark_mode=self._get_var_value(tk_vars, "dark_mode", False),
             )
 
@@ -232,7 +232,7 @@ class PreferencesCoordinator:
         # Apply days to search
         try:
             if loaded_state.search.days_to_search:
-                var = tk_vars.get("daysToSearch")
+                var = tk_vars.get("days_to_search")
                 if var:
                     var.set(str(loaded_state.search.days_to_search))
         except (AttributeError, tk.TclError, TypeError):
@@ -241,7 +241,7 @@ class PreferencesCoordinator:
         # Apply observation date
         try:
             if loaded_state.search.observation_date:
-                var = tk_vars.get("observationDate")
+                var = tk_vars.get("observation_date")
                 if var:
                     var.set(str(loaded_state.search.observation_date))
         except (AttributeError, tk.TclError, TypeError):
@@ -250,7 +250,7 @@ class PreferencesCoordinator:
         # Apply observation time
         try:
             if loaded_state.search.observation_time:
-                var = tk_vars.get("observationTime")
+                var = tk_vars.get("observation_time")
                 if var:
                     var.set(str(loaded_state.search.observation_time))
         except (AttributeError, tk.TclError, TypeError):
@@ -259,7 +259,7 @@ class PreferencesCoordinator:
         # Apply observation duration
         try:
             if loaded_state.search.observation_duration:
-                var = tk_vars.get("observationDuration")
+                var = tk_vars.get("observation_duration")
                 if var:
                     var.set(str(loaded_state.search.observation_duration))
         except (AttributeError, tk.TclError, TypeError):
@@ -268,7 +268,7 @@ class PreferencesCoordinator:
         # Apply min latitude
         try:
             if loaded_state.search.min_latitude:
-                var = tk_vars.get("minLatitud")
+                var = tk_vars.get("min_latitud")
                 if var:
                     var.set(str(loaded_state.search.min_latitude))
         except (AttributeError, tk.TclError, TypeError):
@@ -290,7 +290,7 @@ class PreferencesCoordinator:
             vw = loaded_state.search.visibility_window
             visibility_windows = self.get_visibility_windows()
             if vw and vw in visibility_windows:
-                var = tk_vars.get("visibilityWindow")
+                var = tk_vars.get("visibility_window")
                 if var:
                     var.set(vw)
         except (AttributeError, tk.TclError, TypeError, KeyError):
@@ -306,7 +306,7 @@ class PreferencesCoordinator:
             if lang:
                 try:
                     set_language(lang)
-                    langvar = tk_vars.get("langVar")
+                    langvar = tk_vars.get("lang_var")
                     if langvar:
                         langvar.set(lang)
 

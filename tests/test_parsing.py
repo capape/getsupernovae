@@ -50,12 +50,12 @@ class TestParsing(unittest.TestCase):
         # date objects should be present
         self.assertIsNotNone(parsed.get("date_obj"))
         self.assertEqual(parsed["type"], "Ia")
-        self.assertEqual(parsed["maxMagnitude"], "14.8")
-        # maxMagnitudeDate and firstObserved should be normalized and have date objects
-        self.assertEqual(parsed["maxMagnitudeDate"], "2025-12-03")
-        self.assertIsNotNone(parsed.get("maxMagnitudeDate_obj"))
-        self.assertEqual(parsed["firstObserved"], "2025-11-30")
-        self.assertIsNotNone(parsed.get("firstObserved_obj"))
+        self.assertEqual(parsed["max_magnitude"], "14.8")
+        # maxMagnitudeDate and first_observed should be normalized and have date objects
+        self.assertEqual(parsed["max_magnitude_date"], "2025-12-03")
+        self.assertIsNotNone(parsed.get("max_magnitude_date_obj"))
+        self.assertEqual(parsed["first_observed"], "2025-11-30")
+        self.assertIsNotNone(parsed.get("first_observed_obj"))
 
 
 if __name__ == "__main__":

@@ -15,14 +15,14 @@ from getsupernovae import RochesterSupernova, sites
 
 
 class DummyVisibilityFactory:
-    def __init__(self, minAlt, maxAlt, minAz, maxAz):
+    def __init__(self, min_alt, max_alt, min_az, max_az):
         # record params for later inspection if needed
-        self.minAlt = minAlt
-        self.maxAlt = maxAlt
-        self.minAz = minAz
-        self.maxAz = maxAz
+        self.min_alt = min_alt
+        self.max_alt = max_alt
+        self.min_az = min_az
+        self.max_az = max_az
 
-    def getVisibility(self, site, coord, t1, t2):
+    def get_visibility(self, site, coord, t1, t2):
         # Return a minimal Visibility object that will be treated as visible
         return Visibility(True, [AxCordInTime(t1, None)])
 
@@ -66,18 +66,18 @@ def test_rochester_uses_injected_visibility_factory():
     rv = RochesterSupernova(visibility_factory=DummyVisibilityFactory)
 
     # Run selection with permissive thresholds so the single row is included
-    results = rv.selectSupernovas(
+    results = rv.select_supernovae(
         snList,
-        maxMag="16",
-        observationDay=datetime.now(),
-        localStartTime="21:00",
-        hoursObservation=2,
-        fromDate="2024-01-01",
+        max_mag="16",
+        observation_day=datetime.now(),
+        local_start_time="21:00",
+        hours_observation=2,
+        from_date="2024-01-01",
         site=sites["Sabadell"],
-        minAlt=0,
-        maxAlt=90,
-        minAz=0,
-        maxAz=360,
+        min_alt=0,
+        max_alt=90,
+        min_az=0,
+        max_az=360,
     )
 
     assert isinstance(results, list)

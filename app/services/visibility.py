@@ -45,9 +45,9 @@ def compute_alt_min_max(az_coords: Iterable) -> Tuple[Optional[float], Optional[
 
 
 def compute_az_interval(az_coords: Iterable) -> Tuple[Optional[float], Optional[float]]:
-    """Compute a minimal covering azimuth interval (minAz, maxAz) in degrees.
+    """Compute a minimal covering azimuth interval (min_az, max_az) in degrees.
 
-    The returned interval may wrap (minAz > maxAz) to indicate e.g. 350..10°.
+    The returned interval may wrap (min_az > max_az) to indicate e.g. 350..10°.
     Returns (None, None) if no azimuths available.
     """
     azs: List[float] = []
@@ -92,7 +92,7 @@ def compute_az_interval(az_coords: Iterable) -> Tuple[Optional[float], Optional[
 
 
 def visibility_summary(az_coords: Iterable) -> Optional[dict]:
-    """Return a dict with keys: minAlt, maxAlt, minAz, maxAz, visible.
+    """Return a dict with keys: min_alt, max_alt, min_az, max_az, visible.
 
     Returns None if no valid coordinates are present.
     """
@@ -101,9 +101,9 @@ def visibility_summary(az_coords: Iterable) -> Optional[dict]:
     if min_alt is None and min_az is None:
         return None
     return {
-        "minAlt": min_alt,
-        "maxAlt": max_alt,
-        "minAz": min_az,
-        "maxAz": max_az,
+        "min_alt": min_alt,
+        "max_alt": max_alt,
+        "min_az": min_az,
+        "max_az": max_az,
         "visible": True if (min_alt is not None or min_az is not None) else False,
     }

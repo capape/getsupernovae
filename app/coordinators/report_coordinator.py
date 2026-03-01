@@ -12,8 +12,8 @@ import subprocess
 from typing import Callable, List, Optional
 
 from app.models.snmodels import Supernova
-from app.reports.report_pdf import createPdf
-from app.reports.report_text import createText, createTextAsString
+from app.reports.report_pdf import create_pdf
+from app.reports.report_text import create_text, create_text_as_string
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -77,26 +77,26 @@ class ReportCoordinator:
                 return
 
             # Generate text representation for display
-            datatxt = createTextAsString(
+            datatxt = create_text_as_string(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, "visibilityWindowName", None),
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
             self.on_results_text_update(datatxt)
 
             # Generate PDF
-            pdf_path = createPdf(
+            pdf_path = create_pdf(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, "visibilityWindowName", None),
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
 
             # Show success message and offer to open file
@@ -130,26 +130,26 @@ class ReportCoordinator:
                 return
 
             # Generate text representation
-            datatxt = createTextAsString(
+            datatxt = create_text_as_string(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, "visibilityWindowName", None),
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
             self.on_results_text_update(datatxt)
 
             # Save to file
-            createText(
+            create_text(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, "visibilityWindowName", None),
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
 
         except (AttributeError, TypeError, KeyError, ValueError, OSError, IOError):

@@ -36,7 +36,7 @@ class InitializationBuilder:
         self.app.state_manager = AppStateManager()
         self.app.preferences_manager = PreferencesManager()
         self.app._initializing = True
-        self.app.supernovasFound = None
+        self.app.supernovas_found = None
         self.app.refreshing = False
 
     def setup_theme_and_language(self):
@@ -79,26 +79,26 @@ class InitializationBuilder:
         self.app.magnitude = tk.StringVar()
         self.app.magnitude.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.daysToSearch = tk.StringVar()
-        self.app.daysToSearch.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.days_to_search = tk.StringVar()
+        self.app.days_to_search.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.observationDate = tk.StringVar()
-        self.app.observationDate.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observation_date = tk.StringVar()
+        self.app.observation_date.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.observationDuration = tk.StringVar()
-        self.app.observationDuration.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observation_duration = tk.StringVar()
+        self.app.observation_duration.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.minLatitud = tk.StringVar()
-        self.app.minLatitud.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.min_latitud = tk.StringVar()
+        self.app.min_latitud.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.observationTime = tk.StringVar()
-        self.app.observationTime.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.observation_time = tk.StringVar()
+        self.app.observation_time.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.site = tk.StringVar()
         self.app.site.trace_add(["write", "unset"], self.app.on_clear_results)
 
-        self.app.visibilityWindow = tk.StringVar()
-        self.app.visibilityWindow.trace_add(["write", "unset"], self.app.on_clear_results)
+        self.app.visibility_window = tk.StringVar()
+        self.app.visibility_window.trace_add(["write", "unset"], self.app.on_clear_results)
 
         self.app.results = tk.StringVar()
         self.app.results.trace_add(["write", "unset"], self.app.on_clear_results)
@@ -159,7 +159,7 @@ class InitializationBuilder:
         # ReportCoordinator
         self.app.report_coordinator = ReportCoordinator(
             has_results=self.app.has_results,
-            get_results=lambda: self.app.supernovasFound,
+            get_results=lambda: self.app.supernovas_found,
             on_search_async=self.app.on_search_async,
             on_results_text_update=self.app.set_results_text,
             on_show_message=self.app._show_yes_no_dialog,
@@ -178,7 +178,7 @@ class InitializationBuilder:
             on_show_error=self.app._show_error_dialog,
             on_get_current_site=lambda: (self.app.site.get() if hasattr(self.app, "site") else ""),
             on_get_current_visibility_window=lambda: (
-                self.app.visibilityWindow.get() if hasattr(self.app, "visibilityWindow") else ""
+                self.app.visibility_window.get() if hasattr(self.app, "visibility_window") else ""
             ),
             get_combobox_site=lambda: (self.app.cbSite if hasattr(self.app, "cbSite") else None),
             get_combobox_visibility=lambda: (
@@ -247,27 +247,27 @@ class InitializationBuilder:
         visibility_windows = load_visibility_windows()
 
         self.app.magnitude.set(self.filters.magnitude)
-        self.app.daysToSearch.set(self.filters.daysToSearch)
-        self.app.observationDate.set(self.filters.observationDate.strftime("%Y-%m-%d"))
-        self.app.observationTime.set(self.filters.observationTime)
-        self.app.observationDuration.set(self.filters.observationHours)
-        self.app.minLatitud.set(self.filters.minLatitude)
+        self.app.days_to_search.set(self.filters.days_to_search)
+        self.app.observation_date.set(self.filters.observation_date.strftime("%Y-%m-%d"))
+        self.app.observation_time.set(self.filters.observation_time)
+        self.app.observation_duration.set(self.filters.observation_hours)
+        self.app.min_latitud.set(self.filters.min_latitude)
         self.app.site.set(self.filters.site)
 
         # Set visibility window
         try:
-            if getattr(self.filters, "visibilityWindowName", None):
-                self.app.visibilityWindow.set(self.filters.visibilityWindowName)
+            if getattr(self.filters, "visibility_window_name", None):
+                self.app.visibility_window.set(self.filters.visibility_window_name)
             else:
                 # Choose first available key or Default
                 keys = list(visibility_windows.keys())
                 if "Default" in visibility_windows:
-                    self.app.visibilityWindow.set("Default")
+                    self.app.visibility_window.set("Default")
                 elif keys:
-                    self.app.visibilityWindow.set(keys[0])
+                    self.app.visibility_window.set(keys[0])
         except (AttributeError, KeyError, IndexError, tk.TclError):
             try:
-                self.app.visibilityWindow.set("Default")
+                self.app.visibility_window.set("Default")
             except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to set default visibility window")
 
@@ -330,14 +330,14 @@ class InitializationBuilder:
                 get_initializing_flag=lambda: getattr(self.app, "_initializing", False),
                 get_tk_variables=lambda: {
                     "magnitude": getattr(self.app, "magnitude", None),
-                    "daysToSearch": getattr(self.app, "daysToSearch", None),
-                    "observationDate": getattr(self.app, "observationDate", None),
-                    "observationTime": getattr(self.app, "observationTime", None),
-                    "observationDuration": getattr(self.app, "observationDuration", None),
+                    "days_to_search": getattr(self.app, "days_to_search", None),
+                    "observation_date": getattr(self.app, "observation_date", None),
+                    "observation_time": getattr(self.app, "observation_time", None),
+                    "observation_duration": getattr(self.app, "observation_duration", None),
                     "site": getattr(self.app, "site", None),
-                    "visibilityWindow": getattr(self.app, "visibilityWindow", None),
-                    "minLatitud": getattr(self.app, "minLatitud", None),
-                    "langVar": getattr(self.app, "langVar", None),
+                    "visibility_window": getattr(self.app, "visibility_window", None),
+                    "min_latitud": getattr(self.app, "min_latitud", None),
+                    "lang_var": getattr(self.app, "lang_var", None),
                     "dark_mode": getattr(self.app, "dark_mode", None),
                 },
                 get_sites=lambda: gs.sites,

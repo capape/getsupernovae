@@ -68,7 +68,7 @@ class AsyncRochesterDownload(Thread):
             supernovae_list = provider.fetch()
 
             # Apply selection/filtering logic
-            self.result = self.rochester_supernova.selectAndSortSupernovas(
+            self.result = self.rochester_supernova.select_and_sort_supernovae(
                 self.config, supernovae_list
             )
             # Keep raw rows so the app can re-filter without re-downloading
@@ -205,7 +205,7 @@ class SearchCoordinator:
 
         try:
             # Apply filtering to cached data
-            new_results = self.rochester_supernova.selectAndSortSupernovas(
+            new_results = self.rochester_supernova.select_and_sort_supernovae(
                 search_criteria, self.last_rows
             )
             self.current_results = new_results

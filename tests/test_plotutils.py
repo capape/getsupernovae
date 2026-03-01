@@ -42,9 +42,9 @@ def test_visibility_plotter_offline_fixture():
         link=None,
         constellation=None,
         coordinates=None,
-        firstObserved=None,
-        maxMagnitude=None,
-        maxMagnitudeDate=None,
+        first_observed=None,
+        max_magnitude=None,
+        max_magnitude_date=None,
         type=None,
         visibility=vis,
     )

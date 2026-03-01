@@ -71,25 +71,25 @@ class SupernovaCallBackData:
     def __init__(
         self,
         magnitude,
-        observationDate,
-        observationTime,
-        observationHours,
-        daysToSearch,
+        observation_date,
+        observation_time,
+        observation_hours,
+        days_to_search,
         site,
-        minLatitude,
-        visibilityWindowName=None,
+        min_latitude,
+        visibility_window_name=None,
     ):
         self.magnitude = magnitude
-        self.observationDate = observationDate
-        self.observationTime = ObservationTimeService.normalize_time(observationTime)
-        self.observationHours = observationHours
-        self.daysToSearch = daysToSearch
+        self.observation_date = observation_date
+        self.observation_time = ObservationTimeService.normalize_time(observation_time)
+        self.observation_hours = observation_hours
+        self.days_to_search = days_to_search
         self.site = site
-        self.minLatitude = minLatitude
-        self.observationStart = Time(observationDate + "T" + self.observationTime + "Z")
-        self.fromDateTime = self.observationStart - timedelta(days=int(daysToSearch))
-        self.fromDate = self.fromDateTime.strftime("%Y-%m-%d")
-        self.visibilityWindowName = visibilityWindowName
+        self.min_latitude = min_latitude
+        self.observation_start = Time(observation_date + "T" + self.observation_time + "Z")
+        self.from_date_time = self.observation_start - timedelta(days=int(days_to_search))
+        self.from_date = self.from_date_time.strftime("%Y-%m-%d")
+        self.visibility_window_name = visibility_window_name
 
 
 class RochesterSupernova:
@@ -105,7 +105,7 @@ class RochesterSupernova:
     ):
         # visibility_factory should be a callable/class that creates a
         # visibility window instance with signature
-        # VisibilityWindow(minAlt, maxAlt, minAz, maxAz)
+        # VisibilityWindow(min_alt, max_alt, min_az, max_az)
         self.visibility_factory = (
             visibility_factory if visibility_factory is not None else VisibilityWindow
         )
@@ -130,7 +130,9 @@ class RochesterSupernova:
             )
         )
 
-    def selectAndSortSupernovas(self, e: SupernovaCallBackData, supernovaeList: List[SupernovaDTO]):
+    def select_and_sort_supernovae(
+        self, e: SupernovaCallBackData, supernovae_list: List[SupernovaDTO]
+    ):
         """Select and sort supernovae using the selection service.
 
         This method now delegates to SupernovaSelectionService for all
@@ -144,63 +146,63 @@ class RochesterSupernova:
 
         # Use selection service to coordinate the entire selection process
         supernovas = self.selection_service.select_and_sort_supernovae(
-            supernova_list=supernovaeList,
+            supernova_list=supernovae_list,
             max_magnitude=max_magnitude,
-            observation_start=e.observationStart,
-            observation_hours=int(e.observationHours),
-            from_date=e.fromDate,
+            observation_start=e.observation_start,
+            observation_hours=int(e.observation_hours),
+            from_date=e.from_date,
             site=e.site,
             exclusion_list=set(old) if old else set(),
-            visibility_window_name=getattr(e, "visibilityWindowName", None),
-            min_latitude=float(e.minLatitude),
+            visibility_window_name=getattr(e, "visibility_window_name", None),
+            min_latitude=float(e.min_latitude),
             visibility_factory=self.visibility_factory,
         )
 
         return supernovas
 
-    def selectSupernovas(
+    def select_supernovae(
         self,
-        supernovaeList: List[SupernovaDTO],
-        maxMag: str,
-        observationDay: datetime,
-        localStartTime: str,
-        hoursObservation: int,
-        fromDate: str,
+        supernovae_list: List[SupernovaDTO],
+        max_mag: str,
+        observation_day: datetime,
+        local_start_time: str,
+        hours_observation: int,
+        from_date: str,
         site: EarthLocation,
-        minAlt: float = 0,
-        maxAlt: float = 90,
-        minAz: float = 0,
-        maxAz: float = 360,
+        min_alt: float = 0,
+        max_alt: float = 90,
+        min_az: float = 0,
+        max_az: float = 360,
     ):
         """Select supernovae using the filter service.
 
         Legacy method kept for backward compatibility. Delegates to filter service.
-        For new code, prefer using selectAndSortSupernovas with SupernovaCallBackData.
+        For new code, prefer using select_and_sort_supernovae with SupernovaCallBackData.
         """
-        observationStart = observationDay.strftime("%Y-%m-%d") + "T" + localStartTime + "Z"
+        observation_start = observation_day.strftime("%Y-%m-%d") + "T" + local_start_time + "Z"
 
-        time1 = Time(observationStart)
-        time2 = time1 + timedelta(hours=hoursObservation)
+        time1 = Time(observation_start)
+        time2 = time1 + timedelta(hours=hours_observation)
 
         # Convert maxMag to float
         try:
-            max_mag_threshold = float(maxMag)
+            max_mag_threshold = float(max_mag)
         except (ValueError, TypeError):
-            max_mag_threshold = float(str(maxMag))
+            max_mag_threshold = float(str(max_mag))
 
         # Use filter service to apply all filters and get results
         filtered_results = self.filter_service.apply_all_filters(
-            supernovae=supernovaeList,
+            supernovae=supernovae_list,
             max_magnitude=max_mag_threshold,
-            from_date=fromDate,
+            from_date=from_date,
             exclusion_list=set(old) if old else set(),
             site=site,
             observation_start=time1,
             observation_end=time2,
-            min_altitude=minAlt,
-            max_altitude=maxAlt,
-            min_azimuth=minAz,
-            max_azimuth=maxAz,
+            min_altitude=min_alt,
+            max_altitude=max_alt,
+            min_azimuth=min_az,
+            max_azimuth=max_az,
             visibility_factory=self.visibility_factory,
         )
 
@@ -220,22 +222,22 @@ class SearchFilters:
     def __init__(
         self,
         magnitude: str,
-        daysToSearch: int,
-        observationDate: datetime,
-        observationTime: str,
-        observationHours: int,
+        days_to_search: int,
+        observation_date: datetime,
+        observation_time: str,
+        observation_hours: int,
         site: str,
-        minLatitude: float,
-        visibilityWindowName: str | None = None,
+        min_latitude: float,
+        visibility_window_name: str | None = None,
     ):
         self.magnitude = magnitude
-        self.daysToSearch = daysToSearch
-        self.observationDate = observationDate
-        self.observationTime = observationTime
-        self.observationHours = observationHours
+        self.days_to_search = days_to_search
+        self.observation_date = observation_date
+        self.observation_time = observation_time
+        self.observation_hours = observation_hours
         self.site = site
-        self.minLatitude = minLatitude
-        self.visibilityWindowName = visibilityWindowName
+        self.min_latitude = min_latitude
+        self.visibility_window_name = visibility_window_name
 
 
 class SupernovasApp(tk.Tk):
@@ -249,7 +251,7 @@ class SupernovasApp(tk.Tk):
     search_coordinator: "SearchCoordinator"
     presenter: "ResultsPresenter"
     site: tk.StringVar
-    visibilityWindow: tk.StringVar
+    visibility_window: tk.StringVar
 
     #
     # Create object with filters to search
@@ -273,20 +275,20 @@ class SupernovasApp(tk.Tk):
         except (TypeError, AttributeError, RuntimeError):
             log_exception(logger, "Failed to add unset trace callback")
 
-    def getDataToSearch(self):
+    def get_data_to_search(self):
         """Retrieve current search filter parameters from UI variables."""
         try:
-            callbackData = SupernovaCallBackData(
+            callback_data = SupernovaCallBackData(
                 self.magnitude.get(),
-                self.observationDate.get(),
-                self.observationTime.get(),
-                self.observationDuration.get(),
-                self.daysToSearch.get(),
+                self.observation_date.get(),
+                self.observation_time.get(),
+                self.observation_duration.get(),
+                self.days_to_search.get(),
                 sites[self.site.get()],
-                self.minLatitud.get(),
-                getattr(self, "visibilityWindow", None) and self.visibilityWindow.get(),
+                self.min_latitud.get(),
+                getattr(self, "visibility_window", None) and self.visibility_window.get(),
             )
-            return callbackData
+            return callback_data
         except (ValueError, AttributeError, TypeError) as ex:
             messagebox.showerror(
                 _("Invalid input"),
@@ -301,7 +303,7 @@ class SupernovasApp(tk.Tk):
     #
     def has_results(self):
         """Check if there are search results available."""
-        if self.supernovasFound is None:
+        if self.supernovas_found is None:
             return False
         return True
 
@@ -343,7 +345,7 @@ class SupernovasApp(tk.Tk):
             error_text: Error message if any, or empty string
         """
         try:
-            self.supernovasFound = results
+            self.supernovas_found = results
 
             # Update results display
             if error_text:
@@ -365,11 +367,11 @@ class SupernovasApp(tk.Tk):
         try:
             tk_state = tk.NORMAL if state == "normal" else tk.DISABLED
             if button_name == "pdf" and hasattr(self, "pdfButton"):
-                self.pdfButton["state"] = tk_state
+                self.pdf_button["state"] = tk_state
             elif button_name == "txt" and hasattr(self, "txtButton"):
-                self.txtButton["state"] = tk_state
+                self.txt_button["state"] = tk_state
             elif button_name == "refresh" and hasattr(self, "searchButton"):
-                self.searchButton["state"] = tk_state
+                self.search_button["state"] = tk_state
         except (AttributeError, KeyError, tk.TclError):
             log_exception(logger, f"Failed to set {button_name} button state to {state}")
 
@@ -428,7 +430,7 @@ class SupernovasApp(tk.Tk):
             Supernova object if one is selected, None otherwise
         """
         try:
-            selection = self.resultsTree.selection()
+            selection = self.results_tree.selection()
             if not selection:
                 return None
 
@@ -464,7 +466,7 @@ class SupernovasApp(tk.Tk):
         try:
             self.filter_panel_manager.update_visibility_window_values(values)
             if selected:
-                self.visibilityWindow.set(selected)
+                self.visibility_window.set(selected)
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update visibility windows combobox")
 
@@ -500,33 +502,33 @@ class SupernovasApp(tk.Tk):
             _index: Index (unused, required by trace callback)
             _mode: Mode (unused, required by trace callback)
         """
-        self.supernovasFound = None
+        self.supernovas_found = None
 
     def set_results_text(self, datatxt: str):
         """Helper to update the results table from supernova data."""
         # Clear existing tree entries
         try:
-            for item in self.resultsTree.get_children():
-                self.resultsTree.delete(item)
+            for item in self.results_tree.get_children():
+                self.results_tree.delete(item)
             self.supernova_data.clear()
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to clear existing results tree entries")
 
         # If datatxt is an error message, show it
-        if datatxt and (datatxt.startswith("ERROR") or self.supernovasFound is None):
+        if datatxt and (datatxt.startswith("ERROR") or self.supernovas_found is None):
             try:
                 # Insert error as a single row
-                self.resultsTree.insert(
+                self.results_tree.insert(
                     "", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", "")
                 )
             except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to render error row in results tree")
             return
 
-        # Populate tree from self.supernovasFound
+        # Populate tree from self.supernovas_found
         try:
-            if self.supernovasFound:
-                for idx, sn in enumerate(self.supernovasFound):
+            if self.supernovas_found:
+                for idx, sn in enumerate(self.supernovas_found):
                     presenter = self.presenter
                     try:
                         row = presenter.present(sn)
@@ -568,12 +570,12 @@ class SupernovasApp(tk.Tk):
                         else (UI_STRINGS.TAG_EVEN_ROW if idx % 2 == 0 else UI_STRINGS.TAG_ODD_ROW)
                     )
 
-                    item_id = self.resultsTree.insert("", "end", values=row, tags=(tag,))
+                    item_id = self.results_tree.insert("", "end", values=row, tags=(tag,))
                     self.supernova_data[item_id] = sn
         except (AttributeError, TypeError, KeyError, tk.TclError) as e:
             # If population fails, show error
             try:
-                self.resultsTree.insert(
+                self.results_tree.insert(
                     "", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", "")
                 )
             except (AttributeError, tk.TclError):
@@ -585,13 +587,13 @@ class SupernovasApp(tk.Tk):
             # Prepare variables dictionary for the filter panel
             filter_variables = {
                 "magnitude": self.magnitude,
-                "days_to_search": self.daysToSearch,
-                "observation_date": self.observationDate,
-                "observation_time": self.observationTime,
-                "observation_duration": self.observationDuration,
+                "days_to_search": self.days_to_search,
+                "observation_date": self.observation_date,
+                "observation_time": self.observation_time,
+                "observation_duration": self.observation_duration,
                 "site": self.site,
-                "visibility_window": self.visibilityWindow,
-                "min_latitude": self.minLatitud,
+                "visibility_window": self.visibility_window,
+                "min_latitude": self.min_latitud,
             }
 
             # Create callbacks for the filter panel
@@ -670,9 +672,9 @@ class SupernovasApp(tk.Tk):
                 on_motion=lambda e: None,
                 on_leave=lambda e: None,
                 on_selection_change=lambda e: None,
-                on_pdf=lambda: self.on_pdf_export_clicked(self.getDataToSearch()),
-                on_txt=lambda: self.on_text_export_clicked(self.getDataToSearch()),
-                on_refresh=lambda: self.on_refresh_clicked(self.getDataToSearch()),
+                on_pdf=lambda: self.on_pdf_export_clicked(self.get_data_to_search()),
+                on_txt=lambda: self.on_text_export_clicked(self.get_data_to_search()),
+                on_refresh=lambda: self.on_refresh_clicked(self.get_data_to_search()),
                 on_exit=self.quit,
             )
 
@@ -684,11 +686,11 @@ class SupernovasApp(tk.Tk):
             self.results_panel_manager.build()
 
             # Store references to commonly accessed widgets for backward compatibility
-            self.resultsTree = self.results_panel_manager.get_tree()
+            self.results_tree = self.results_panel_manager.get_tree()
             self.labelResults = self.results_panel_manager.widgets.get("label_results")
-            self.pdfButton = self.results_panel_manager.widgets.get("button_pdf")
-            self.txtButton = self.results_panel_manager.widgets.get("button_txt")
-            self.searchButton = self.results_panel_manager.widgets.get("button_refresh")
+            self.pdf_button = self.results_panel_manager.widgets.get("button_pdf")
+            self.txt_button = self.results_panel_manager.widgets.get("button_txt")
+            self.search_button = self.results_panel_manager.widgets.get("button_refresh")
             self.exitButton = self.results_panel_manager.widgets.get("button_exit")
             self.progressBar = self.results_panel_manager.widgets.get("progress_bar")
 
@@ -697,7 +699,7 @@ class SupernovasApp(tk.Tk):
 
             # Initialize ResultsTreeCoordinator to handle all tree interactions
             self.tree_coordinator = ResultsTreeCoordinator(
-                tree_widget=self.resultsTree,
+                tree_widget=self.results_tree,
                 supernova_data=self.supernova_data,
                 get_dark_mode=lambda: self.dark_mode.get() if hasattr(self, "dark_mode") else False,
                 on_enable_button=self._enable_find_stars_button,
@@ -712,9 +714,9 @@ class SupernovasApp(tk.Tk):
                 on_motion=self.tree_coordinator.on_motion,
                 on_leave=self.tree_coordinator.on_leave,
                 on_selection_change=self.tree_coordinator.on_selection_change,
-                on_pdf=lambda: self.on_pdf_export_clicked(self.getDataToSearch()),
-                on_txt=lambda: self.on_text_export_clicked(self.getDataToSearch()),
-                on_refresh=lambda: self.on_refresh_clicked(self.getDataToSearch()),
+                on_pdf=lambda: self.on_pdf_export_clicked(self.get_data_to_search()),
+                on_txt=lambda: self.on_text_export_clicked(self.get_data_to_search()),
+                on_refresh=lambda: self.on_refresh_clicked(self.get_data_to_search()),
                 on_exit=self.quit,
             )
 
@@ -723,10 +725,10 @@ class SupernovasApp(tk.Tk):
 
             # Rebind tree events with coordinator methods
             try:
-                self.resultsTree.bind("<Double-Button-1>", self.tree_coordinator.on_double_click)
-                self.resultsTree.bind("<Motion>", self.tree_coordinator.on_motion)
-                self.resultsTree.bind("<Leave>", self.tree_coordinator.on_leave)
-                self.resultsTree.bind(
+                self.results_tree.bind("<Double-Button-1>", self.tree_coordinator.on_double_click)
+                self.results_tree.bind("<Motion>", self.tree_coordinator.on_motion)
+                self.results_tree.bind("<Leave>", self.tree_coordinator.on_leave)
+                self.results_tree.bind(
                     "<<TreeviewSelect>>", self.tree_coordinator.on_selection_change
                 )
             except (AttributeError, tk.TclError):
@@ -747,7 +749,7 @@ class SupernovasApp(tk.Tk):
                     ("rochester", False),
                     ("tns", False),
                 ]:
-                    self.resultsTree.heading(
+                    self.results_tree.heading(
                         col,
                         command=lambda c=col, n=is_numeric: self.tree_coordinator.sort_column(c, n),
                     )
@@ -792,7 +794,7 @@ class SupernovasApp(tk.Tk):
         If no cached data exists, falls back to a full network download.
         """
         try:
-            self.search_coordinator.refilter_from_cache(self.getDataToSearch(), source)
+            self.search_coordinator.refilter_from_cache(self.get_data_to_search(), source)
         except (AttributeError, TypeError):
             log_exception(logger, f"Failed to refilter from cache for source={source}")
 

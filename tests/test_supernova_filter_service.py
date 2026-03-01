@@ -24,14 +24,14 @@ from app.services.supernova_filter_service import SupernovaFilterService
 class MockVisibilityFactory:
     """Mock visibility calculator that returns configurable results."""
 
-    def __init__(self, minAlt, maxAlt, minAz, maxAz):
-        self.minAlt = minAlt
-        self.maxAlt = maxAlt
-        self.minAz = minAz
-        self.maxAz = maxAz
+    def __init__(self, min_alt, max_alt, min_az, max_az):
+        self.min_alt = min_alt
+        self.max_alt = max_alt
+        self.min_az = min_az
+        self.max_az = max_az
         self.calls = []
 
-    def getVisibility(self, site, coord, t1, t2):
+    def get_visibility(self, site, coord, t1, t2):
         """Return mock visibility - visible for coords with RA > 12h."""
         self.calls.append((site, coord, t1, t2))
 
@@ -63,12 +63,12 @@ def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00
         date_obj=date_obj,
         coordinates=coords,
         type="Ia",
-        firstObserved=date_str,
-        maxMagnitude=mag,
-        maxMagnitudeDate=date_str,
+        first_observed=date_str,
+        max_magnitude=mag,
+        max_magnitude_date=date_str,
         link=f"http://example.com/{name}",
-        firstObserved_obj=date_obj,
-        maxMagnitudeDate_obj=date_obj,
+        first_observed_obj=date_obj,
+        max_magnitude_date_obj=date_obj,
     )
 
 

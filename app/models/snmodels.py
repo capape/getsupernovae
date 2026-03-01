@@ -21,10 +21,10 @@ class Visibility:
     visible: bool
     azCords: List[AxCordInTime] = field(default_factory=list)
     # Optional aggregated summary fields (degrees)
-    minAlt: Optional[float] = None
-    maxAlt: Optional[float] = None
-    minAz: Optional[float] = None
-    maxAz: Optional[float] = None
+    min_alt: Optional[float] = None
+    max_alt: Optional[float] = None
+    min_az: Optional[float] = None
+    max_az: Optional[float] = None
 
 
 @dataclass
@@ -39,11 +39,11 @@ class Supernova:
     link: Optional[str]
     constellation: Optional[str]
     coordinates: Optional[SkyCoord]
-    firstObserved: Optional[str]
-    maxMagnitude: Optional[str]
-    maxMagnitudeDate: Optional[str]
+    first_observed: Optional[str]
+    max_magnitude: Optional[str]
+    max_magnitude_date: Optional[str]
     type: Optional[str]
     visibility: Visibility
     # optional parsed date objects (kept as date for compatibility)
-    maxMagnitudeDate_obj: Optional[date] = None
-    firstObserved_obj: Optional[date] = None
+    max_magnitude_date_obj: Optional[date] = None
+    first_observed_obj: Optional[date] = None

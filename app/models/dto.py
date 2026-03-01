@@ -19,9 +19,9 @@ class SupernovaDTO:
     decl: Optional[str] = None
     link: Optional[str] = None
     coordinates: Optional[Any] = None
-    firstObserved: Optional[str] = None
-    maxMagnitude: Optional[str] = None
-    maxMagnitudeDate: Optional[str] = None
+    first_observed: Optional[str] = None
+    max_magnitude: Optional[str] = None
+    max_magnitude_date: Optional[str] = None
     type: Optional[str] = None
-    maxMagnitudeDate_obj: Optional[date] = None
-    firstObserved_obj: Optional[date] = None
+    max_magnitude_date_obj: Optional[date] = None
+    first_observed_obj: Optional[date] = None
