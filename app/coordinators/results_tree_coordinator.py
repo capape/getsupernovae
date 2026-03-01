@@ -119,11 +119,11 @@ class ResultsTreeCoordinator:
         except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to sort results tree column")
 
-    def on_selection_change(self, event=None):
+    def on_selection_change(self, _event=None):
         """Enable or disable Find stars button based on tree selection.
 
         Args:
-            event: Tkinter event (unused)
+            _event: Tkinter event (unused)
         """
         try:
             selection = self.tree.selection()
@@ -309,11 +309,11 @@ class ResultsTreeCoordinator:
         except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to process results hover tooltip")
 
-    def on_leave(self, event=None):
+    def on_leave(self, _event=None):
         """Hide tooltip when mouse leaves the tree.
 
         Args:
-            event: Tkinter event (unused)
+            _event: Tkinter event (unused)
         """
         self.hide_tooltip()
 

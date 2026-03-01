@@ -71,7 +71,7 @@ def create_pdf(
     observation_date: str,
     magnitude,
     site,
-    min_latitude,
+    _min_latitude,
     visibility_window_name=None,
 ):
     logger.info("Creating pdf")

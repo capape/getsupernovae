@@ -105,7 +105,7 @@ class PreferencesCoordinator:
         except (AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to update visibility UI")
 
-    def persist_prefs(self, *args):
+    def persist_prefs(self, *_args):
         """Collect current tracked UI values and persist them to disk."""
         # Don't persist during initialization (before prefs are loaded)
         if self.get_initializing_flag():

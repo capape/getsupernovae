@@ -143,14 +143,14 @@ def make_sky_chart(
         ax.scatter(ra_vals, dec_vals, s=_mag_to_marker_size(tbl["mag"]), c="k", alpha=0.7)
         ax.scatter([center_ra], [center_dec], s=30, c="red", marker="+", linewidths=1.2)
 
-        def ra_formatter(x, pos=None):
+        def ra_formatter(x, _pos=None):
             try:
                 # show hours and minutes only (no seconds)
                 return Angle(x * u.deg).to_string(unit=u.hourangle, sep=":", precision=0)
             except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
-        def dec_formatter(x, pos=None):
+        def dec_formatter(x, _pos=None):
             try:
                 # show degrees and arcminutes only (no seconds)
                 return Angle(x * u.deg).to_string(unit=u.deg, sep=":", precision=0, alwayssign=True)
