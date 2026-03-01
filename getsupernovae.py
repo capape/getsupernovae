@@ -831,10 +831,9 @@ def representsInt(s):
     """Check if a string represents an integer."""
     try:
         int(s)
+        return True
     except ValueError:
         return False
-    else:
-        return True
 
 
 def main():

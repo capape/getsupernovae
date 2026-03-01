@@ -341,9 +341,9 @@ class SitesDialog(tk.Toplevel):
         self.height_var.set(str(height))
 
     def _validate_coords(self, lat: float, lon: float, height: float):
-        if not (-90.0 <= lat <= 90.0):
+        if not -90.0 <= lat <= 90.0:
             raise ValueError(_("Latitude must be between -90 and 90 degrees"))
-        if not (-180.0 <= lon <= 180.0):
+        if not -180.0 <= lon <= 180.0:
             raise ValueError(_("Longitude must be between -180 and 180 degrees"))
 
     def _on_save(self):

@@ -262,7 +262,7 @@ class VisibilityDialog(tk.Toplevel):
         self._current[nm] = {"min_alt": mina, "max_alt": maxa, "min_az": minz, "max_az": maxz}
         try:
             self._persist_current()
-            global_visibility = load_visibility_windows()
+            load_visibility_windows()
         except (OSError, IOError, TypeError) as e:
             messagebox.showerror(
                 _("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=self

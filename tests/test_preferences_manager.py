@@ -236,8 +236,8 @@ class TestLegacyFunctions(unittest.TestCase):
         """Test legacy save function."""
         result = save_user_prefs(
             site="Test Site",
-            latitude=40.0,
-            longitude=-3.0,
+            _latitude=40.0,
+            _longitude=-3.0,
             magnitude="16.0",
             days="30",
             duration="6",
@@ -263,8 +263,8 @@ class TestLegacyFunctions(unittest.TestCase):
         """Test legacy save without location."""
         result = save_user_prefs(
             site="Test",
-            latitude=None,
-            longitude=None,
+            _latitude=None,
+            _longitude=None,
             magnitude="17.0",
             days="30",
             duration="6",

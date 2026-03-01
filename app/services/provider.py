@@ -74,12 +74,8 @@ class FileRochesterProvider(RochesterProvider):
     def fetch(self) -> List[SupernovaDTO]:
         """Fetch supernova data from the source file."""
         # support local file paths and URLs
-        try:
-            with open(self.source, "rb") as fh:
-                html = fh.read()
-        except (OSError, IOError):
-            # propagate error to caller
-            raise
+        with open(self.source, "rb") as fh:
+            html = fh.read()
 
         return self.parse_html(html)
 
@@ -112,5 +108,4 @@ class NetworkRochesterProvider(RochesterProvider):
         except (OSError, IOError, urllib.error.URLError):
             raise
 
-        # parse using RochesterProvider
         return self.parse_html(html)

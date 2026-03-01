@@ -11,13 +11,10 @@ from typing import Iterable, List, Optional, Tuple
 
 def _deg_normalize(az: float) -> float:
     """Normalize azimuth to [0, 360)."""
-    try:
-        a = float(az) % 360.0
-        if a < 0:
-            a += 360.0
-        return a
-    except (TypeError, ValueError, ZeroDivisionError):
-        raise
+    a = float(az) % 360.0
+    if a < 0:
+        a += 360.0
+    return a
 
 
 def compute_alt_min_max(az_coords: Iterable) -> Tuple[Optional[float], Optional[float]]:
@@ -75,14 +72,14 @@ def compute_az_interval(az_coords: Iterable) -> Tuple[Optional[float], Optional[
 
     # Find largest gap between consecutive azimuths (including wrap)
     gaps: List[Tuple[float, int]] = []  # (gap_size, index_of_first)
-    for i in range(len(azs)):
-        a1 = azs[i]
+    for i, az in enumerate(azs):
+        a1 = az
         a2 = azs[(i + 1) % len(azs)]
         gap = (a2 - a1) if i + 1 < len(azs) else (azs[0] + 360.0 - azs[-1])
         gaps.append((gap, i))
 
     # largest gap index
-    largest_gap, idx = max(gaps, key=lambda x: x[0])
+    _, idx = max(gaps, key=lambda x: x[0])
 
     # interval is complement of largest gap: from next element to current
     start = azs[(idx + 1) % len(azs)]
@@ -105,5 +102,5 @@ def visibility_summary(az_coords: Iterable) -> Optional[dict]:
         "max_alt": max_alt,
         "min_az": min_az,
         "max_az": max_az,
-        "visible": True if (min_alt is not None or min_az is not None) else False,
+        "visible": bool(min_alt is not None or min_az is not None),
     }

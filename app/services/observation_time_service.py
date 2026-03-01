@@ -44,8 +44,8 @@ class ObservationTimeService:
             hour = int(parts[0])
             minute = int(parts[1]) if len(parts) >= 2 else 0
             second = int(parts[2]) if len(parts) == 3 else None
-        except (TypeError, ValueError):
-            raise ValueError("Observation time must contain numeric values")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Observation time must contain numeric values") from exc
 
         if hour < 0 or hour > 23:
             raise ValueError("Hour must be between 0 and 23")

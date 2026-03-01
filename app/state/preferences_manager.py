@@ -175,8 +175,8 @@ class PreferencesManager:
 
 def save_user_prefs(
     site: Optional[str],
-    latitude: Optional[float],
-    longitude: Optional[float],
+    _latitude: Optional[float],
+    _longitude: Optional[float],
     magnitude: str,
     days: str,
     duration: str,
@@ -187,8 +187,8 @@ def save_user_prefs(
 
     Args:
         site: Observatory site name
-        latitude: Site latitude (ignored - kept for backward compatibility)
-        longitude: Site longitude (ignored - kept for backward compatibility)
+        _latitude: Site latitude (ignored - kept for backward compatibility)
+        _longitude: Site longitude (ignored - kept for backward compatibility)
         magnitude: Magnitude limit
         days: Days to search
         duration: Observation duration
