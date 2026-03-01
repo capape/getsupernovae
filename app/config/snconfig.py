@@ -16,7 +16,7 @@ from astropy.coordinates import EarthLocation
 import astropy.units as u
 
 
-def load_old_supernovae(path=None):
+def load_old_supernovae(path: str | None = None):
     """Load old supernova names from a file (one per line). If the file
     is missing, returns an empty list."""
 
@@ -35,7 +35,7 @@ def load_old_supernovae(path=None):
     return []
 
 
-def load_sites(path=None):
+def load_sites(path: str | None = None):
     """Load observing sites from a JSON file and return an OrderedDict of
     name -> EarthLocation. If missing, return reasonable defaults."""
     defaults = OrderedDict(
@@ -71,7 +71,7 @@ def load_sites(path=None):
                 lat = float(v.get("lat", 0.0))
                 lon = float(v.get("lon", 0.0))
                 h = float(v.get("height", 0.0))
-                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)
+                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
             except Exception:
                 continue
 
@@ -86,7 +86,7 @@ def load_sites(path=None):
                         lat = float(v.lat.value)
                         lon = float(v.lon.value)
                         h = float(v.height.value)
-                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)
+                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
                 except Exception:
                     continue
     except Exception:
@@ -95,19 +95,19 @@ def load_sites(path=None):
 
     return result
 
-def get_config_candidates(path:str, config_file:str):
+def get_config_candidates(path: str | None, config_file: str):
     candidates = []
     if path:
         candidates.append(path)
     config_path = get_user_config_dir()
     candidates.append(os.path.join(config_path, config_file))
-    os.environ.get("XDG_CONFIG_HOME")
+    # Note: XDG_CONFIG_HOME support could be added here if needed
     return candidates
 
-def load_visibility_windows(path=None):
+def load_visibility_windows(path: str | None = None):
     defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
 
-    candidates = get_config_candidates(None,"visibility_windows.json")
+    candidates = get_config_candidates(path, "visibility_windows.json")
 
     for p in candidates:
         try:

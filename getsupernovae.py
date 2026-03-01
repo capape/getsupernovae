@@ -13,7 +13,7 @@ import sys
 import tkinter as tk
 from datetime import datetime, timedelta
 from tkinter import messagebox
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -38,6 +38,11 @@ from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
 
 # import the external plotter helper
 from app.i18n import _
+
+if TYPE_CHECKING:
+    from app.coordinators.report_coordinator import ReportCoordinator
+    from app.coordinators.search_coordinator import SearchCoordinator
+    from app.ui.results_presenter import ResultsPresenter
 from app.services.observation_time_service import ObservationTimeService
 from app.services.provider import NetworkRochesterProvider
 from app.services.supernova_filter_service import SupernovaFilterService
@@ -217,7 +222,7 @@ class SearchFilters:
         observationHours: int,
         site: str,
         minLatitude: float,
-        visibilityWindowName: str = None,
+        visibilityWindowName: str | None = None,
     ):
         self.magnitude = magnitude
         self.daysToSearch = daysToSearch
@@ -230,6 +235,16 @@ class SearchFilters:
 
 
 class SupernovasApp(tk.Tk):
+    """Main application class for Get Supernovae.
+    
+    Many attributes are initialized by InitializationBuilder.build().
+    """
+    # Type hints for attributes set by InitializationBuilder
+    report_coordinator: "ReportCoordinator"
+    search_coordinator: "SearchCoordinator"
+    presenter: "ResultsPresenter"
+    site: tk.StringVar
+    visibilityWindow: tk.StringVar
 
     #
     # Create object with filters to search
@@ -418,7 +433,7 @@ class SupernovasApp(tk.Tk):
         except Exception:
             return None
 
-    def _update_sites_combobox(self, values: list, selected: str = None):
+    def _update_sites_combobox(self, values: list, selected: str | None = None):
         """Update site combobox with new values.
 
         Args:
@@ -432,7 +447,7 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to update sites combobox")
 
-    def _update_visibility_windows_combobox(self, values: list, selected: str = None):
+    def _update_visibility_windows_combobox(self, values: list, selected: str | None = None):
         """Update visibility window combobox with new values.
 
         Args:
@@ -446,11 +461,11 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to update visibility windows combobox")
 
-    def _enable_find_stars_button(self, button_name: str):
+    def _enable_find_stars_button(self, _button_name: str):
         """Enable the find stars button.
 
         Args:
-            button_name: Button name (not used, kept for interface compatibility)
+            _button_name: Button name (not used, kept for interface compatibility)
         """
         try:
             if hasattr(self, "findStarsButton") and self.findStarsButton:
@@ -458,11 +473,11 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to enable find stars button")
 
-    def _disable_find_stars_button(self, button_name: str):
+    def _disable_find_stars_button(self, _button_name: str):
         """Disable the find stars button.
 
         Args:
-            button_name: Button name (not used, kept for interface compatibility)
+            _button_name: Button name (not used, kept for interface compatibility)
         """
         try:
             if hasattr(self, "findStarsButton") and self.findStarsButton:
@@ -470,7 +485,14 @@ class SupernovasApp(tk.Tk):
         except Exception:
             log_exception(logger, "Failed to disable find stars button")
 
-    def on_clear_results(self, var, index, mode):
+    def on_clear_results(self, _var, _index, _mode):
+        """Clear results when any filter variable changes.
+        
+        Args:
+            _var: Variable that changed (unused, required by trace callback)
+            _index: Index (unused, required by trace callback)
+            _mode: Mode (unused, required by trace callback)
+        """
         self.supernovasFound = None
 
     def set_results_text(self, datatxt: str):
@@ -520,11 +542,9 @@ class SupernovasApp(tk.Tk):
                     # Determine brightness tag based on numeric magnitude
                     mag_val = None
                     try:
-                        mag_val = (
-                            float(getattr(sn, "mag", None))
-                            if getattr(sn, "mag", None) is not None
-                            else None
-                        )
+                        mag_attr = getattr(sn, "mag", None)
+                        if mag_attr is not None:
+                            mag_val = float(mag_attr)
                     except Exception:
                         mag_val = None
 
