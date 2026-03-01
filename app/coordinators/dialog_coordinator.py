@@ -8,6 +8,7 @@ This coordinator handles:
 
 It uses callbacks to interact with the UI without tight coupling.
 """
+# pylint: disable=cyclic-import  # Lazy imports in methods break cycle at runtime
 
 import os
 import tkinter as tk
@@ -123,7 +124,7 @@ class DialogCoordinator:
             try:
                 import getsupernovae
 
-                getsupernovae.old = load_old_supernovae(path)
+                getsupernovae.old_supernovae = load_old_supernovae(path)
             except (ImportError, AttributeError, OSError, IOError):
                 log_exception(logger, "Failed to reload ignored supernovae after add")
 
@@ -167,7 +168,7 @@ class DialogCoordinator:
             try:
                 import getsupernovae
 
-                current = "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
+                current = "" if getsupernovae.old_supernovae is None else "\n".join(getsupernovae.old_supernovae)
             except (ImportError, AttributeError, TypeError):
                 current = ""
 
@@ -244,7 +245,7 @@ class DialogCoordinator:
                 try:
                     import getsupernovae
 
-                    getsupernovae.old = load_old_supernovae(path)
+                    getsupernovae.old_supernovae = load_old_supernovae(path)
                 except (ImportError, AttributeError, OSError, IOError):
                     log_exception(logger, "Failed to reload ignored supernovae after edit")
 

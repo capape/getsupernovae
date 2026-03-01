@@ -11,7 +11,12 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
-from app.config.ui_constants import DEFAULT_VALUES, THEME_COLORS, UI_CONSTANTS, UI_STRINGS
+from app.config.ui_constants import (
+    DEFAULT_VALUES,
+    THEME_COLORS,
+    UI_CONSTANTS,
+    UI_STRINGS,
+)
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)

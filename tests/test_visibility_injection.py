@@ -11,7 +11,8 @@ from astropy.coordinates import SkyCoord
 
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import AxCordInTime, Visibility
-from getsupernovae import RochesterSupernova, sites
+from app.services.rochester_supernova import RochesterSupernova
+from getsupernovae import sites
 
 
 class DummyVisibilityFactory:
@@ -63,7 +64,11 @@ def test_rochester_uses_injected_visibility_factory():
     """
 
     # Instantiate RochesterSupernova with the dummy factory
-    rv = RochesterSupernova(visibility_factory=DummyVisibilityFactory)
+    rv = RochesterSupernova(
+        old_supernovae=set(),
+        visibility_windows={},
+        visibility_factory=DummyVisibilityFactory
+    )
 
     # Run selection with permissive thresholds so the single row is included
     results = rv.select_supernovae(

@@ -14,7 +14,7 @@ import sys
 import tkinter as tk
 from datetime import datetime, timedelta
 from tkinter import messagebox
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -32,14 +32,9 @@ from app.config.snconfig import (
 from app.config.ui_constants import DEFAULT_VALUES, UI_STRINGS
 from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
 from app.i18n import _
-from app.models.dto import SupernovaDTO
 from app.services.observation_time_service import ObservationTimeService
-from app.services.provider import NetworkRochesterProvider
-from app.services.supernova_filter_service import SupernovaFilterService
-from app.services.supernova_selection_service import SupernovaSelectionService
 from app.ui.filter_panel_manager import FilterPanelCallbacks, FilterPanelManager
 from app.ui.results_panel_manager import ResultsPanelCallbacks, ResultsPanelManager
-from app.ui.snvisibility import VisibilityWindow
 from app.ui.toolbar_manager import ToolbarCallbacks, ToolbarManager
 from app.utils.logger import get_logger, log_exception
 
@@ -49,7 +44,7 @@ if TYPE_CHECKING:
     from app.ui.results_presenter import ResultsPresenter
 
 bootstrap_config()
-old = load_old_supernovae()
+old_supernovae = load_old_supernovae()
 sites = load_sites()
 visibility_windows = load_visibility_windows()
 logger = get_logger(__name__)
@@ -84,130 +79,6 @@ class SupernovaCallBackData:  # pylint: disable=too-few-public-methods
         self.from_date_time = self.observation_start - timedelta(days=int(days_to_search))
         self.from_date = self.from_date_time.strftime("%Y-%m-%d")
         self.visibility_window_name = visibility_window_name
-
-
-class RochesterSupernova:
-    """Main class for fetching and selecting supernovae from Rochester catalog."""
-
-    def __init__(
-        self,
-        visibility_factory=None,
-        provider_factory=None,
-        reporter=None,
-        filter_service=None,
-        selection_service=None,
-    ):
-        # visibility_factory should be a callable/class that creates a
-        # visibility window instance with signature
-        # VisibilityWindow(min_alt, max_alt, min_az, max_az)
-        self.visibility_factory = (
-            visibility_factory if visibility_factory is not None else VisibilityWindow
-        )
-        # provider_factory constructs a provider used to fetch Rochester data
-        self.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
-        )
-        # reporter is optional; selection logic does not require it but keep for DI consistency
-        self.reporter = reporter
-        # filter_service handles all filtering logic
-        self.filter_service = (
-            filter_service
-            if filter_service is not None
-            else SupernovaFilterService(visibility_factory=self.visibility_factory)
-        )
-        # selection_service coordinates selection and sorting
-        self.selection_service = (
-            selection_service
-            if selection_service is not None
-            else SupernovaSelectionService(
-                filter_service=self.filter_service, visibility_windows=visibility_windows
-            )
-        )
-
-    def select_and_sort_supernovae(
-        self, e: SupernovaCallBackData, supernovae_list: List[SupernovaDTO]
-    ):
-        """Select and sort supernovae using the selection service.
-
-        This method now delegates to SupernovaSelectionService for all
-        selection, filtering, and sorting logic.
-        """
-        # Convert magnitude to float
-        try:
-            max_magnitude = float(e.magnitude)
-        except (ValueError, TypeError):
-            max_magnitude = float(str(e.magnitude))
-
-        # Use selection service to coordinate the entire selection process
-        supernovas = self.selection_service.select_and_sort_supernovae(
-            supernova_list=supernovae_list,
-            max_magnitude=max_magnitude,
-            observation_start=e.observation_start,
-            observation_hours=int(e.observation_hours),
-            from_date=e.from_date,
-            site=e.site,
-            exclusion_list=set(old) if old else set(),
-            visibility_window_name=getattr(e, "visibility_window_name", None),
-            min_latitude=float(e.min_latitude),
-            visibility_factory=self.visibility_factory,
-        )
-
-        return supernovas
-
-    def select_supernovae(
-        self,
-        supernovae_list: List[SupernovaDTO],
-        max_mag: str,
-        observation_day: datetime,
-        local_start_time: str,
-        hours_observation: int,
-        from_date: str,
-        site: EarthLocation,
-        min_alt: float = 0,
-        max_alt: float = 90,
-        min_az: float = 0,
-        max_az: float = 360,
-    ):
-        """Select supernovae using the filter service.
-
-        Legacy method kept for backward compatibility. Delegates to filter service.
-        For new code, prefer using select_and_sort_supernovae with SupernovaCallBackData.
-        """
-        observation_start = observation_day.strftime("%Y-%m-%d") + "T" + local_start_time + "Z"
-
-        time1 = Time(observation_start)
-        time2 = time1 + timedelta(hours=hours_observation)
-
-        # Convert maxMag to float
-        try:
-            max_mag_threshold = float(max_mag)
-        except (ValueError, TypeError):
-            max_mag_threshold = float(str(max_mag))
-
-        # Use filter service to apply all filters and get results
-        filtered_results = self.filter_service.apply_all_filters(
-            supernovae=supernovae_list,
-            max_magnitude=max_mag_threshold,
-            from_date=from_date,
-            exclusion_list=set(old) if old else set(),
-            site=site,
-            observation_start=time1,
-            observation_end=time2,
-            min_altitude=min_alt,
-            max_altitude=max_alt,
-            min_azimuth=min_az,
-            max_azimuth=max_az,
-            visibility_factory=self.visibility_factory,
-        )
-
-        # Convert to domain models
-        supernovas = self.filter_service.convert_to_domain_models(filtered_results)
-
-        return supernovas
-
-
-# Note: domain model dataclasses live in `app.models.snmodels` and are imported
-# at the top of this module. Do not redefine them here to avoid drift.
 
 
 class SearchFilters:  # pylint: disable=too-few-public-methods
@@ -881,7 +752,15 @@ class SupernovasApp(tk.Tk):
         from app.ui.initialization_builder import InitializationBuilder
 
         builder = InitializationBuilder(self, filters)
-        builder.build(presenter, visibility_factory, provider_factory, reporter)
+        builder.build(
+            old_supernovae=old_supernovae,
+            sites=sites,
+            visibility_windows=visibility_windows,
+            presenter=presenter,
+            visibility_factory=visibility_factory,
+            provider_factory=provider_factory,
+            reporter=reporter,
+        )
 
 
 def represents_int(s):

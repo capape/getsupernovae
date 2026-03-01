@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Optional
 
+
 @dataclass
 class SupernovaDTO:
     """Data Transfer Object produced by providers.

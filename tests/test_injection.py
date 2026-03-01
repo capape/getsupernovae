@@ -5,7 +5,8 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.coordinators.search_coordinator import AsyncRochesterDownload
-from getsupernovae import RochesterSupernova, SupernovaCallBackData, sites
+from app.services.rochester_supernova import RochesterSupernova
+from getsupernovae import SupernovaCallBackData, sites
 
 
 class DummyProvider:
@@ -37,7 +38,11 @@ def test_async_uses_injected_provider():
 
     # Create RochesterSupernova for the async downloader
     rochester = RochesterSupernova(
-        visibility_factory=None, provider_factory=DummyProvider, reporter=None
+        old_supernovae=set(),
+        visibility_windows={},
+        visibility_factory=None,
+        provider_factory=DummyProvider,
+        reporter=None
     )
 
     # run downloader with dummy provider factory
@@ -59,5 +64,11 @@ def test_async_uses_injected_provider():
 
 def test_reporter_propagation_to_rochester():
     dr = DummyReporter()
-    rs = RochesterSupernova(visibility_factory=None, provider_factory=None, reporter=dr)
+    rs = RochesterSupernova(
+        old_supernovae=set(),
+        visibility_windows={},
+        visibility_factory=None,
+        provider_factory=None,
+        reporter=dr
+    )
     assert getattr(rs, "reporter", None) is dr

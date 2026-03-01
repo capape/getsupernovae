@@ -28,6 +28,10 @@ class InitializationBuilder:
         """
         self.app = app
         self.filters = filters
+        # Store these to avoid circular imports
+        self.old_supernovae = None
+        self.sites = None
+        self.visibility_windows = None
 
     def setup_state_management(self):
         """Initialize state managers and coordinator infrastructure."""
@@ -123,9 +127,11 @@ class InitializationBuilder:
         self.app.reporter = reporter
 
         # Initialize RochesterSupernova
-        from getsupernovae import RochesterSupernova
+        from app.services.rochester_supernova import RochesterSupernova
 
         self.app.rochester_supernova = RochesterSupernova(
+            old_supernovae=self.old_supernovae,
+            visibility_windows=self.visibility_windows,
             visibility_factory=self.app.visibility_factory,
             provider_factory=self.app.provider_factory,
             reporter=self.app.reporter,
@@ -320,7 +326,6 @@ class InitializationBuilder:
 
     def initialize_preferences_coordinator(self):
         """Initialize the preferences coordinator before loading preferences."""
-        import getsupernovae as gs
         from app.coordinators.preferences_coordinator import PreferencesCoordinator
 
         try:
@@ -340,8 +345,8 @@ class InitializationBuilder:
                     "lang_var": getattr(self.app, "lang_var", None),
                     "dark_mode": getattr(self.app, "dark_mode", None),
                 },
-                get_sites=lambda: gs.sites,
-                get_visibility_windows=lambda: gs.visibility_windows,
+                get_sites=lambda: self.sites,
+                get_visibility_windows=lambda: self.visibility_windows,
                 get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
                 get_language_coordinator=lambda: getattr(self.app, "language_coordinator", None),
                 get_theme_coordinator=lambda: getattr(self.app, "theme_coordinator", None),
@@ -351,6 +356,9 @@ class InitializationBuilder:
 
     def build(
         self,
+        old_supernovae=None,
+        sites=None,
+        visibility_windows=None,
         presenter=None,
         visibility_factory=None,
         provider_factory=None,
@@ -359,6 +367,9 @@ class InitializationBuilder:
         """Execute the full initialization sequence.
 
         Args:
+            old_supernovae: Set of previously seen supernova names to exclude
+            sites: Dictionary of observation sites
+            visibility_windows: Dictionary of visibility window configurations
             presenter: Optional custom results presenter
             visibility_factory: Optional custom visibility calculator factory
             provider_factory: Optional custom data provider factory
@@ -367,6 +378,11 @@ class InitializationBuilder:
         Returns:
             The initialized app instance
         """
+        # Store these to avoid circular imports
+        self.old_supernovae = old_supernovae if old_supernovae is not None else set()
+        self.sites = sites if sites is not None else {}
+        self.visibility_windows = visibility_windows if visibility_windows is not None else {}
+
         self.setup_state_management()
         self.setup_theme_and_language()
         self.create_tk_variables()

@@ -6,8 +6,8 @@ from astropy.time import Time
 
 # import app helpers
 import getsupernovae as gs
-from app.models.snmodels import AxCordInTime, Supernova, Visibility
 from app.i18n import _
+from app.models.snmodels import AxCordInTime, Supernova, Visibility
 
 # build visibility az_coords: 10 time points over next 5 hours
 now = Time.now()

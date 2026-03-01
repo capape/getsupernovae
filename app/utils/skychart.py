@@ -84,7 +84,7 @@ def make_sky_chart(
         radius = (fov_deg * (2**0.5)) / 2.0
         tbls = (
             viz.query_region(
-                center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
+                center, radius=radius * u.degree, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
             )
             if HAS_ASTROQUERY
             else []
