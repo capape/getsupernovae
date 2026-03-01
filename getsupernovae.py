@@ -899,11 +899,11 @@ def main():
         raise ValueError(_("Usage: getsupernovae.py maxMag lastDays"))
 
     mag = DEFAULT_VALUES.MAGNITUDE
-    daysToSearch = DEFAULT_VALUES.DAYS_TO_SEARCH
+    days_to_search = DEFAULT_VALUES.DAYS_TO_SEARCH
 
     if len(sys.argv) == 3:
         if represents_int(sys.argv[2]):
-            daysToSearch = int(sys.argv[2])
+            days_to_search = int(sys.argv[2])
             mag = sys.argv[1]
     elif len(sys.argv) == 2:
         if represents_int(sys.argv[1]):
@@ -916,7 +916,7 @@ def main():
 
     filters = SearchFilters(
         mag,
-        daysToSearch,
+        days_to_search,
         datetime.now(),
         DEFAULT_VALUES.OBSERVATION_TIME,
         DEFAULT_VALUES.OBSERVATION_HOURS,

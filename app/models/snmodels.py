@@ -1,3 +1,7 @@
+"""Supernova data models.
+
+Defines core domain models for supernova observations, coordinates, and visibility data.
+"""
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, List, Optional

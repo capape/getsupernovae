@@ -1,3 +1,7 @@
+"""Data Transfer Objects for supernova data.
+
+Defines lightweight DTOs used for data transfer between providers and domain models.
+"""
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Optional

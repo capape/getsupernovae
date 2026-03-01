@@ -1,3 +1,8 @@
+"""PDF report generation for supernova observations.
+
+This module creates comprehensive PDF reports with supernova data, sky charts,
+and visibility plots.
+"""
 import logging
 import os
 import platform
@@ -28,6 +33,12 @@ logger.setLevel(logging.INFO)
 
 
 def add_supernova_to_pdf(text_object, data: Supernova):
+    """Add a single supernova's information to a PDF text object.
+
+    Args:
+        text_object: ReportLab text object to write to
+        data: Supernova object with observation data
+    """
     lines = [
         i18n.i18n._("-------------------------------------------------"),
         i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(
@@ -75,6 +86,20 @@ def create_pdf(
     _min_latitude,
     visibility_window_name=None,
 ):
+    """Generate a comprehensive PDF report of supernova observations.
+    
+    Args:
+        supernovas: List of Supernova objects with visibility data
+        from_date: Start date of search period
+        observation_date: End date of search period
+        magnitude: Maximum magnitude filter value
+        site: EarthLocation of observation site
+        _min_latitude: Minimum altitude threshold (unused, kept for compatibility)
+        visibility_window_name: Optional visibility window configuration name
+        
+    Returns:
+        Path to the generated PDF file
+    """
     logger.info("Creating pdf")
 
     # choose a font to embed for better mobile compatibility (Unicode, degree sign)

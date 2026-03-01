@@ -1,3 +1,7 @@
+"""Plotting utilities for visibility graphs in PDF reports.
+
+Provides VisibilityPlotter class for generating matplotlib-based visibility charts.
+"""
 import io
 
 from reportlab.lib.utils import ImageReader

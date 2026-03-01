@@ -1,3 +1,7 @@
+"""Text report generation for supernova observations.
+
+This module generates plain text reports with supernova data and visibility information.
+"""
 from typing import List
 
 from app import i18n
@@ -7,6 +11,14 @@ from app.utils.snparser import format_iso_datetime
 
 
 def text_supernova(data: Supernova) -> str:
+    """Generate a text representation of a single supernova with visibility data.
+
+    Args:
+        data: Supernova object with observation and visibility information
+
+    Returns:
+        Formatted text string with supernova details
+    """
     tpl = i18n._("""
 Date: {date}, Mag: {mag}, T: {type}, Name:{name}
 Const: {constellation}, Host:{host}
@@ -51,6 +63,16 @@ RA:{ra}, DECL.{decl}
 
 
 def text_site(site, min_latitude, visibility_window_name=None):
+    """Generate text description of observation site and visibility window.
+
+    Args:
+        site: EarthLocation with observation site coordinates
+        min_latitude: Minimum altitude threshold in degrees
+        visibility_window_name: Optional name of visibility window configuration
+
+    Returns:
+        Formatted string with site information
+    """
     try:
         vis = load_visibility_windows()
         if visibility_window_name and visibility_window_name in vis:
@@ -91,6 +113,17 @@ def create_text(
     min_latitude,
     visibility_window_name=None,
 ):
+    """Print text report of supernovae to stdout.
+
+    Args:
+        supernovas: List of Supernova objects to report
+        from_date: Start date of search period
+        observation_date: End date of search period
+        magnitude: Maximum magnitude filter value
+        site: EarthLocation of observation site
+        min_latitude: Minimum altitude threshold in degrees
+        visibility_window_name: Optional visibility window configuration name
+    """
     header = i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
         from_date=from_date, to=observation_date, magnitude=magnitude
     )
@@ -111,6 +144,20 @@ def create_text_as_string(
     min_latitude,
     visibility_window_name=None,
 ) -> str:
+    """Generate text report of supernovae as a string.
+    
+    Args:
+        supernovas: List of Supernova objects to report
+        from_date: Start date of search period
+        observation_date: End date of search period
+        magnitude: Maximum magnitude filter value
+        site: EarthLocation of observation site
+        min_latitude: Minimum altitude threshold in degrees
+        visibility_window_name: Optional visibility window configuration name
+        
+    Returns:
+        Complete text report as a string
+    """
     header = i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
         from_date=from_date, to=observation_date, magnitude=magnitude
     )
@@ -180,7 +227,9 @@ def print_supernova_short(data: Supernova):
         )
     )
     print(
-        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(date=data.last_observed_date, ra=data.ra, dec=data.decl)
+        i18n._("D: {date} RA: {ra}, DEC: {dec}").format(
+            date=data.last_observed_date, ra=data.ra, dec=data.decl
+        )
     )
     print(
         i18n._("Observation time: {from_} - {to} az: {az}, LAT: {lat}").format(
