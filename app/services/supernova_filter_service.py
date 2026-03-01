@@ -17,8 +17,8 @@ from astropy.time import Time
 from app.config.ui_constants import DEFAULT_VALUES
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
-from app.utils.snparser import parse_date
 from app.utils.logger import get_logger, log_exception
+from app.utils.snparser import parse_date
 
 if TYPE_CHECKING:
     from app.ui.snvisibility import Visibility
@@ -62,7 +62,7 @@ class SupernovaFilterService:
             except (TypeError, ValueError):
                 # Skip entries with invalid magnitude but log the reason
                 try:
-                    sn_name = getattr(sn, 'name', 'unknown')
+                    sn_name = getattr(sn, "name", "unknown")
                     log_exception(self.logger, f"Invalid magnitude for supernova {sn_name}")
                 except (AttributeError, OSError, IOError):
                     # Ensure filtering doesn't raise due to logging
@@ -168,7 +168,7 @@ class SupernovaFilterService:
             except (AttributeError, TypeError, ValueError) as ex:
                 # Skip supernovae with invalid coordinates or visibility calculation errors
                 try:
-                    sn_name = getattr(sn, 'name', 'unknown')
+                    sn_name = getattr(sn, "name", "unknown")
                     log_exception(
                         self.logger,
                         f"Visibility calculation failed for supernova {sn_name}: {ex}",
@@ -274,7 +274,7 @@ class SupernovaFilterService:
             except (AttributeError, TypeError, ValueError):
                 # Skip entries that can't be converted and log the issue
                 try:
-                    sn_name = getattr(sn_dto, 'name', 'unknown')
+                    sn_name = getattr(sn_dto, "name", "unknown")
                     msg = f"Failed to convert SupernovaDTO {sn_name} to domain model"
                     log_exception(self.logger, msg)
                 except (AttributeError, OSError, IOError):

@@ -138,11 +138,7 @@ def print_supernova(data: Supernova):
     # observation time
     obs_start = format_iso_datetime(data.visibility.azCords[0].time)
     obs_end = format_iso_datetime(data.visibility.azCords[-1].time)
-    print(
-        i18n._("  Observation time: {obs}").format(
-            obs=f"{obs_start} - {obs_end}"
-        )
-    )
+    print(i18n._("  Observation time: {obs}").format(obs=f"{obs_start} - {obs_end}"))
     print(
         i18n._("  Visible from : {from_} to: {to}").format(
             from_=format_iso_datetime(data.visibility.azCords[0].time),

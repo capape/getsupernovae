@@ -15,7 +15,8 @@ class ThemeColors:
 
     Using frozen=True to make these immutable and prevent accidental modification.
     """
-# pylint: disable=invalid-name
+
+    # pylint: disable=invalid-name
     # Dark theme colors
     DARK_BG: str = "#2e2e2e"
     DARK_FG: str = "#eaeaea"
@@ -45,7 +46,10 @@ class ThemeColors:
     # Highlight colors for bright supernovae (magnitude < 15)
     BRIGHT_FG_DARK: str = "#ff4444"
     BRIGHT_FG_LIGHT: str = "#cc0000"
+
+
 # pylint: enable=invalid-name
+
 
 @dataclass(frozen=True)
 class UIConstants:
@@ -100,6 +104,7 @@ class UIConstants:
     MONITOR_INTERVAL_MS: int = 100
     # pylint: enable=invalid-name
 
+
 @dataclass(frozen=True)
 class DefaultValues:
     """Default values for search filters and UI controls."""
@@ -116,6 +121,7 @@ class DefaultValues:
     # Brightness threshold for highlighting
     BRIGHT_MAGNITUDE_THRESHOLD: float = 15.0
     # pylint: enable=invalid-name
+
 
 @dataclass(frozen=True)
 class NetworkConstants:
@@ -135,6 +141,7 @@ class NetworkConstants:
     SIMBAD_MAIN_TYPE: str = "*"  # stellar objects
     SIMBAD_MAX_OBJECTS: int = 100
     # pylint: enable=invalid-name
+
 
 @dataclass(frozen=True)
 class FileConstants:
@@ -156,9 +163,11 @@ class FileConstants:
     LOCALES_DIR: str = "locales"
     # pylint: enable=invalid-name
 
+
 @dataclass(frozen=True)
 class UIStrings:
     """UI string constants (icons, symbols, etc.)."""
+
     # pylint: disable=invalid-name
     # Unicode symbols
     EDIT_ICON: str = "✎"
@@ -173,6 +182,7 @@ class UIStrings:
     TAG_EVEN_ROW_BRIGHT: str = "evenrow_bright"
     TAG_ODD_ROW_BRIGHT: str = "oddrow_bright"
     # pylint: enable=invalid-name
+
 
 # pylint: disable=invalid-name
 # Convenience instances for easy import
