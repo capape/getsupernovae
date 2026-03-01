@@ -88,7 +88,7 @@ class LanguageCoordinator:
                 set_language(None)
             else:
                 set_language(lang)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to apply selected language")
 
     def _refresh_ui_labels(self):
@@ -119,7 +119,7 @@ class LanguageCoordinator:
             # Update window title
             self._update_window_title()
 
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to refresh UI labels after language change")
 
     def _refresh_filter_panel_labels(self):
@@ -128,7 +128,7 @@ class LanguageCoordinator:
             filter_panel = self.get_filter_panel_manager()
             if filter_panel is not None:
                 filter_panel.refresh_labels()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to refresh filter panel labels")
 
     def _refresh_results_panel_labels(self):
@@ -137,7 +137,7 @@ class LanguageCoordinator:
             results_panel = self.get_results_panel_manager()
             if results_panel is not None:
                 results_panel.refresh_labels()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to refresh results panel labels")
 
     def _refresh_toolbar_labels(self):
@@ -146,7 +146,7 @@ class LanguageCoordinator:
             toolbar = self.get_toolbar_manager()
             if toolbar is not None:
                 toolbar.refresh_labels()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to refresh toolbar labels")
 
     def _refresh_toolbar_button_labels(self, widgets: Dict[str, Optional[tk.Widget]]):
@@ -159,7 +159,7 @@ class LanguageCoordinator:
             edit_button = widgets.get("editOldButton")
             if edit_button is not None:
                 edit_button.config(text=_("Edit Ignored SN"))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to refresh ignore/edit toolbar labels")
 
     def _refresh_action_button_labels(self, widgets: Dict[str, Optional[tk.Widget]]):
@@ -180,14 +180,14 @@ class LanguageCoordinator:
             exit_button = widgets.get("exitButton")
             if exit_button is not None:
                 exit_button.config(text=_("Exit"))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to refresh action button labels")
 
     def _update_window_title(self):
         """Update main window title."""
         try:
             self.root_window.title(_("Find latest supernovae"))
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(
                 logger, "Failed to refresh window title after language change"
             )
@@ -196,7 +196,7 @@ class LanguageCoordinator:
         """Reapply results tree styling and theme after language change."""
         try:
             self.on_configure_tree_styling()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(
                 logger, "Failed to reconfigure results tree after language change"
             )
@@ -204,14 +204,14 @@ class LanguageCoordinator:
         try:
             # Re-apply theme in case translations affected widget styles
             self.on_apply_theme()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to reapply theme after language change")
 
     def _update_visibility_ui(self):
         """Update visibility UI after language change."""
         try:
             self.on_update_visibility_ui()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(
                 logger, "Failed to refresh visibility UI after language change"
             )

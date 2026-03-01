@@ -76,11 +76,11 @@ class AsyncRochesterDownload(Thread):
             # Keep raw rows so the app can re-filter without re-downloading
             self.dto_list = supernovae_list
 
-        except Exception as ex:
+        except (AttributeError, TypeError, ValueError, OSError, IOError) as ex:
             # Record the error for the main thread to show
             try:
                 self.error = str(ex)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 self.error = "unknown error"
             self.result = None
 
@@ -176,7 +176,7 @@ class SearchCoordinator:
             # Monitor thread completion
             self._monitor_thread(download_thread, source)
 
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError):
             log_exception(logger, f"Failed to start async search for source={source}")
             self._cleanup_after_search(source)
 
@@ -203,7 +203,7 @@ class SearchCoordinator:
             try:
                 self.refreshing = True
                 self.search_async(search_criteria, source)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to fallback to full search")
             return
 
@@ -233,13 +233,13 @@ class SearchCoordinator:
                 self._set_button_state("pdf", "normal")
                 self._set_button_state("refresh", "normal")
 
-        except Exception:
+        except (AttributeError, TypeError, ValueError, KeyError):
             log_exception(logger, "Failed to refilter from cache")
             # Fallback to network refresh
             try:
                 self.refreshing = True
                 self.search_async(search_criteria, source)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to fallback to network refresh")
 
     def _monitor_thread(self, thread: AsyncRochesterDownload, source: str):
@@ -302,14 +302,14 @@ class SearchCoordinator:
                 # Cache raw rows for later refiltering
                 try:
                     self.last_rows = getattr(thread, "dto_list", None)
-                except Exception:
+                except (AttributeError, TypeError):
                     log_exception(logger, "Failed to cache downloaded rows")
                     self.last_rows = None
             else:
                 # Default case
                 self._cleanup_after_search(source)
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError):
             log_exception(
                 logger, f"Failed to handle thread completion for source={source}"
             )
@@ -329,7 +329,7 @@ class SearchCoordinator:
         if self.on_button_state_change:
             try:
                 self.on_button_state_change(button, state)
-            except Exception:
+            except (AttributeError, TypeError):
                 log_exception(logger, f"Failed to set {button} button to {state}")
 
     def _cleanup_after_search(self, source: str):
@@ -344,7 +344,7 @@ class SearchCoordinator:
             self._set_button_state("refresh", "normal")
             if source == "REFRESH":
                 self.refreshing = False
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to cleanup after search")
 
     def get_current_results(self) -> Optional[List[Supernova]]:

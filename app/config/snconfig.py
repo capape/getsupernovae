@@ -29,7 +29,7 @@ def load_old_supernovae(path: str | None = None):
             with open(p, "r", encoding="utf-8") as fh:
                 lines = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
             return lines
-        except Exception:
+        except (OSError, IOError, UnicodeDecodeError):
             continue
 
     return []
@@ -56,7 +56,7 @@ def load_sites(path: str | None = None):
             with open(p, "r", encoding="utf-8") as fh:
                 sites_conf = json.load(fh)
             break
-        except Exception:
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
             sites_conf = None
             continue
 
@@ -72,7 +72,7 @@ def load_sites(path: str | None = None):
                 lon = float(v.get("lon", 0.0))
                 h = float(v.get("height", 0.0))
                 result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
-            except Exception:
+            except (ValueError, TypeError, KeyError, AttributeError):
                 continue
 
         if isinstance(sites_conf, dict):
@@ -87,9 +87,9 @@ def load_sites(path: str | None = None):
                         lon = float(v.lon.value)
                         h = float(v.height.value)
                     result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
-                except Exception:
+                except (ValueError, TypeError, KeyError, AttributeError):
                     continue
-    except Exception:
+    except (ValueError, TypeError, KeyError, AttributeError):
         # On any unexpected error, fall back to defaults already populated.
         pass
 
@@ -117,7 +117,7 @@ def load_visibility_windows(path: str | None = None):
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-        except Exception:
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
             continue
 
     return defaults
@@ -154,7 +154,7 @@ def bootstrap_config():
     cfg = get_user_config_dir()
     try:
         os.makedirs(cfg, exist_ok=True)
-    except Exception:
+    except OSError:
         return
 
     sites_path = os.path.join(cfg, "sites.json")
@@ -172,7 +172,7 @@ def bootstrap_config():
         if not os.path.exists(sites_path):
             with open(sites_path, "w", encoding="utf-8") as fh:
                 json.dump(default_sites, fh, indent=2)
-    except Exception:
+    except (OSError, IOError):
         pass
 
     try:
@@ -180,7 +180,7 @@ def bootstrap_config():
             with open(old_path, "w", encoding="utf-8") as fh:
                 for name in default_old:
                     fh.write(name + "\n")
-    except Exception:
+    except (OSError, IOError):
         pass
 
 
@@ -205,7 +205,7 @@ def load_user_prefs():
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-    except Exception:
+    except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     return {}
 
@@ -219,14 +219,14 @@ def save_user_prefs(prefs: dict):
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(prefs, fh, indent=2)
         return
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
     # last resort: write next to module
     try:
         p = os.path.join(os.path.dirname(__file__), "prefs.json")
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(prefs, fh, indent=2)
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
 
     # default visibility windows
@@ -238,7 +238,7 @@ def save_user_prefs(prefs: dict):
         if not os.path.exists(vis_path):
             with open(vis_path, "w", encoding="utf-8") as fh:
                 json.dump(default_visibility, fh, indent=2)
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
 
     # Ensure a bundled font exists in package fonts/ for deterministic embedding on export
@@ -259,7 +259,7 @@ def save_user_prefs(prefs: dict):
                     if sc and os.path.exists(sc):
                         shutil.copyfile(sc, bundled)
                         break
-                except Exception:
+                except (OSError, IOError, shutil.Error):
                     continue
-    except Exception:
+    except (OSError, IOError):
         pass

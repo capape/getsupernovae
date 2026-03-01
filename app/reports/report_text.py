@@ -66,7 +66,7 @@ def textSite(site, minLatitude, visibilityWindowName=None):
                 minAz=float(cfg.get("minAz", 0.0)),
                 maxAz=float(cfg.get("maxAz", 360.0)),
             )
-    except Exception:
+    except (AttributeError, TypeError, ValueError, KeyError):
         pass
 
     return i18n._(

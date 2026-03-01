@@ -4,8 +4,9 @@ This module provides centralized state management for the application using
 dataclasses and the observer pattern for reactive updates.
 """
 
-from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, List, Optional
+from dataclasses import dataclass, field, asdict
+from typing import List, Optional, Callable, Any
+from datetime import datetime
 
 
 @dataclass
@@ -18,9 +19,7 @@ class SearchState:
     observation_time: str = ""
     observation_duration: str = "6"
     site: Optional[str] = None  # Site name (e.g., "Home", "Sabadell")
-    visibility_window: Optional[str] = (
-        None  # Visibility window name (e.g., "Default", "Evening")
-    )
+    visibility_window: Optional[str] = None  # Visibility window name (e.g., "Default", "Evening")
     min_latitude: str = ""
 
     def to_dict(self) -> dict:
@@ -28,7 +27,7 @@ class SearchState:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "SearchState":
+    def from_dict(cls, data: dict) -> 'SearchState':
         """Create SearchState from dictionary."""
         # Filter out unknown keys to handle missing/extra fields gracefully
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}
@@ -80,7 +79,7 @@ class UIState:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "UIState":
+    def from_dict(cls, data: dict) -> 'UIState':
         """Create UIState from dictionary."""
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}
         filtered_data = {k: v for k, v in data.items() if k in valid_keys}
@@ -98,21 +97,21 @@ class AppState:
     def to_dict(self) -> dict:
         """Convert to dictionary. Note: results are not persisted."""
         return {
-            "search": self.search.to_dict(),
-            "ui": self.ui.to_dict(),
+            'search': self.search.to_dict(),
+            'ui': self.ui.to_dict(),
             # Don't persist results - they're transient
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "AppState":
+    def from_dict(cls, data: dict) -> 'AppState':
         """Create AppState from dictionary."""
         state = cls()
 
-        if "search" in data and isinstance(data["search"], dict):
-            state.search = SearchState.from_dict(data["search"])
+        if 'search' in data and isinstance(data['search'], dict):
+            state.search = SearchState.from_dict(data['search'])
 
-        if "ui" in data and isinstance(data["ui"], dict):
-            state.ui = UIState.from_dict(data["ui"])
+        if 'ui' in data and isinstance(data['ui'], dict):
+            state.ui = UIState.from_dict(data['ui'])
 
         # results are not loaded from persistence
         return state
@@ -134,7 +133,7 @@ class AppStateManager:
         state_mgr.update_search_state(magnitude="15", site="TestSite")
     """
 
-    VALID_CATEGORIES = {"search", "results", "ui", "all"}
+    VALID_CATEGORIES = {'search', 'results', 'ui', 'all'}
 
     def __init__(self, initial_state: Optional[AppState] = None):
         """Initialize state manager.
@@ -144,10 +143,10 @@ class AppStateManager:
         """
         self.state = initial_state or AppState()
         self._listeners = {
-            "search": [],
-            "results": [],
-            "ui": [],
-            "all": [],
+            'search': [],
+            'results': [],
+            'ui': [],
+            'all': [],
         }
 
     def add_listener(self, category: str, callback: Callable) -> None:
@@ -163,9 +162,7 @@ class AppStateManager:
             ValueError: If category is invalid
         """
         if category not in self.VALID_CATEGORIES:
-            raise ValueError(
-                f"Invalid category: {category}. Must be one of {self.VALID_CATEGORIES}"
-            )
+            raise ValueError(f"Invalid category: {category}. Must be one of {self.VALID_CATEGORIES}")
 
         if callback not in self._listeners[category]:
             self._listeners[category].append(callback)
@@ -189,15 +186,15 @@ class AppStateManager:
         Raises:
             ValueError: If category is invalid
         """
-        if category not in self.VALID_CATEGORIES or category == "all":
+        if category not in self.VALID_CATEGORIES or category == 'all':
             raise ValueError(f"Invalid category for notification: {category}")
 
         # Get the specific state object
-        if category == "search":
+        if category == 'search':
             state_obj = self.state.search
-        elif category == "results":
+        elif category == 'results':
             state_obj = self.state.results
-        elif category == "ui":
+        elif category == 'ui':
             state_obj = self.state.ui
         else:
             state_obj = None
@@ -206,15 +203,15 @@ class AppStateManager:
         for callback in self._listeners[category]:
             try:
                 callback(state_obj)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 # Don't let listener errors stop other listeners
                 pass
 
         # Notify 'all' listeners with category name and state object
-        for callback in self._listeners["all"]:
+        for callback in self._listeners['all']:
             try:
                 callback(category, state_obj)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 pass
 
     def update_search_state(self, **kwargs) -> None:
@@ -227,7 +224,7 @@ class AppStateManager:
             if hasattr(self.state.search, key):
                 setattr(self.state.search, key, value)
 
-        self.notify_listeners("search")
+        self.notify_listeners('search')
 
     def update_results_state(self, **kwargs) -> None:
         """Update results state fields and notify listeners.
@@ -239,7 +236,7 @@ class AppStateManager:
             if hasattr(self.state.results, key):
                 setattr(self.state.results, key, value)
 
-        self.notify_listeners("results")
+        self.notify_listeners('results')
 
     def update_ui_state(self, **kwargs) -> None:
         """Update UI state fields and notify listeners.
@@ -251,21 +248,21 @@ class AppStateManager:
             if hasattr(self.state.ui, key):
                 setattr(self.state.ui, key, value)
 
-        self.notify_listeners("ui")
+        self.notify_listeners('ui')
 
     def clear_results(self) -> None:
         """Clear results state and notify listeners."""
         self.state.results.clear_results()
-        self.notify_listeners("results")
+        self.notify_listeners('results')
 
     def reset_to_defaults(self) -> None:
         """Reset all state to defaults and notify all listeners."""
         self.state = AppState()
 
         # Notify all categories individually (not 'all' which would raise ValueError)
-        for category in ["search", "results", "ui"]:
-            for callback in self._listeners["all"]:
+        for category in ['search', 'results', 'ui']:
+            for callback in self._listeners['all']:
                 try:
                     callback(category)
-                except Exception:
+                except (AttributeError, TypeError, RuntimeError):
                     pass

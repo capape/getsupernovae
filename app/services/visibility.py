@@ -16,7 +16,7 @@ def _deg_normalize(az: float) -> float:
         if a < 0:
             a += 360.0
         return a
-    except Exception:
+    except (TypeError, ValueError, ZeroDivisionError):
         raise
 
 
@@ -36,7 +36,7 @@ def compute_alt_min_max(az_coords: Iterable) -> Tuple[Optional[float], Optional[
             if val is None:
                 val = float(a)
             alts.append(float(val))
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             continue
 
     if not alts:
@@ -60,7 +60,7 @@ def compute_az_interval(az_coords: Iterable) -> Tuple[Optional[float], Optional[
             if val is None:
                 val = float(a)
             azs.append(_deg_normalize(float(val)))
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             continue
 
     if not azs:

@@ -184,7 +184,7 @@ class RochesterSupernova:
         # Convert maxMag to float
         try:
             max_mag_threshold = float(maxMag)
-        except Exception:
+        except (ValueError, TypeError):
             max_mag_threshold = float(str(maxMag))
 
         # Use filter service to apply all filters and get results
@@ -258,16 +258,16 @@ class SupernovasApp(tk.Tk):
         try:
             var.trace_add(["write", "unset"], callback)
             return
-        except Exception:
+        except (TypeError, AttributeError, RuntimeError):
             log_exception(logger, "Failed to add combined trace callback")
         try:
             var.trace_add("write", callback)
             return
-        except Exception:
+        except (TypeError, AttributeError, RuntimeError):
             log_exception(logger, "Failed to add write trace callback")
         try:
             var.trace_add("unset", callback)
-        except Exception:
+        except (TypeError, AttributeError, RuntimeError):
             log_exception(logger, "Failed to add unset trace callback")
 
     def getDataToSearch(self):
@@ -284,7 +284,7 @@ class SupernovasApp(tk.Tk):
                 getattr(self, "visibilityWindow", None) and self.visibilityWindow.get(),
             )
             return callbackData
-        except Exception as ex:
+        except (ValueError, AttributeError, TypeError) as ex:
             messagebox.showerror(
                 _("Invalid input"),
                 _(
@@ -349,7 +349,7 @@ class SupernovasApp(tk.Tk):
                 self.set_results_text("")
             else:
                 self.set_results_text("ERROR: No results")
-        except Exception:
+        except (AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to handle search results")
 
     def _set_button_state(self, button_name: str, state: str):
@@ -367,7 +367,7 @@ class SupernovasApp(tk.Tk):
                 self.txtButton["state"] = tk_state
             elif button_name == "refresh" and hasattr(self, "searchButton"):
                 self.searchButton["state"] = tk_state
-        except Exception:
+        except (AttributeError, KeyError, tk.TclError):
             log_exception(logger, f"Failed to set {button_name} button state to {state}")
 
     def start_progress_bar(self):
@@ -434,7 +434,7 @@ class SupernovasApp(tk.Tk):
                 return None
 
             return self.supernova_data[item]
-        except Exception:
+        except (KeyError, AttributeError):
             return None
 
     def _update_sites_combobox(self, values: list, selected: str | None = None):
@@ -448,7 +448,7 @@ class SupernovasApp(tk.Tk):
             self.filter_panel_manager.update_site_values(values)
             if selected:
                 self.site.set(selected)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update sites combobox")
 
     def _update_visibility_windows_combobox(self, values: list, selected: str | None = None):
@@ -462,7 +462,7 @@ class SupernovasApp(tk.Tk):
             self.filter_panel_manager.update_visibility_window_values(values)
             if selected:
                 self.visibilityWindow.set(selected)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update visibility windows combobox")
 
     def _enable_find_stars_button(self, _button_name: str):
@@ -474,7 +474,7 @@ class SupernovasApp(tk.Tk):
         try:
             if hasattr(self, "findStarsButton") and self.findStarsButton:
                 self.findStarsButton.config(state=tk.NORMAL)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to enable find stars button")
 
     def _disable_find_stars_button(self, _button_name: str):
@@ -486,7 +486,7 @@ class SupernovasApp(tk.Tk):
         try:
             if hasattr(self, "findStarsButton") and self.findStarsButton:
                 self.findStarsButton.config(state=tk.DISABLED)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to disable find stars button")
 
     def on_clear_results(self, _var, _index, _mode):
@@ -506,7 +506,7 @@ class SupernovasApp(tk.Tk):
             for item in self.resultsTree.get_children():
                 self.resultsTree.delete(item)
             self.supernova_data.clear()
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to clear existing results tree entries")
 
         # If datatxt is an error message, show it
@@ -516,7 +516,7 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.insert(
                     "", "end", values=(datatxt, "", "", "", "", "", "", "", "", "", "")
                 )
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to render error row in results tree")
             return
 
@@ -527,7 +527,7 @@ class SupernovasApp(tk.Tk):
                     presenter = self.presenter
                     try:
                         row = presenter.present(sn)
-                    except Exception:
+                    except (AttributeError, TypeError, ValueError):
                         # Fallback to minimal row on presenter error
                         row = (
                             getattr(sn, "name", ""),
@@ -549,7 +549,7 @@ class SupernovasApp(tk.Tk):
                         mag_attr = getattr(sn, "mag", None)
                         if mag_attr is not None:
                             mag_val = float(mag_attr)
-                    except Exception:
+                    except (ValueError, TypeError):
                         mag_val = None
 
                     is_bright = (
@@ -567,13 +567,13 @@ class SupernovasApp(tk.Tk):
 
                     item_id = self.resultsTree.insert("", "end", values=row, tags=(tag,))
                     self.supernova_data[item_id] = sn
-        except Exception as e:
+        except (AttributeError, TypeError, KeyError, tk.TclError) as e:
             # If population fails, show error
             try:
                 self.resultsTree.insert(
                     "", "end", values=(f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", "")
                 )
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to render exception row in results tree")
 
     def build_left_panel(self):
@@ -643,14 +643,14 @@ class SupernovasApp(tk.Tk):
             # Apply persisted prefs if present (best-effort)
             try:
                 self.preferences_coordinator.load_and_apply_prefs()
-            except Exception:
+            except (OSError, ValueError, KeyError, AttributeError):
                 log_exception(
                     logger, "Failed to load and apply preferences while building left panel"
                 )
 
             # Initialization complete, enable preference persistence
             self._initializing = False
-        except Exception:
+        except (AttributeError, TypeError, tk.TclError):
             log_exception(logger, "Failed to build left panel")
 
     def build_results_panel(self):
@@ -726,7 +726,7 @@ class SupernovasApp(tk.Tk):
                 self.resultsTree.bind(
                     "<<TreeviewSelect>>", self.tree_coordinator.on_selection_change
                 )
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to rebind tree events with coordinator")
 
             # Update column sort commands to use coordinator
@@ -748,7 +748,7 @@ class SupernovasApp(tk.Tk):
                         col,
                         command=lambda c=col, n=is_numeric: self.tree_coordinator.sort_column(c, n),
                     )
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to update column sort commands")
 
             # Create toolbar manager callbacks
@@ -779,7 +779,7 @@ class SupernovasApp(tk.Tk):
 
             # Configure results tree styling
             self.theme_coordinator.configure_results_tree_styling()
-        except Exception:
+        except (AttributeError, TypeError, tk.TclError):
             log_exception(logger, "Failed to build results panel")
 
     def refilter_from_cache(self, source="REFRESH"):

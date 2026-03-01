@@ -118,9 +118,9 @@ class ResultsTreeCoordinator:
                             tag = "evenrow" if index % 2 == 0 else "oddrow"
 
                         self.tree.item(item, tags=(tag,))
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to re-tag sorted tree row")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to sort results tree column")
 
     def on_selection_change(self, event=None):
@@ -135,7 +135,7 @@ class ResultsTreeCoordinator:
                 self.on_enable_button("find_stars")
             else:
                 self.on_disable_button("find_stars")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(
                 logger, "Failed to update Find Stars button state on selection change"
             )
@@ -174,7 +174,7 @@ class ResultsTreeCoordinator:
                     f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"
                 )
                 criteria_enc = urllib.parse.quote(criteria_str)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 log_exception(logger, "Failed to build SIMBAD criteria query")
                 criteria_enc = ""
 
@@ -189,10 +189,10 @@ class ResultsTreeCoordinator:
             # Open in browser
             webbrowser.open(simbad_url)
 
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError, OSError) as e:
             try:
                 self.on_show_error(_("Error"), _("Failed to query SIMBAD: ") + str(e))
-            except Exception:
+            except (AttributeError, TypeError):
                 log_exception(logger, "Failed to show SIMBAD error message")
 
     def on_double_click(self, event):
@@ -224,7 +224,7 @@ class ResultsTreeCoordinator:
                     or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
                 )
                 self._open_url(url)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to process results table double click")
 
     def _open_url(self, url: str):
@@ -235,7 +235,7 @@ class ResultsTreeCoordinator:
         """
         try:
             webbrowser.open(url)
-        except Exception:
+        except (OSError, TypeError, ValueError):
             log_exception(logger, "Failed to open URL")
 
     def on_motion(self, event):
@@ -313,7 +313,7 @@ class ResultsTreeCoordinator:
                                     tooltip_lines.append(
                                         f"Max altitude: {max_alt.degree:.1f}°"
                                     )
-                            except Exception:
+                            except (AttributeError, TypeError, ValueError):
                                 log_exception(
                                     logger, "Failed to compute tooltip altitude values"
                                 )
@@ -322,7 +322,7 @@ class ResultsTreeCoordinator:
                         self.show_tooltip(
                             event.x_root, event.y_root, "\n".join(tooltip_lines)
                         )
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to process results hover tooltip")
 
     def on_leave(self, event=None):
@@ -375,7 +375,7 @@ class ResultsTreeCoordinator:
                 font=("TkDefaultFont", 9),
             )
             label.pack()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to show tooltip")
 
     def hide_tooltip(self):
@@ -385,5 +385,5 @@ class ResultsTreeCoordinator:
                 self.tooltip_window.destroy()
                 self.tooltip_window = None
             self.tooltip_item = None
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to hide tooltip")

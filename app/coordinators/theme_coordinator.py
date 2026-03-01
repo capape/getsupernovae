@@ -95,7 +95,7 @@ class ThemeCoordinator:
 
             # Reapply tags to all existing items to preserve bright highlighting
             self.reapply_tree_tags()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to configure results tree styling")
 
     def reapply_tree_tags(self):
@@ -125,9 +125,9 @@ class ThemeCoordinator:
                             tag = "evenrow" if index % 2 == 0 else "oddrow"
 
                         tree.item(item, tags=(tag,))
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to reapply tree tag for item")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to reapply tree tags")
 
     def apply_theme(self):
@@ -136,7 +136,7 @@ class ThemeCoordinator:
             # Persist dark mode preference when changed
             try:
                 self.on_persist_prefs()
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(
                     logger, "Failed to persist preferences during theme apply"
                 )
@@ -144,9 +144,9 @@ class ThemeCoordinator:
             style = ttk.Style()
             try:
                 style.theme_use("clam")
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to apply ttk theme 'clam'")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             style = None
 
         dark = self.get_dark_mode()
@@ -195,13 +195,13 @@ class ThemeCoordinator:
                         else THEME_COLORS.LIGHT_SELECTION
                     )
                     style.map("Treeview", background=[("selected", sel_color)])
-                except Exception:
+                except (AttributeError, tk.TclError):
                     log_exception(logger, "Failed to map Treeview selection color")
                 try:
                     # also set the main window background for non-ttk widgets
                     try:
                         self.root.configure(background=bg)
-                    except Exception:
+                    except (AttributeError, tk.TclError):
                         log_exception(
                             logger, "Failed to configure root window background"
                         )
@@ -210,17 +210,17 @@ class ThemeCoordinator:
                         tree = self.get_results_tree()
                         if tree is not None:
                             tree.configure(style="Treeview")
-                    except Exception:
+                    except (AttributeError, tk.TclError):
                         log_exception(logger, "Failed to configure results tree style")
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError):
                     log_exception(logger, "Failed while applying non-ttk theme updates")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to apply ttk theme configuration")
 
         # Reapply results tree styling after theme change
         try:
             self.configure_results_tree_styling()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(
                 logger, "Failed to reconfigure results tree after theme change"
             )
@@ -228,7 +228,7 @@ class ThemeCoordinator:
         try:
             if bg:
                 self.root.configure(bg=bg)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to set root background color")
 
         # Update some known frames/widgets that are not styled by ttk
@@ -240,7 +240,7 @@ class ThemeCoordinator:
                     # Many ttk/native widgets do not expose a `background` option.
                     # This is expected and should not be logged as an error.
                     continue
-                except Exception:
+                except (AttributeError, TypeError):
                     log_exception(logger, "Failed to configure child widget background")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to apply theme to child widgets")

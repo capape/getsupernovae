@@ -76,7 +76,7 @@ class FileRochesterProvider(RochesterProvider):
         try:
             with open(self.source, "rb") as fh:
                 html = fh.read()
-        except Exception:
+        except (OSError, IOError):
             # propagate error to caller
             raise
 
@@ -110,7 +110,7 @@ class NetworkRochesterProvider(RochesterProvider):
             ) as resp:
                 html = resp.read()
 
-        except Exception:
+        except (OSError, IOError, urllib.error.URLError):
             raise
 
         # parse using RochesterProvider

@@ -65,7 +65,7 @@ class ReportCoordinator:
         if not self.has_results():
             try:
                 self.on_search_async(search_criteria, "PDF")
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to trigger search for PDF generation")
             return
 
@@ -102,7 +102,7 @@ class ReportCoordinator:
             # Show success message and offer to open file
             self._handle_pdf_success(pdf_path)
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError, OSError, IOError):
             log_exception(logger, "Failed to generate PDF report")
 
     def generate_txt_report(self, search_criteria):
@@ -118,7 +118,7 @@ class ReportCoordinator:
         if not self.has_results():
             try:
                 self.on_search_async(search_criteria, "TXT")
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to trigger search for TXT generation")
             return
 
@@ -152,7 +152,7 @@ class ReportCoordinator:
                 getattr(search_criteria, "visibilityWindowName", None),
             )
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError, OSError, IOError):
             log_exception(logger, "Failed to generate TXT report")
 
     def _handle_pdf_success(self, pdf_path: str):
@@ -180,7 +180,7 @@ class ReportCoordinator:
             if should_open:
                 self._open_file(pdf_path)
 
-        except Exception:
+        except (AttributeError, TypeError, ImportError):
             log_exception(logger, "Failed to handle PDF success dialog")
 
     def _open_file(self, file_path: str):
@@ -197,7 +197,7 @@ class ReportCoordinator:
                     subprocess.run(["xdg-open", file_path])
                 else:
                     subprocess.run(["open", file_path])
-        except Exception as ex:
+        except (OSError, subprocess.CalledProcessError, FileNotFoundError) as ex:
             if self.on_show_warning:
                 from app.i18n import _
 

@@ -26,7 +26,7 @@ def parse_magnitude(text: str) -> Tuple[Optional[float], Optional[str]]:
     limit = m.group(1) or None
     try:
         val = float(m.group(2))
-    except Exception:
+    except (ValueError, TypeError):
         return None, limit
     return val, limit
 
@@ -48,14 +48,14 @@ def parse_date(text: str):
         try:
             dt = datetime.strptime(s, fmt).date()
             return dt, dt.strftime("%Y-%m-%d")
-        except Exception:
+        except (ValueError, TypeError):
             continue
 
     s2 = s.replace("/", "-").replace(".", "-")
     try:
         dt = datetime.strptime(s2, "%Y-%m-%d").date()
         return dt, dt.strftime("%Y-%m-%d")
-    except Exception:
+    except (ValueError, TypeError):
         return None, None
 
 
@@ -67,7 +67,7 @@ def format_iso_datetime(obj):
         if hasattr(obj, "to_datetime"):
             dt = obj.to_datetime()
             return dt.strftime("%Y-%m-%d %H:%M")
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
         pass
 
     try:
@@ -75,7 +75,7 @@ def format_iso_datetime(obj):
             return obj.strftime("%Y-%m-%d %H:%M")
         # fallback: return string as-is
         return str(obj)
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return ""
 
 
@@ -120,7 +120,7 @@ def _parse_row_safe(row: Tag):
         try:
             # pylint: disable=no-member  # astropy.units members exist at runtime
             coord = SkyCoord(ra_text, dec_text, frame="icrs", unit=(u.hourangle, u.deg))
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return None
 
         return {
@@ -142,5 +142,5 @@ def _parse_row_safe(row: Tag):
             "coord": coord,
         }
 
-    except Exception:
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError):
         return None

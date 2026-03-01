@@ -56,14 +56,14 @@ class SitesDialog(tk.Toplevel):
                 lon = float(v.get("lon"))
                 h = float(v.get("height", 0.0))
                 return {"lat": lat, "lon": lon, "height": h}
-        except Exception:
+        except (ValueError, TypeError, KeyError):
             pass
         try:
             lat = float(v.lat.value)
             lon = float(v.lon.value)
             h = float(v.height.value)
             return {"lat": lat, "lon": lon, "height": h}
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return {"lat": 0.0, "lon": 0.0, "height": 0.0}
 
     def _determine_path(self):
@@ -78,7 +78,7 @@ class SitesDialog(tk.Toplevel):
             return (
                 os.path.join(cfgdir, "sites.json") if self.path is None else self.path
             )
-        except Exception:
+        except (OSError, IOError):
             return (
                 os.path.join(os.path.dirname(__file__), "sites.json")
                 if self.path is None
@@ -102,7 +102,7 @@ class SitesDialog(tk.Toplevel):
                         }
                         for k, v in self._original_sites.items()
                     }
-        except Exception:
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
             current = {
                 k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value}
                 for k, v in self._original_sites.items()
@@ -110,13 +110,13 @@ class SitesDialog(tk.Toplevel):
 
         try:
             current = {k: self._normalize_site_info(v) for k, v in current.items()}
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             current = {}
         try:
             for k, v in self._original_sites.items():
                 if k not in current:
                     current[k] = self._normalize_site_info(v)
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             pass
 
         return current

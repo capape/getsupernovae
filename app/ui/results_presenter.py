@@ -23,7 +23,7 @@ def _format_time_obj(t: Any) -> str:
             return parts[1]
         if len(s) >= 5:
             return s[-5:]
-    except Exception:
+    except (AttributeError, TypeError, ValueError, IndexError):
         pass
     return ""
 
@@ -39,7 +39,7 @@ def format_observation_time(visibility: Any) -> str:
         tfrom = getattr(az[0], "time", None)
         tto = getattr(az[-1], "time", None)
         return f"{_format_time_obj(tfrom)} - {_format_time_obj(tto)}".strip(" -")
-    except Exception:
+    except (AttributeError, TypeError, IndexError):
         return ""
 
 
@@ -52,10 +52,10 @@ def format_ra_dec(coord: Optional[SkyCoord]) -> Tuple[str, str]:
         ra = coord.ra.to_string(unit=u.hour, sep=":", precision=1)
         dec = coord.dec.to_string(unit=u.degree, sep=":", precision=1, alwayssign=True)
         return ra, dec
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
         try:
             return str(coord.ra), str(coord.dec)
-        except Exception:
+        except (AttributeError, TypeError):
             return "", ""
 
 
@@ -66,7 +66,7 @@ def format_magnitude(mag: Any) -> str:
     try:
         mv = float(mag)
         return f"{mv:.1f}"
-    except Exception:
+    except (ValueError, TypeError):
         return str(mag)
 
 
@@ -94,7 +94,7 @@ class ResultsPresenter:
                     max_alt = summary.get("maxAlt")
             if max_alt is not None:
                 obs_time = f"{obs_time} (maxAlt: {float(max_alt):.1f}°)"
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             pass
         host = getattr(sn, "host", "") or ""
         constellation = getattr(sn, "constellation", "") or ""

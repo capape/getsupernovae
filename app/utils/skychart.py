@@ -57,12 +57,12 @@ def make_sky_chart(
             if ra and dec:
                 try:
                     center = SkyCoord(ra, dec, frame="icrs", unit=(u.hourangle, u.deg))
-                except Exception:
+                except (ValueError, TypeError, AttributeError):
                     logger.exception(
                         "failed to create SkyCoord for %s", getattr(data, "name", None)
                     )
                     center = None
-    except Exception:
+    except (AttributeError, TypeError):
         logger.exception(
             "error obtaining center coordinates for %s", getattr(data, "name", None)
         )
@@ -156,7 +156,7 @@ def make_sky_chart(
                 return Angle(x * u.deg).to_string(
                     unit=u.hourangle, sep=":", precision=0
                 )
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
         def dec_formatter(x, pos=None):
@@ -165,7 +165,7 @@ def make_sky_chart(
                 return Angle(x * u.deg).to_string(
                     unit=u.deg, sep=":", precision=0, alwayssign=True
                 )
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
         ax.xaxis.set_major_formatter(FuncFormatter(ra_formatter))
@@ -193,7 +193,7 @@ def make_sky_chart(
             plt.close(fig)
             bio.seek(0)
             return ImageReader(bio)
-    except Exception:
+    except (OSError, ValueError, TypeError):
         logger.exception(
             "failed to generate sky chart for %s", getattr(data, "name", None)
         )
@@ -208,6 +208,6 @@ def _mag_to_marker_size(mags):
         arr = _np.nan_to_num(arr, nan=99.0)
         sizes = 30.0 * (1.0 - (_np.clip(arr, 0, 17) / 17.0)) + 2.0
         return sizes
-    except Exception:
+    except (ValueError, TypeError, ImportError):
         logger.exception("error computing marker sizes from mags")
         return 4.0

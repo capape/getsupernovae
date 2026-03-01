@@ -90,7 +90,7 @@ class ResultsPanelManager:
         try:
             self.parent.grid_columnconfigure(3, weight=1)
             self.parent.grid_rowconfigure(1, weight=1)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to configure results panel grid weights")
 
     def _build_results_label(self) -> None:
@@ -99,7 +99,7 @@ class ResultsPanelManager:
             label = ttk.Label(self.parent, text=_("Results: "))
             label.grid(column=3, row=0, padx=5, pady=5, sticky=tk.W)
             self.widgets['label_results'] = label
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build results label")
 
     def _build_results_tree(self) -> None:
@@ -184,7 +184,7 @@ class ResultsPanelManager:
             tree.bind("<Leave>", self.callbacks.on_leave)
             tree.bind("<<TreeviewSelect>>", self.callbacks.on_selection_change)
 
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build results tree")
 
     def _build_action_buttons(self) -> None:
@@ -228,7 +228,7 @@ class ResultsPanelManager:
             try:
                 self.parent.grid_rowconfigure(15, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
                 self.parent.grid_rowconfigure(16, minsize=UI_CONSTANTS.MIN_ROW_SIZE)
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to configure exit button spacing rows")
 
             exit_btn.grid(
@@ -240,7 +240,7 @@ class ResultsPanelManager:
             )
             self.widgets['button_exit'] = exit_btn
 
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build results action buttons")
 
     def _build_progress_bar(self) -> None:
@@ -252,7 +252,7 @@ class ResultsPanelManager:
                 length=UI_CONSTANTS.PROGRESS_BAR_LENGTH
             )
             self.widgets['progress_bar'] = progress
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build progress bar")
 
     def get_tree(self) -> Optional[ttk.Treeview]:
@@ -271,7 +271,7 @@ class ResultsPanelManager:
                 for item in tree.get_children():
                     tree.delete(item)
             self.supernova_data.clear()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to clear results tree")
 
     def add_tree_item(self, values: tuple, tags: tuple = ()) -> Optional[str]:
@@ -288,7 +288,7 @@ class ResultsPanelManager:
             tree = self.get_tree()
             if tree:
                 return tree.insert('', 'end', values=values, tags=tags)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to add item to results tree")
         return None
 
@@ -302,7 +302,7 @@ class ResultsPanelManager:
         try:
             if button_name in self.widgets:
                 self.widgets[button_name]['state'] = state
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, f"Failed to set button state: {button_name}")
 
     def start_progress_bar(self) -> None:
@@ -312,7 +312,7 @@ class ResultsPanelManager:
                 progress = self.widgets['progress_bar']
                 progress.grid(column=3, row=10, columnspan=2, sticky="ew")
                 progress.start()  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, tk.TclError, KeyError):
             log_exception(logger, "Failed to start progress bar")
 
     def stop_progress_bar(self) -> None:
@@ -322,7 +322,7 @@ class ResultsPanelManager:
                 progress = self.widgets['progress_bar']
                 progress.stop()  # type: ignore[attr-defined]
                 progress.grid_forget()
-        except Exception:
+        except (AttributeError, tk.TclError, KeyError):
             log_exception(logger, "Failed to stop progress bar")
 
     def get_selection(self) -> list:
@@ -335,7 +335,7 @@ class ResultsPanelManager:
             tree = self.get_tree()
             if tree:
                 return list(tree.selection())
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to get tree selection")
         return []
 
@@ -349,7 +349,7 @@ class ResultsPanelManager:
             tree = self.get_tree()
             if tree:
                 return tree.get_children('')
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to get tree children")
         return ()
 
@@ -384,7 +384,7 @@ class ResultsPanelManager:
                 tree.heading("rochester", text=_("Rochester"))
                 tree.heading("tns", text=_("TNS"))
 
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to refresh results panel labels")
 
     def update_idletasks(self) -> None:
@@ -393,5 +393,5 @@ class ResultsPanelManager:
             for widget in self.widgets.values():
                 if hasattr(widget, 'update_idletasks'):
                     widget.update_idletasks()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to update results panel idletasks")

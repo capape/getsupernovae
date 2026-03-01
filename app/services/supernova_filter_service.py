@@ -78,7 +78,7 @@ class SupernovaFilterService:
         """
         try:
             from_date_obj = parse_date(from_date)[0]
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             # If date parsing fails, return all supernovae
             return supernovae
 
@@ -160,7 +160,7 @@ class SupernovaFilterService:
 
                 if visibility.visible:
                     visible.append((sn, visibility))
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 # Skip supernovae with invalid coordinates or visibility calculation errors
                 continue
 
