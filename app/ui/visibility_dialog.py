@@ -3,6 +3,7 @@
 Provides `VisibilityDialog` which extracts the inline editor from
 `getsupernovae.on_add_visibility_window` into a testable component.
 """
+# pylint: disable=duplicate-code  # Similar UI patterns to sites_dialog
 
 import json
 import os
