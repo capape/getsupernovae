@@ -57,9 +57,7 @@ class TestSearchState(unittest.TestCase):
 
     def test_to_dict(self):
         """Test serialization to dictionary."""
-        state = SearchState(
-            magnitude="16.0", site="Test Site", visibility_window="Evening"
-        )
+        state = SearchState(magnitude="16.0", site="Test Site", visibility_window="Evening")
         result = state.to_dict()
 
         self.assertIsInstance(result, dict)
@@ -251,9 +249,7 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_initial_custom_state(self):
         """Test manager can start with custom state."""
-        custom_state = AppState(
-            search=SearchState(magnitude="16.0"), ui=UIState(language="es")
-        )
+        custom_state = AppState(search=SearchState(magnitude="16.0"), ui=UIState(language="es"))
         manager = AppStateManager(initial_state=custom_state)
 
         self.assertEqual(manager.state.search.magnitude, "16.0")
@@ -357,9 +353,7 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_update_search_state(self):
         """Test updating search state."""
-        self.manager.update_search_state(
-            magnitude="16.0", days_to_search="45", site="Observatory"
-        )
+        self.manager.update_search_state(magnitude="16.0", days_to_search="45", site="Observatory")
 
         self.assertEqual(self.manager.state.search.magnitude, "16.0")
         self.assertEqual(self.manager.state.search.days_to_search, "45")

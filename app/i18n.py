@@ -32,9 +32,7 @@ def set_language(lang: Optional[str]) -> None:
         _current_language = None
     else:
         try:
-            _current_trans = gettext.translation(
-                DOMAIN, LOCALEDIR, languages=[lang], fallback=True
-            )
+            _current_trans = gettext.translation(DOMAIN, LOCALEDIR, languages=[lang], fallback=True)
             _current_language = lang
         except (OSError, IOError, ValueError):
             _current_trans = gettext.NullTranslations()

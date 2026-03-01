@@ -10,7 +10,7 @@ try:
     from astroquery.vizier import Vizier
 
     HAS_ASTROQUERY = True
-except Exception as e:
+except (ImportError, ModuleNotFoundError, AttributeError) as e:
     # Log the import failure so frozen executables expose the root cause
     logging.getLogger(__name__).exception("astroquery.vizier import failed: %s", e)
     HAS_ASTROQUERY = False

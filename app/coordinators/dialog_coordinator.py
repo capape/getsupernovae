@@ -134,7 +134,7 @@ class DialogCoordinator:
                     self.on_search_async({}, "REFRESH")
                 except (AttributeError, TypeError):
                     log_exception(logger, "Failed to refresh after adding ignored supernova")
-        except Exception as ex:
+        except (OSError, IOError, PermissionError, UnicodeEncodeError) as ex:
             self.on_show_error(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
 
     def edit_old_supernovae(self):
@@ -238,7 +238,7 @@ class DialogCoordinator:
                         self.on_search_async({}, "REFRESH")
                     except (AttributeError, TypeError):
                         log_exception(logger, "Failed to refresh after editing ignored supernovae")
-            except Exception as ex:
+            except (OSError, IOError, PermissionError, UnicodeEncodeError) as ex:
                 self.on_show_error(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
 
         # Close handler

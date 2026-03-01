@@ -51,9 +51,7 @@ class VisibilityPlotter:
         self.height_cm = height_cm
         self.dpi = dpi
 
-    def make_image(
-        self, data, fmt: str = "png", show_moon: bool = False, location=None
-    ):
+    def make_image(self, data, fmt: str = "png", show_moon: bool = False, location=None):
         """Render the visibility plot.
 
         Args:
@@ -77,9 +75,7 @@ class VisibilityPlotter:
                 try:
                     dt = ac.time.to_datetime()
                 except (AttributeError, TypeError, ValueError):
-                    dt = datetime.strptime(
-                        format_iso_datetime(ac.time), "%Y-%m-%dT%H:%M:%SZ"
-                    )
+                    dt = datetime.strptime(format_iso_datetime(ac.time), "%Y-%m-%dT%H:%M:%SZ")
                 times.append(dt)
                 alts.append(ac.coord.alt.to_value(u.deg))
 

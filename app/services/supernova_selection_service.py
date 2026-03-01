@@ -7,7 +7,9 @@ supernovae.
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Dict, List, Optional
+
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
@@ -31,7 +33,7 @@ class SupernovaSelectionService:
     def __init__(
         self,
         filter_service: Optional[SupernovaFilterService] = None,
-        visibility_windows: Optional[Dict[str, Dict[str, float]]] = None
+        visibility_windows: Optional[Dict[str, Dict[str, float]]] = None,
     ):
         """Initialize the selection service.
 
@@ -40,15 +42,12 @@ class SupernovaSelectionService:
             visibility_windows: Optional dictionary of named visibility window configs.
         """
         self.filter_service = (
-            filter_service if filter_service is not None
-            else SupernovaFilterService()
+            filter_service if filter_service is not None else SupernovaFilterService()
         )
         self.visibility_windows = visibility_windows or {}
 
     def get_visibility_window_params(
-        self,
-        visibility_window_name: Optional[str],
-        fallback_min_latitude: float
+        self, visibility_window_name: Optional[str], fallback_min_latitude: float
     ) -> tuple[float, float, float, float]:
         """Extract visibility window parameters from configuration or fallback.
 
@@ -85,7 +84,7 @@ class SupernovaSelectionService:
         exclusion_list: set,
         visibility_window_name: Optional[str] = None,
         min_latitude: float = 0.0,
-        visibility_factory=None
+        visibility_factory=None,
     ) -> List[Supernova]:
         """Select and sort supernovae based on observation criteria.
 
@@ -116,8 +115,7 @@ class SupernovaSelectionService:
 
         # Get visibility window parameters
         min_alt, max_alt, min_az, max_az = self.get_visibility_window_params(
-            visibility_window_name,
-            min_latitude
+            visibility_window_name, min_latitude
         )
 
         # Apply all filters using the filter service
@@ -133,7 +131,7 @@ class SupernovaSelectionService:
             max_altitude=max_alt,
             min_azimuth=min_az,
             max_azimuth=max_az,
-            visibility_factory=visibility_factory
+            visibility_factory=visibility_factory,
         )
 
         # Convert to domain models
@@ -157,33 +155,28 @@ class SupernovaSelectionService:
         Returns:
             Sorted list of supernovae
         """
+
         def get_observation_times(sn: Supernova) -> tuple[float, float]:
             """Extract start and end times from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, 'azCords') and sn.visibility.azCords:
+                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
                     az_coords = sn.visibility.azCords
                     if len(az_coords) > 0:
                         start_time = (
-                            az_coords[0].time
-                            if hasattr(az_coords[0], 'time')
-                            else float('inf')
+                            az_coords[0].time if hasattr(az_coords[0], "time") else float("inf")
                         )
                         end_time = (
-                            az_coords[-1].time
-                            if hasattr(az_coords[-1], 'time')
-                            else float('inf')
+                            az_coords[-1].time if hasattr(az_coords[-1], "time") else float("inf")
                         )
                         return (start_time, end_time)
             except (AttributeError, IndexError, TypeError):
                 pass
-            return (float('inf'), float('inf'))
+            return (float("inf"), float("inf"))
 
         return sorted(supernovae, key=get_observation_times)
 
     def sort_by_max_altitude(
-        self,
-        supernovae: List[Supernova],
-        reverse: bool = True
+        self, supernovae: List[Supernova], reverse: bool = True
     ) -> List[Supernova]:
         """Sort supernovae by maximum altitude during observation window.
 
@@ -196,13 +189,14 @@ class SupernovaSelectionService:
         Returns:
             Sorted list of supernovae
         """
+
         def get_max_altitude(sn: Supernova) -> float:
             """Extract maximum altitude from visibility data."""
             try:
-                if sn.visibility and hasattr(sn.visibility, 'azCords') and sn.visibility.azCords:
+                if sn.visibility and hasattr(sn.visibility, "azCords") and sn.visibility.azCords:
                     altitudes = []
                     for coord in sn.visibility.azCords:
-                        if hasattr(coord, 'coord') and hasattr(coord.coord, 'alt'):
+                        if hasattr(coord, "coord") and hasattr(coord.coord, "alt"):
                             altitudes.append(coord.coord.alt.degree)
 
                     if altitudes:
@@ -213,10 +207,7 @@ class SupernovaSelectionService:
 
         return sorted(supernovae, key=get_max_altitude, reverse=reverse)
 
-    def group_by_constellation(
-        self,
-        supernovae: List[Supernova]
-    ) -> Dict[str, List[Supernova]]:
+    def group_by_constellation(self, supernovae: List[Supernova]) -> Dict[str, List[Supernova]]:
         """Group supernovae by constellation.
 
         This can be useful for planning observations or creating finding charts
@@ -241,7 +232,7 @@ class SupernovaSelectionService:
         self,
         supernovae: List[Supernova],
         min_altitude: float = 30.0,
-        min_observation_duration_minutes: float = 30.0
+        min_observation_duration_minutes: float = 30.0,
     ) -> List[Supernova]:
         """Filter supernovae by observation quality criteria.
 
@@ -259,7 +250,7 @@ class SupernovaSelectionService:
         filtered = []
         for sn in supernovae:
             try:
-                if not sn.visibility or not hasattr(sn.visibility, 'azCords'):
+                if not sn.visibility or not hasattr(sn.visibility, "azCords"):
                     continue
 
                 az_coords = sn.visibility.azCords
@@ -269,18 +260,16 @@ class SupernovaSelectionService:
                 # Check maximum altitude
                 altitudes = []
                 for coord in az_coords:
-                    if hasattr(coord, 'coord') and hasattr(coord.coord, 'alt'):
+                    if hasattr(coord, "coord") and hasattr(coord.coord, "alt"):
                         altitudes.append(coord.coord.alt.degree)
 
                 if not altitudes or max(altitudes) < min_altitude:
                     continue
 
                 # Check observation duration
-                if hasattr(az_coords[0], 'time') and hasattr(az_coords[-1], 'time'):
+                if hasattr(az_coords[0], "time") and hasattr(az_coords[-1], "time"):
                     # Convert days to minutes
-                    duration_minutes = (
-                        (az_coords[-1].time - az_coords[0].time) * 60 * 24
-                    )
+                    duration_minutes = (az_coords[-1].time - az_coords[0].time) * 60 * 24
                     if duration_minutes < min_observation_duration_minutes:
                         continue
 

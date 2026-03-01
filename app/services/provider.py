@@ -1,4 +1,5 @@
 """Provider module for fetching supernova data from various sources."""
+
 import urllib.request
 from typing import List, Protocol
 
@@ -105,9 +106,7 @@ class NetworkRochesterProvider(RochesterProvider):
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
-            with urllib.request.urlopen(
-                source, context=ctx, timeout=self.timeout
-            ) as resp:
+            with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
                 html = resp.read()
 
         except (OSError, IOError, urllib.error.URLError):

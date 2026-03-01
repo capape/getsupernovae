@@ -150,9 +150,7 @@ class TestFilterPanelManager(unittest.TestCase):
         ]
 
         for widget_name in expected_widgets:
-            self.assertIn(
-                widget_name, manager.widgets, f"Missing widget: {widget_name}"
-            )
+            self.assertIn(widget_name, manager.widgets, f"Missing widget: {widget_name}")
 
     def test_magnitude_entry_linked_to_variable(self):
         """Test that magnitude entry is properly linked to its variable."""

@@ -5,6 +5,7 @@ This is the main entry point for the Get Supernovae application, a tkinter-based
 desktop application that fetches and displays supernova data from online sources,
 calculates visibility windows, and generates observation reports.
 """
+
 # Check supernova data
 #
 
@@ -215,6 +216,7 @@ class RochesterSupernova:
 
 class SearchFilters:
     """Data class to hold supernova search filter parameters."""
+
     def __init__(
         self,
         magnitude: str,
@@ -241,6 +243,7 @@ class SupernovasApp(tk.Tk):
 
     Many attributes are initialized by InitializationBuilder.build().
     """
+
     # Type hints for attributes set by InitializationBuilder
     report_coordinator: "ReportCoordinator"
     search_coordinator: "SearchCoordinator"

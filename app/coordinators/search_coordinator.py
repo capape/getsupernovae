@@ -50,9 +50,7 @@ class AsyncRochesterDownload(Thread):
         self.rochester_supernova = rochester_supernova
         self.visibility_factory = visibility_factory
         self.provider_factory = (
-            provider_factory
-            if provider_factory is not None
-            else NetworkRochesterProvider
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
         )
         self.reporter = reporter
         self.dto_list = None
@@ -126,9 +124,7 @@ class SearchCoordinator:
             visibility_factory if visibility_factory is not None else VisibilityWindow
         )
         self.provider_factory = (
-            provider_factory
-            if provider_factory is not None
-            else NetworkRochesterProvider
+            provider_factory if provider_factory is not None else NetworkRochesterProvider
         )
         self.reporter = reporter
 
@@ -310,9 +306,7 @@ class SearchCoordinator:
                 self._cleanup_after_search(source)
 
         except (AttributeError, TypeError, KeyError):
-            log_exception(
-                logger, f"Failed to handle thread completion for source={source}"
-            )
+            log_exception(logger, f"Failed to handle thread completion for source={source}")
             self._cleanup_after_search(source)
         finally:
             # Always stop progress indicator

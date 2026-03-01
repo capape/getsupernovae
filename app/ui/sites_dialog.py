@@ -391,7 +391,7 @@ class SitesDialog(tk.Toplevel):
                 load_sites()
             except (OSError, IOError, ValueError, TypeError):
                 pass
-        except Exception as e:
+        except (OSError, IOError, PermissionError, ValueError, TypeError) as e:
             messagebox.showerror(
                 _("Error"), _("Failed to save site: {e}").format(e=e), parent=self
             )
@@ -440,7 +440,7 @@ class SitesDialog(tk.Toplevel):
             if nm in self._current:
                 del self._current[nm]
             self._persist_current()
-        except Exception as e:
+        except (OSError, IOError, PermissionError, ValueError, TypeError, KeyError) as e:
             messagebox.showerror(
                 _("Error"), _("Failed to delete site: {e}").format(e=e), parent=self
             )

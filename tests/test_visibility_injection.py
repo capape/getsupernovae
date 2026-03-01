@@ -38,9 +38,7 @@ def test_rochester_uses_injected_visibility_factory():
         mag=15.3,
         date="2025/12/01",
         date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
-        coordinates=SkyCoord(
-            "12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)
-        ),
+        coordinates=SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
         type="Ia",
     )
     snList.append(sn)

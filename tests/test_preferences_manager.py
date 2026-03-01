@@ -66,9 +66,7 @@ class TestPreferencesManager(unittest.TestCase):
     def test_save_preserves_data(self):
         """Test saved data can be read back."""
         state = AppState(
-            search=SearchState(
-                magnitude="15.5", site="Observatory", visibility_window="Evening"
-            ),
+            search=SearchState(magnitude="15.5", site="Observatory", visibility_window="Evening"),
             ui=UIState(language="ca", dark_mode=True),
         )
 
@@ -124,9 +122,7 @@ class TestPreferencesManager(unittest.TestCase):
 
     def test_get_preference_not_found(self):
         """Test getting non-existent preference returns default."""
-        value = self.manager.get_preference(
-            "search.nonexistent", default="default_value"
-        )
+        value = self.manager.get_preference("search.nonexistent", default="default_value")
         self.assertEqual(value, "default_value")
 
     def test_get_preference_no_file(self):

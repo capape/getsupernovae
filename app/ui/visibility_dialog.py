@@ -6,14 +6,12 @@ Provides `VisibilityDialog` which extracts the inline editor from
 
 import json
 import os
-from typing import Dict, Optional
-
 import tkinter as tk
 from tkinter import messagebox, ttk
-
-from app.i18n import _
+from typing import Dict, Optional
 
 from app.config.snconfig import get_user_config_dir, load_visibility_windows
+from app.i18n import _
 
 
 class VisibilityDialog(tk.Toplevel):
@@ -60,9 +58,15 @@ class VisibilityDialog(tk.Toplevel):
         try:
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
-            return os.path.join(cfgdir, "visibility_windows.json") if self.path is None else self.path
+            return (
+                os.path.join(cfgdir, "visibility_windows.json") if self.path is None else self.path
+            )
         except (OSError, IOError):
-            return os.path.join(os.path.dirname(__file__), "visibility_windows.json") if self.path is None else self.path
+            return (
+                os.path.join(os.path.dirname(__file__), "visibility_windows.json")
+                if self.path is None
+                else self.path
+            )
 
     def _normalize(self, v):
         try:
@@ -94,9 +98,18 @@ class VisibilityDialog(tk.Toplevel):
         try:
             style = ttk.Style()
             style.configure("VisTreeview.Treeview", rowheight=26)
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", style="VisTreeview.Treeview", height=12)
+            self.tree = ttk.Treeview(
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                style="VisTreeview.Treeview",
+                height=12,
+            )
         except (AttributeError, tk.TclError):
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", height=12)
+            self.tree = ttk.Treeview(
+                frame_left, columns=self.columns, show="headings", selectmode="browse", height=12
+            )
         for col in self.columns:
             self.tree.heading(col, text=col.capitalize())
             self.tree.column(col, width=100, anchor=tk.CENTER)
@@ -111,23 +124,41 @@ class VisibilityDialog(tk.Toplevel):
 
         ttk.Label(frame_right, text=_("Name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
         self.name_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(
+            column=1, row=0, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Min Alt (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Min Alt (deg):")).grid(
+            column=0, row=1, sticky=tk.E, padx=5, pady=5
+        )
         self.minalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.minalt_var, width=20).grid(column=1, row=1, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.minalt_var, width=20).grid(
+            column=1, row=1, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Max Alt (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Max Alt (deg):")).grid(
+            column=0, row=2, sticky=tk.E, padx=5, pady=5
+        )
         self.maxalt_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.maxalt_var, width=20).grid(column=1, row=2, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.maxalt_var, width=20).grid(
+            column=1, row=2, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Min Az (deg):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Min Az (deg):")).grid(
+            column=0, row=3, sticky=tk.E, padx=5, pady=5
+        )
         self.minaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.minaz_var, width=20).grid(column=1, row=3, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.minaz_var, width=20).grid(
+            column=1, row=3, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Max Az (deg):")).grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Max Az (deg):")).grid(
+            column=0, row=4, sticky=tk.E, padx=5, pady=5
+        )
         self.maxaz_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.maxaz_var, width=20).grid(column=1, row=4, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.maxaz_var, width=20).grid(
+            column=1, row=4, padx=5, pady=5
+        )
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
@@ -151,12 +182,22 @@ class VisibilityDialog(tk.Toplevel):
                 xa = float(info.get("maxAlt", 90.0))
                 mz = float(info.get("minAz", 0.0))
                 xz = float(info.get("maxAz", 360.0))
-                self.tree.insert("", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}"))
+                self.tree.insert(
+                    "", "end", values=(nm, f"{ma:.1f}", f"{xa:.1f}", f"{mz:.1f}", f"{xz:.1f}")
+                )
             except (ValueError, TypeError, KeyError, AttributeError):
                 self.tree.insert("", "end", values=(nm, "", "", "", ""))
 
     def _persist_current(self):
-        normalized = {k: {"minAlt": float(v.get("minAlt", 0.0)), "maxAlt": float(v.get("maxAlt", 90.0)), "minAz": float(v.get("minAz", 0.0)), "maxAz": float(v.get("maxAz", 360.0))} for k, v in self._current.items()}
+        normalized = {
+            k: {
+                "minAlt": float(v.get("minAlt", 0.0)),
+                "maxAlt": float(v.get("maxAlt", 90.0)),
+                "minAz": float(v.get("minAz", 0.0)),
+                "maxAz": float(v.get("maxAz", 360.0)),
+            }
+            for k, v in self._current.items()
+        }
         try:
             cfg_dir = get_user_config_dir()
             os.makedirs(cfg_dir, exist_ok=True)
@@ -198,12 +239,18 @@ class VisibilityDialog(tk.Toplevel):
             minz = float(self.minaz_var.get())
             maxz = float(self.maxaz_var.get())
         except (ValueError, TypeError) as e:
-            messagebox.showerror(_("Error"), _("Invalid numeric input: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Invalid numeric input: {e}").format(e=e), parent=self
+            )
             return
 
         old = self._selected_name["value"]
         if nm in self._current and old is not None and nm != old:
-            if not messagebox.askyesno(_("Overwrite"), _("Window '{nm}' already exists. Overwrite?").format(nm=nm), parent=self):
+            if not messagebox.askyesno(
+                _("Overwrite"),
+                _("Window '{nm}' already exists. Overwrite?").format(nm=nm),
+                parent=self,
+            ):
                 return
 
         if old and old != nm and old in self._current:
@@ -217,7 +264,9 @@ class VisibilityDialog(tk.Toplevel):
             self._persist_current()
             global_visibility = load_visibility_windows()
         except (OSError, IOError, TypeError) as e:
-            messagebox.showerror(_("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Failed to save visibility windows: {e}").format(e=e), parent=self
+            )
             return
 
         self._populate_tree()
@@ -235,16 +284,22 @@ class VisibilityDialog(tk.Toplevel):
             minz = float(self.minaz_var.get())
             maxz = float(self.maxaz_var.get())
         except (ValueError, TypeError):
-            messagebox.showerror(_("Invalid input"), _("Numeric fields must be valid numbers."), parent=self)
+            messagebox.showerror(
+                _("Invalid input"), _("Numeric fields must be valid numbers."), parent=self
+            )
             return
         if nm in self._current:
-            messagebox.showerror(_("Invalid input"), _("A window with that name already exists."), parent=self)
+            messagebox.showerror(
+                _("Invalid input"), _("A window with that name already exists."), parent=self
+            )
             return
         self._current[nm] = {"minAlt": mina, "maxAlt": maxa, "minAz": minz, "maxAz": maxz}
         try:
             self._persist_current()
         except (OSError, IOError, TypeError) as e:
-            messagebox.showerror(_("Error"), _("Failed to add window: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Failed to add window: {e}").format(e=e), parent=self
+            )
             return
         self._populate_tree()
         self.result = self._current
@@ -253,14 +308,18 @@ class VisibilityDialog(tk.Toplevel):
         nm = self._selected_name["value"]
         if not nm:
             return
-        if not messagebox.askyesno(_("Delete"), _("Delete visibility window '{nm}'?").format(nm=nm), parent=self):
+        if not messagebox.askyesno(
+            _("Delete"), _("Delete visibility window '{nm}'?").format(nm=nm), parent=self
+        ):
             return
         try:
             if nm in self._current:
                 del self._current[nm]
             self._persist_current()
         except (KeyError, TypeError, OSError, IOError) as e:
-            messagebox.showerror(_("Error"), _("Failed to delete window: {e}").format(e=e), parent=self)
+            messagebox.showerror(
+                _("Error"), _("Failed to delete window: {e}").format(e=e), parent=self
+            )
             return
         self._populate_tree()
         self.result = self._current

@@ -7,13 +7,14 @@ This module provides functions to load configuration from various sources:
 - Bootstrap configuration and directory management
 """
 
-import os
-import sys
 import json
+import os
 import shutil
+import sys
 from collections import OrderedDict
-from astropy.coordinates import EarthLocation
+
 import astropy.units as u
+from astropy.coordinates import EarthLocation
 
 
 def load_old_supernovae(path: str | None = None):
@@ -95,6 +96,7 @@ def load_sites(path: str | None = None):
 
     return result
 
+
 def get_config_candidates(path: str | None, config_file: str):
     candidates = []
     if path:
@@ -103,6 +105,7 @@ def get_config_candidates(path: str | None, config_file: str):
     candidates.append(os.path.join(config_path, config_file))
     # Note: XDG_CONFIG_HOME support could be added here if needed
     return candidates
+
 
 def load_visibility_windows(path: str | None = None):
     defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
@@ -161,9 +164,7 @@ def bootstrap_config():
     old_path = os.path.join(cfg, "old_supernovae.txt")
 
     # default sites
-    default_sites = {
-        "Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}
-    }
+    default_sites = {"Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}}
 
     # default old list
     default_old = []
@@ -230,9 +231,7 @@ def save_user_prefs(prefs: dict):
         pass
 
     # default visibility windows
-    default_visibility = {
-        "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
-    }
+    default_visibility = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
     vis_path = os.path.join(cfg, "visibility_windows.json")
     try:
         if not os.path.exists(vis_path):

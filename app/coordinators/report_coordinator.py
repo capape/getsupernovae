@@ -203,9 +203,9 @@ class ReportCoordinator:
 
                 self.on_show_warning(
                     _("Cannot open file"),
-                    _(
-                        "File saved but could not be opened automatically: {error}"
-                    ).format(error=str(ex)),
+                    _("File saved but could not be opened automatically: {error}").format(
+                        error=str(ex)
+                    ),
                 )
             else:
                 log_exception(logger, f"Failed to open file {file_path}")

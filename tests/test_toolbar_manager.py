@@ -76,9 +76,7 @@ class TestToolbarManager(unittest.TestCase):
 
     def test_initialization_without_dark_mode(self):
         """Test ToolbarManager initialization without dark mode variable."""
-        manager = ToolbarManager(
-            parent=self.root, callbacks=self.callbacks, dark_mode=None
-        )
+        manager = ToolbarManager(parent=self.root, callbacks=self.callbacks, dark_mode=None)
 
         self.assertIsNone(manager.dark_mode)
 
@@ -145,9 +143,7 @@ class TestToolbarManager(unittest.TestCase):
 
     def test_build_without_dark_mode_skips_toggle(self):
         """Test that build() skips dark mode toggle when dark_mode is None."""
-        manager = ToolbarManager(
-            parent=self.root, callbacks=self.callbacks, dark_mode=None
-        )
+        manager = ToolbarManager(parent=self.root, callbacks=self.callbacks, dark_mode=None)
 
         manager.build()
 

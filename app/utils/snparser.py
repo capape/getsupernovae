@@ -86,9 +86,7 @@ def _parse_row_safe(row: Tag):
 
     try:
         name_tag = cols[0].find("a")
-        name = (
-            name_tag.get_text(strip=True) if name_tag else cols[0].get_text(strip=True)
-        )
+        name = name_tag.get_text(strip=True) if name_tag else cols[0].get_text(strip=True)
         href = name_tag.get("href") if name_tag else None
         link = None
         if href:
