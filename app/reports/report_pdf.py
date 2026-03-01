@@ -99,10 +99,10 @@ def createPdf(
                     pdfmetrics.registerFont(TTFont("DejaVuSans", fp))
                     used_font = "DejaVuSans"
                     break
-                except Exception:
+                except (OSError, IOError, ValueError, RuntimeError):
                     logger.exception("failed to register font %s", fp)
                     continue
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             logger.exception("unexpected error while checking font candidate %s", fp)
             continue
 
@@ -123,7 +123,7 @@ def createPdf(
                 docs = Path.home() / "Desktop"
             if not docs.exists():
                 docs = Path.cwd()
-        except Exception:
+        except (OSError, AttributeError, RuntimeError):
             logger.exception(
                 "failed to determine Documents/Desktop path on Windows; falling back to cwd"
             )
@@ -134,7 +134,7 @@ def createPdf(
             docs = Path.home() / "Documents"
             if not docs.exists():
                 docs = Path.home()
-        except Exception:
+        except (OSError, AttributeError, RuntimeError):
             logger.exception(
                 "failed to determine Documents/home path; falling back to cwd"
             )
@@ -144,7 +144,7 @@ def createPdf(
     canvas = Canvas(str(pdf_filename), pagesize=A4)
     try:
         canvas.setPageCompression(0)
-    except Exception:
+    except (AttributeError, RuntimeError):
         logger.exception("failed to set page compression (non-fatal)")
     canvas.setFont(used_font, fontsize)
     canvas.setFillColor(black)
@@ -268,13 +268,13 @@ def createPdf(
                 canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
                 canvas.setLineWidth(0.6)
                 canvas.line(marginx, rect_top, marginx + usable_width, rect_top)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 logger.exception(
                     "failed drawing highlight top border for %s",
                     getattr(data, "name", None),
                 )
             canvas.restoreState()
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             logger.exception(
                 "failed drawing highlight box for %s", getattr(data, "name", None)
             )
@@ -316,7 +316,7 @@ def createPdf(
                     relative=0,
                 )
                 canvas.setFillColor(black)
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             logger.exception("failed to draw link for %s", getattr(data, "name", None))
 
         try:
@@ -341,11 +341,11 @@ def createPdf(
                         relative=0,
                     )
                     canvas.setFillColor(black)
-                except Exception:
+                except (AttributeError, TypeError, ValueError, ImportError):
                     logger.exception(
                         "failed to draw tnser link for %s", getattr(data, "name", None)
                     )
-        except Exception:
+        except (AttributeError, TypeError):
             logger.exception(
                 "error while attempting to add tnser link for %s",
                 getattr(data, "name", None),
@@ -353,7 +353,7 @@ def createPdf(
 
         try:
             sky_img = make_sky_chart(data, fmt="png")
-        except Exception:
+        except (OSError, ValueError, TypeError, AttributeError, ImportError):
             logger.exception(
                 "make_sky_chart raised an exception for %s", getattr(data, "name", None)
             )
@@ -398,7 +398,7 @@ def createPdf(
                     if sky_x + sky_w > marginx + usable_width:
                         sky_w = marginx + usable_width - sky_x
                     canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
-            except Exception:
+            except (AttributeError, TypeError, ValueError, OSError):
                 logger.exception(
                     "failed to draw images for %s", getattr(data, "name", None)
                 )

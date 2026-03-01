@@ -140,7 +140,7 @@ class SitesDialog(tk.Toplevel):
                 style="SiteTreeview.Treeview",
                 height=12,
             )
-        except Exception:
+        except (AttributeError, tk.TclError):
             self.tree = ttk.Treeview(
                 frame_left,
                 columns=self.columns,
@@ -215,7 +215,7 @@ class SitesDialog(tk.Toplevel):
         # try to align dialog visual theme to parent application
         try:
             self._apply_parent_theme()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             pass
 
     def _apply_parent_theme(self):
@@ -238,7 +238,7 @@ class SitesDialog(tk.Toplevel):
                 rowh = tree_cfg.get("rowheight")
                 if rowh:
                     style.configure("SiteTreeview.Treeview", rowheight=rowh)
-            except Exception:
+            except (AttributeError, tk.TclError, KeyError):
                 pass
 
             # set dialog background to match parent if available
@@ -246,9 +246,9 @@ class SitesDialog(tk.Toplevel):
                 bg = self.parent.cget("bg")
                 if bg:
                     self.configure(bg=bg)
-            except Exception:
+            except (AttributeError, tk.TclError):
                 pass
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             pass
 
     def _autosize_columns(self):
@@ -256,7 +256,7 @@ class SitesDialog(tk.Toplevel):
             from tkinter import font as tkfont
 
             font = tkfont.Font(font=self.tree.cget("font"))
-        except Exception:
+        except (ImportError, AttributeError, tk.TclError):
             font = None
         max_widths = {col: 0 for col in self.columns}
         for col in self.columns:
@@ -279,7 +279,7 @@ class SitesDialog(tk.Toplevel):
         for col in self.columns:
             try:
                 self.tree.column(col, width=max_widths[col])
-            except Exception:
+            except (AttributeError, tk.TclError):
                 pass
 
     def _populate_tree(self):
@@ -292,7 +292,7 @@ class SitesDialog(tk.Toplevel):
                 lat_s = f"{lat:.2f}"
                 lon_s = f"{lon:.2f}"
                 height_s = f"{height:.2f}"
-            except Exception:
+            except (ValueError, TypeError, KeyError):
                 lat_s = lon_s = height_s = ""
             self.tree.insert("", "end", values=(nm, lat_s, lon_s, height_s))
         self._autosize_columns()
@@ -317,12 +317,12 @@ class SitesDialog(tk.Toplevel):
             os.makedirs(os.path.dirname(target), exist_ok=True)
             with open(target, "w", encoding="utf-8") as fh:
                 json.dump(normalized, fh, indent=2)
-        except Exception:
+        except (OSError, IOError, TypeError):
             # Fallback to module-local path variable computed earlier in __init__
             try:
                 with open(self._effective_path, "w", encoding="utf-8") as fh:
                     json.dump(normalized, fh, indent=2)
-            except Exception:
+            except (OSError, IOError, TypeError):
                 # Give up silently; callers will be informed elsewhere.
                 pass
 
@@ -380,7 +380,7 @@ class SitesDialog(tk.Toplevel):
         if old and old != nm and old in self._current:
             try:
                 del self._current[old]
-            except Exception:
+            except (KeyError, TypeError):
                 pass
 
         self._current[nm] = {"lat": lat, "lon": lon, "height": height}
@@ -389,7 +389,7 @@ class SitesDialog(tk.Toplevel):
             try:
                 # attempt to refresh global sites mapping if available
                 load_sites()
-            except Exception:
+            except (OSError, IOError, ValueError, TypeError):
                 pass
         except Exception as e:
             messagebox.showerror(
@@ -400,7 +400,7 @@ class SitesDialog(tk.Toplevel):
         # Reload from disk to ensure UI reflects the persisted representation
         try:
             self._current = self._load_current(self._effective_path)
-        except Exception:
+        except (OSError, IOError, ValueError, TypeError):
             # fall back to in-memory copy already present
             pass
 
@@ -414,7 +414,7 @@ class SitesDialog(tk.Toplevel):
                     self.tree.selection_set(iid)
                     try:
                         self.tree.see(iid)
-                    except Exception:
+                    except (AttributeError, tk.TclError):
                         pass
                     break
             self._selected_name["value"] = nm
@@ -422,7 +422,7 @@ class SitesDialog(tk.Toplevel):
             self.lat_var.set(f"{float(self._current[nm].get('lat',0.0)):.2f}")
             self.lon_var.set(f"{float(self._current[nm].get('lon',0.0)):.2f}")
             self.height_var.set(f"{float(self._current[nm].get('height',0.0)):.2f}")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError, ValueError):
             pass
 
         # set result for caller

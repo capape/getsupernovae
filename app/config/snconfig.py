@@ -195,7 +195,7 @@ def load_user_prefs():
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-    except Exception:
+    except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     # fallback: try package-local prefs file
     try:

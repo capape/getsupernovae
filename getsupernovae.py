@@ -790,7 +790,7 @@ class SupernovasApp(tk.Tk):
         """
         try:
             self.search_coordinator.refilter_from_cache(self.getDataToSearch(), source)
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, f"Failed to refilter from cache for source={source}")
 
     def on_ignore_selected(self):

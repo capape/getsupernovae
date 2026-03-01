@@ -90,7 +90,7 @@ class FilterPanelManager:
             self.frame.grid_columnconfigure(0, weight=0)
             self.frame.grid_columnconfigure(1, weight=0)
             self.frame.grid_columnconfigure(2, weight=0)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to configure filter panel grid columns")
 
         # Build all filter controls
@@ -204,13 +204,13 @@ class FilterPanelManager:
         try:
             combobox.bind('<<ComboboxSelected>>',
                          lambda ev: self.callbacks.on_update_visibility_ui())
-        except Exception:
+        except (AttributeError, tk.TclError):
             try:
                 self.variables['visibility_window'].trace_add(
                     'write',
                     lambda *a: self.callbacks.on_update_visibility_ui()
                 )
-            except Exception:
+            except (AttributeError, tk.TclError, TypeError):
                 log_exception(logger, "Failed to bind visibility window updates")
 
         button = ttk.Button(
@@ -249,7 +249,7 @@ class FilterPanelManager:
             locales_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "locales")
             lang_values = [d for d in os.listdir(locales_dir)
                           if os.path.isdir(os.path.join(locales_dir, d))]
-        except Exception:
+        except (OSError, IOError, AttributeError):
             lang_values = ["en", "es"]
 
         if "en" not in lang_values:
@@ -260,7 +260,7 @@ class FilterPanelManager:
             try:
                 set_language("en")
                 current_lang = "en"
-            except Exception:
+            except (ImportError, AttributeError, ValueError):
                 current_lang = "en"
 
         lang_var = tk.StringVar(value=current_lang)
@@ -273,7 +273,7 @@ class FilterPanelManager:
                 textvariable=lang_var,
                 width=6
             )
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             combobox = ttk.Combobox(self.frame, values=sorted(lang_values))
 
         combobox.grid(column=1, row=row, padx=5, pady=5, sticky=tk.W)
@@ -281,13 +281,13 @@ class FilterPanelManager:
 
         try:
             combobox.set(lang_var.get() or "en")
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to set language combobox initial value")
 
         try:
             combobox.bind('<<ComboboxSelected>>',
                          lambda ev: self.callbacks.on_language_change())
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to bind language change callback")
 
     def _build_rochester_attribution(self, row: int) -> None:
@@ -315,7 +315,7 @@ class FilterPanelManager:
 
             text_widget.grid(column=0, row=row, columnspan=3, padx=5, pady=(2, 6), sticky=tk.W)
             self.widgets['text_rochester'] = text_widget
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, ImportError):
             log_exception(logger, "Failed to build Rochester attribution text")
 
     def _setup_variable_traces(self) -> None:
@@ -350,16 +350,16 @@ class FilterPanelManager:
                         self.variables['language'],
                         lambda *a: self.callbacks.on_persist_prefs(*a)
                     )
-            except Exception:
+            except (AttributeError, TypeError):
                 log_exception(logger, "Failed to add language trace callback")
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to setup filter panel variable traces")
 
     def _safe_trace_add(self, var: tk.StringVar, callback: Callable) -> None:
         """Safely add a trace to a variable, handling exceptions."""
         try:
             var.trace_add('write', callback)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to add variable trace callback")
 
     def update_visibility_values_label(self, text: str) -> None:
@@ -371,7 +371,7 @@ class FilterPanelManager:
         try:
             if 'label_visibility_values' in self.widgets:
                 self.widgets['label_visibility_values'].config(text=text)  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update visibility values label")
 
     def set_min_latitude_state(self, state: str) -> None:
@@ -383,7 +383,7 @@ class FilterPanelManager:
         try:
             if 'entry_min_latitude' in self.widgets:
                 self.widgets['entry_min_latitude'].config(state=state)  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to update min latitude entry state")
 
     def update_site_values(self, site_values: list) -> None:
@@ -395,7 +395,7 @@ class FilterPanelManager:
         try:
             if 'combobox_site' in self.widgets:
                 self.widgets['combobox_site']['values'] = site_values
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to update site combobox values")
 
     def update_visibility_window_values(self, vis_values: list) -> None:
@@ -407,7 +407,7 @@ class FilterPanelManager:
         try:
             if 'combobox_visibility' in self.widgets:
                 self.widgets['combobox_visibility']['values'] = vis_values
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to update visibility combobox values")
 
     def refresh_labels(self) -> None:
@@ -443,7 +443,7 @@ class FilterPanelManager:
                 text_widget.delete('1.0', tk.END)  # type: ignore[attr-defined]
                 text_widget.insert('1.0', rochester_text)  # type: ignore[attr-defined]
                 text_widget.config(state='disabled')  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, tk.TclError, ImportError):
             log_exception(logger, "Failed to refresh filter panel labels")
 
     def apply_theme(self, dark_mode: bool) -> None:
@@ -458,5 +458,5 @@ class FilterPanelManager:
                            if dark_mode
                            else THEME_COLORS.LIGHT_ROCHESTER_BG)
                 self.widgets['text_rochester'].config(background=bg_color)  # type: ignore[attr-defined]
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to apply filter panel theme")

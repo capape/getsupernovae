@@ -10,7 +10,7 @@ try:
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
-except Exception:
+except (ImportError, AttributeError, OSError):
     HAS_MATPLOTLIB = False
 
 from datetime import datetime
@@ -22,7 +22,7 @@ try:
     from astropy.coordinates import AltAz, get_moon
 
     HAS_GET_MOON = True
-except Exception:
+except (ImportError, AttributeError):
     from astropy.coordinates import AltAz
 
     HAS_GET_MOON = False
@@ -76,7 +76,7 @@ class VisibilityPlotter:
             for ac in data.visibility.azCords:
                 try:
                     dt = ac.time.to_datetime()
-                except Exception:
+                except (AttributeError, TypeError, ValueError):
                     dt = datetime.strptime(
                         format_iso_datetime(ac.time), "%Y-%m-%dT%H:%M:%SZ"
                     )
@@ -122,15 +122,15 @@ class VisibilityPlotter:
                             color="#999999",
                             alpha=0.12,
                         )
-                    except Exception:
+                    except (ValueError, TypeError, AttributeError):
                         pass
-                except Exception:
+                except (AttributeError, TypeError, ValueError, ImportError):
                     # best-effort: if moon calculation fails, continue without it
                     pass
             # Add legend for supernova and moon
             try:
                 ax.legend(fontsize=7, frameon=False, loc="upper right")
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 pass
             ax.set_ylim(0, 90)
             ax.set_ylabel("Alt (deg)", fontsize=8)
@@ -152,5 +152,5 @@ class VisibilityPlotter:
                 plt.close(fig)
                 bio.seek(0)
                 return ImageReader(bio)
-        except Exception:
+        except (OSError, ValueError, TypeError, AttributeError):
             return None

@@ -64,13 +64,13 @@ class InitializationBuilder:
         # Set default language
         try:
             set_language("en")
-        except Exception:
+        except (OSError, IOError, ValueError):
             log_exception(logger, "Failed to set default startup language")
 
         # Apply initial theme
         try:
             self.app.theme_coordinator.apply_theme()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to apply initial theme during startup")
 
     def create_tk_variables(self):
@@ -227,7 +227,7 @@ class InitializationBuilder:
         # Set minimum window size
         try:
             self.app.minsize(window_width, window_height)
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to enforce minimum window size")
 
     def _setup_application_icon(self):
@@ -243,7 +243,7 @@ class InitializationBuilder:
             if os.path.exists(ico) and os.name == "nt":
                 try:
                     self.app.iconbitmap(ico)
-                except Exception:
+                except (OSError, tk.TclError):
                     log_exception(logger, "Failed to set ICO application icon")
             elif os.path.exists(png):
                 try:
@@ -251,13 +251,13 @@ class InitializationBuilder:
                     self.app.iconphoto(False, img)
                     # Keep reference to avoid GC
                     self.app._icon_image = img
-                except Exception:
+                except (OSError, tk.TclError):
                     log_exception(logger, "Failed to set PNG application icon")
             else:
                 # SVG present but not supported directly
                 if os.path.exists(svg):
                     pass
-        except Exception:
+        except (OSError, AttributeError, TypeError):
             log_exception(logger, "Failed during application icon setup")
 
     def set_initial_filter_values(self):
@@ -285,10 +285,10 @@ class InitializationBuilder:
                     self.app.visibilityWindow.set("Default")
                 elif keys:
                     self.app.visibilityWindow.set(keys[0])
-        except Exception:
+        except (AttributeError, KeyError, IndexError, tk.TclError):
             try:
                 self.app.visibilityWindow.set("Default")
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to set default visibility window")
 
         self.app.results.set("")
@@ -298,13 +298,13 @@ class InitializationBuilder:
         # Build left panel
         try:
             self.app.build_left_panel()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to build left panel during startup")
 
         # Build results panel
         try:
             self.app.build_results_panel()
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to build results panel during startup")
 
     def initialize_language_coordinator(self):
@@ -341,7 +341,7 @@ class InitializationBuilder:
                     else None
                 ),
             )
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to initialize language coordinator")
 
     def initialize_preferences_coordinator(self):
@@ -380,7 +380,7 @@ class InitializationBuilder:
                     self.app, "theme_coordinator", None
                 ),
             )
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to initialize preferences coordinator")
 
     def build(

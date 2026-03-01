@@ -92,7 +92,7 @@ class DialogCoordinator:
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
             path = os.path.join(cfgdir, "old_supernovae.txt")
-        except Exception:
+        except (OSError, IOError, TypeError, AttributeError):
             path = os.path.join(os.path.dirname(__file__), "old_supernovae.txt")
 
         # Read existing entries
@@ -100,7 +100,7 @@ class DialogCoordinator:
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 existing = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
-        except Exception:
+        except (OSError, IOError, UnicodeDecodeError):
             existing = []
 
         if name in existing:
@@ -120,7 +120,7 @@ class DialogCoordinator:
             try:
                 import getsupernovae
                 getsupernovae.old = load_old_supernovae(path)
-            except Exception:
+            except (ImportError, AttributeError, OSError, IOError):
                 log_exception(logger, "Failed to reload ignored supernovae after add")
 
             self.on_show_info(_("Added"), _("Added '{name}' to ignored supernovae.").format(name=name))
@@ -128,11 +128,11 @@ class DialogCoordinator:
             # Auto-reload results using cached rows when possible
             try:
                 self.on_refilter()
-            except Exception:
+            except (AttributeError, TypeError):
                 # Fallback to network refresh
                 try:
                     self.on_search_async({}, "REFRESH")
-                except Exception:
+                except (AttributeError, TypeError):
                     log_exception(logger, "Failed to refresh after adding ignored supernova")
         except Exception as ex:
             self.on_show_error(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
@@ -146,7 +146,7 @@ class DialogCoordinator:
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
             path = os.path.join(cfgdir, "old_supernovae.txt")
-        except Exception:
+        except (OSError, IOError, TypeError, AttributeError):
             # Fallback to package-local file
             path = os.path.join(os.path.dirname(__file__), "old_supernovae.txt")
 
@@ -154,12 +154,12 @@ class DialogCoordinator:
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 current = fh.read()
-        except Exception:
+        except (OSError, IOError, UnicodeDecodeError):
             # Try to load from global old list
             try:
                 import getsupernovae
                 current = "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
-            except Exception:
+            except (ImportError, AttributeError, TypeError):
                 current = ""
 
         # Create editor window
@@ -173,14 +173,14 @@ class DialogCoordinator:
                 self.parent.theme_coordinator.apply_theme()
             elif hasattr(self.parent, "apply_theme"):
                 self.parent.apply_theme()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             pass
 
         # Make dialog transient and modal
         try:
             editor.transient(self.parent)
             editor.grab_set()
-        except Exception:
+        except (AttributeError, tk.TclError):
             pass
 
         txt = tk.Text(editor, wrap="none")
@@ -193,7 +193,7 @@ class DialogCoordinator:
             if hasattr(self.parent, 'dark_mode'):
                 try:
                     dark_mode = self.parent.dark_mode.get()
-                except Exception:
+                except (AttributeError, tk.TclError):
                     pass
 
             if dark_mode:
@@ -202,7 +202,7 @@ class DialogCoordinator:
             else:
                 txt.configure(bg=THEME_COLORS.LIGHT_ENTRY_BG, fg=THEME_COLORS.LIGHT_FG,
                              insertbackground=THEME_COLORS.LIGHT_FG)
-        except Exception:
+        except (ImportError, AttributeError, tk.TclError):
             pass
 
         txt.insert("1.0", current)
@@ -225,7 +225,7 @@ class DialogCoordinator:
                 try:
                     import getsupernovae
                     getsupernovae.old = load_old_supernovae(path)
-                except Exception:
+                except (ImportError, AttributeError, OSError, IOError):
                     log_exception(logger, "Failed to reload ignored supernovae after edit")
 
                 editor.destroy()
@@ -233,10 +233,10 @@ class DialogCoordinator:
                 # Auto-reload results
                 try:
                     self.on_refilter()
-                except Exception:
+                except (AttributeError, TypeError):
                     try:
                         self.on_search_async({}, "REFRESH")
-                    except Exception:
+                    except (AttributeError, TypeError):
                         log_exception(logger, "Failed to refresh after editing ignored supernovae")
             except Exception as ex:
                 self.on_show_error(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
@@ -261,13 +261,13 @@ class DialogCoordinator:
 
         try:
             from app.ui.sites_dialog import SitesDialog
-        except Exception:
+        except (ImportError, AttributeError):
             return
 
         # Get current sites
         try:
             current_sites = load_sites()
-        except Exception:
+        except (OSError, IOError, ValueError, TypeError):
             current_sites = {}
 
         # Launch dialog and wait
@@ -278,7 +278,7 @@ class DialogCoordinator:
         try:
             try:
                 new_sites = load_sites()
-            except Exception:
+            except (OSError, IOError, ValueError, TypeError):
                 new_sites = None
 
             if new_sites is not None:
@@ -286,7 +286,7 @@ class DialogCoordinator:
                 try:
                     import getsupernovae
                     getsupernovae.sites = new_sites
-                except Exception:
+                except (ImportError, AttributeError):
                     pass
 
                 try:
@@ -301,14 +301,14 @@ class DialogCoordinator:
                         added = sorted(new_keys - old_keys)
                         if added:
                             sel_name = added[0]
-                    except Exception:
+                    except (AttributeError, TypeError, KeyError):
                         sel_name = None
 
                     # Get previous selection
                     prev = None
                     try:
                         prev = self.on_get_current_site()
-                    except Exception:
+                    except (AttributeError, TypeError):
                         prev = None
 
                     if not sel_name:
@@ -326,11 +326,11 @@ class DialogCoordinator:
                             cb = self.get_combobox_site()
                             if cb:
                                 cb.update_idletasks()
-                        except Exception:
+                        except (AttributeError, tk.TclError, TypeError):
                             log_exception(logger, "Failed to update site combobox after dialog")
-                except Exception:
+                except (AttributeError, TypeError, KeyError):
                     log_exception(logger, "Failed to refresh site values after site dialog")
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             log_exception(logger, "Failed to process site dialog result")
 
     def open_visibility_window_dialog(self):
@@ -339,13 +339,13 @@ class DialogCoordinator:
 
         try:
             from app.ui.visibility_dialog import VisibilityDialog
-        except Exception:
+        except (ImportError, AttributeError):
             return
 
         # Get current visibility windows
         try:
             current = load_visibility_windows()
-        except Exception:
+        except (OSError, IOError, ValueError, TypeError):
             current = {}
 
         # Launch dialog and wait
@@ -358,7 +358,7 @@ class DialogCoordinator:
             if new_vis is None:
                 try:
                     new_vis = load_visibility_windows()
-                except Exception:
+                except (OSError, IOError, ValueError, TypeError):
                     new_vis = None
 
             if new_vis is not None:
@@ -366,7 +366,7 @@ class DialogCoordinator:
                 try:
                     import getsupernovae
                     getsupernovae.visibility_windows = new_vis
-                except Exception:
+                except (ImportError, AttributeError):
                     pass
 
                 try:
@@ -381,14 +381,14 @@ class DialogCoordinator:
                         added = sorted(new_keys - old_keys)
                         if added:
                             sel_name = added[0]
-                    except Exception:
+                    except (AttributeError, TypeError, KeyError):
                         sel_name = None
 
                     # Get previous selection
                     prev = None
                     try:
                         prev = self.on_get_current_visibility_window()
-                    except Exception:
+                    except (AttributeError, TypeError):
                         prev = None
 
                     if not sel_name:
@@ -406,9 +406,9 @@ class DialogCoordinator:
                             cb = self.get_combobox_visibility()
                             if cb:
                                 cb.update_idletasks()
-                        except Exception:
+                        except (AttributeError, tk.TclError, TypeError):
                             log_exception(logger, "Failed to update visibility window combobox after dialog")
-                except Exception:
+                except (AttributeError, TypeError, KeyError):
                     log_exception(logger, "Failed to refresh visibility window values after dialog")
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             log_exception(logger, "Failed to process visibility window dialog result")

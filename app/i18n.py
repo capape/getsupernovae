@@ -36,7 +36,7 @@ def set_language(lang: Optional[str]) -> None:
                 DOMAIN, LOCALEDIR, languages=[lang], fallback=True
             )
             _current_language = lang
-        except Exception:
+        except (OSError, IOError, ValueError):
             _current_trans = gettext.NullTranslations()
             _current_language = None
 

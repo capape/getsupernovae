@@ -84,7 +84,7 @@ class ToolbarManager:
             # Configure grid weights
             try:
                 self.toolbar_frame.grid_columnconfigure(0, weight=1)
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to configure toolbar grid column")
 
             # Build toolbar buttons
@@ -93,7 +93,7 @@ class ToolbarManager:
             self._build_edit_old_button()
             self._build_dark_mode_toggle()
 
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build toolbar")
 
     def _build_find_stars_button(self) -> None:
@@ -107,7 +107,7 @@ class ToolbarManager:
             )
             button.grid(column=0, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
             self.widgets['button_find_stars'] = button
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build Find Stars button")
 
     def _build_ignore_selected_button(self) -> None:
@@ -120,7 +120,7 @@ class ToolbarManager:
             )
             button.grid(column=1, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
             self.widgets['button_ignore_selected'] = button
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build Ignore Selected SN button")
 
     def _build_edit_old_button(self) -> None:
@@ -133,7 +133,7 @@ class ToolbarManager:
             )
             button.grid(column=2, row=0, sticky=tk.W, padx=UI_CONSTANTS.BUTTON_PADX)
             self.widgets['button_edit_old'] = button
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build Edit Ignored SN button")
 
     def _build_dark_mode_toggle(self) -> None:
@@ -148,7 +148,7 @@ class ToolbarManager:
                 )
                 toggle.grid(column=3, row=0, sticky=tk.E, padx=UI_CONSTANTS.BUTTON_PADX)
                 self.widgets['toggle_dark_mode'] = toggle
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to build Dark Mode toggle")
 
     def get_widget(self, name: str) -> Optional[tk.Widget]:
@@ -180,7 +180,7 @@ class ToolbarManager:
         if button:
             try:
                 button.config(state=state)  # type: ignore[attr-defined]
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to set Find Stars button state")
 
     def set_ignore_selected_state(self, state: str) -> None:
@@ -193,7 +193,7 @@ class ToolbarManager:
         if button:
             try:
                 button.config(state=state)  # type: ignore[attr-defined]
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to set Ignore Selected SN button state")
 
     def set_edit_old_state(self, state: str) -> None:
@@ -206,7 +206,7 @@ class ToolbarManager:
         if button:
             try:
                 button.config(state=state)  # type: ignore[attr-defined]
-            except Exception:
+            except (AttributeError, tk.TclError):
                 log_exception(logger, "Failed to set Edit Ignored SN button state")
 
     def set_all_buttons_state(self, state: str) -> None:
@@ -219,7 +219,7 @@ class ToolbarManager:
             if name.startswith('button_') and isinstance(widget, ttk.Button):
                 try:
                     widget.config(state=state)
-                except Exception:
+                except (AttributeError, tk.TclError):
                     log_exception(logger, f"Failed to set toolbar widget state: {name}")
 
     def refresh_labels(self) -> None:
@@ -245,7 +245,7 @@ class ToolbarManager:
             if toggle:
                 toggle.config(text=_("Dark mode"))
 
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to refresh toolbar labels")
 
     def destroy(self) -> None:
@@ -255,5 +255,5 @@ class ToolbarManager:
                 self.toolbar_frame.destroy()
                 self.toolbar_frame = None
             self.widgets.clear()
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to destroy toolbar")

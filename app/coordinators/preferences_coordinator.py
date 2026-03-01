@@ -78,7 +78,7 @@ class PreferencesCoordinator:
             if visibility_window_var:
                 try:
                     sel = visibility_window_var.get() or ""
-                except Exception:
+                except (AttributeError, tk.TclError):
                     log_exception(logger, "Failed to read selected visibility window")
                     sel = ""
 
@@ -102,7 +102,7 @@ class PreferencesCoordinator:
                 filter_panel_manager.update_visibility_values_label("")
                 filter_panel_manager.set_min_latitude_state("normal")
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to update visibility UI")
 
     def persist_prefs(self, *args):
@@ -138,9 +138,9 @@ class PreferencesCoordinator:
             # Save to disk using preferences manager
             try:
                 self.preferences_manager.save_preferences(self.state_manager.state)
-            except Exception:
+            except (OSError, IOError, AttributeError, TypeError):
                 log_exception(logger, "Failed to save preferences to disk")
-        except Exception:
+        except (AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to persist preferences")
 
     def load_and_apply_prefs(self):
@@ -166,12 +166,12 @@ class PreferencesCoordinator:
             # Update visibility UI
             try:
                 self.update_visibility_ui()
-            except Exception:
+            except (AttributeError, TypeError, KeyError):
                 log_exception(
                     logger,
                     "Failed to refresh visibility UI after restoring preferences",
                 )
-        except Exception:
+        except (OSError, IOError, AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to load and apply preferences")
 
     def _get_var_value(
@@ -182,7 +182,7 @@ class PreferencesCoordinator:
         if var:
             try:
                 return var.get()
-            except Exception:
+            except (AttributeError, tk.TclError):
                 return default
         return default
 
@@ -221,7 +221,7 @@ class PreferencesCoordinator:
                 # Save in new format for next time
                 self.preferences_manager.save_preferences(loaded_state)
                 return loaded_state
-        except Exception:
+        except (OSError, IOError, AttributeError, TypeError, KeyError):
             log_exception(logger, "Failed to migrate legacy preferences")
 
         return None
@@ -236,7 +236,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("magnitude")
                 if var:
                     var.set(str(loaded_state.search.magnitude))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore magnitude preference")
 
         # Apply days to search
@@ -245,7 +245,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("daysToSearch")
                 if var:
                     var.set(str(loaded_state.search.days_to_search))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore days_to_search preference")
 
         # Apply observation date
@@ -254,7 +254,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("observationDate")
                 if var:
                     var.set(str(loaded_state.search.observation_date))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore observation_date preference")
 
         # Apply observation time
@@ -263,7 +263,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("observationTime")
                 if var:
                     var.set(str(loaded_state.search.observation_time))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore observation_time preference")
 
         # Apply observation duration
@@ -272,7 +272,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("observationDuration")
                 if var:
                     var.set(str(loaded_state.search.observation_duration))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore observation_duration preference")
 
         # Apply min latitude
@@ -281,7 +281,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("minLatitud")
                 if var:
                     var.set(str(loaded_state.search.min_latitude))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore min_latitude preference")
 
         # Apply site
@@ -292,7 +292,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("site")
                 if var:
                     var.set(site)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to restore site preference")
 
         # Apply visibility window
@@ -303,7 +303,7 @@ class PreferencesCoordinator:
                 var = tk_vars.get("visibilityWindow")
                 if var:
                     var.set(vw)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to restore visibility window preference")
 
     def _apply_ui_state(self, loaded_state: Any):
@@ -325,13 +325,13 @@ class PreferencesCoordinator:
                         lang_coordinator = self.get_language_coordinator()
                         if lang_coordinator:
                             lang_coordinator.on_language_change()
-                    except Exception:
+                    except (AttributeError, TypeError, ImportError):
                         log_exception(
                             logger, "Failed to refresh UI after language restoration"
                         )
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError, ImportError):
                     log_exception(logger, "Failed to apply restored language")
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed while restoring language preference")
 
         # Apply dark mode theme
@@ -347,9 +347,9 @@ class PreferencesCoordinator:
                         theme_coordinator = self.get_theme_coordinator()
                         if theme_coordinator:
                             theme_coordinator.apply_theme()
-                    except Exception:
+                    except (AttributeError, TypeError, tk.TclError):
                         log_exception(
                             logger, "Failed to apply restored dark mode theme"
                         )
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to restore dark mode preference")

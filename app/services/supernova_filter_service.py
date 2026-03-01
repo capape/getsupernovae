@@ -261,7 +261,7 @@ class SupernovaFilterService:
                     firstObserved_obj=sn_dto.firstObserved_obj,
                 )
                 supernovas.append(supernova)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 # Skip entries that can't be converted
                 continue
 
@@ -324,7 +324,7 @@ class SupernovaFilterService:
             try:
                 if sn.date:
                     return parse_date(sn.date)[0] or datetime.min
-            except Exception:
+            except (ValueError, TypeError, AttributeError, IndexError):
                 pass
             return datetime.min
 

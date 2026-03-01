@@ -53,7 +53,7 @@ class VisibilityWindow:
                 maxAlt = summary.get("maxAlt")
                 minAz = summary.get("minAz")
                 maxAz = summary.get("maxAz")
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             pass
 
         return Visibility(
