@@ -46,9 +46,9 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(parsed["host"], "NGC 1234")
         self.assertAlmostEqual(parsed["mag"], 15.3)
         self.assertIsNone(parsed["mag_limit"])
-        self.assertEqual(parsed["date"], "2025-12-01")
+        self.assertEqual(parsed["last_observed_date"], "2025-12-01")
         # date objects should be present
-        self.assertIsNotNone(parsed.get("date_obj"))
+        self.assertIsNotNone(parsed.get("last_observed_date_obj"))
         self.assertEqual(parsed["type"], "Ia")
         self.assertEqual(parsed["max_magnitude"], "14.8")
         # maxMagnitudeDate and first_observed should be normalized and have date objects

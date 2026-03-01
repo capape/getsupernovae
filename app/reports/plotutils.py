@@ -59,7 +59,7 @@ class VisibilityPlotter:  # pylint: disable=too-few-public-methods
         """Render the visibility plot.
 
         Args:
-            data: object with `visibility.az_cords` iterable of objects with
+            data: object with `visibility.az_coords` iterable of objects with
                   `.time` (astropy Time-like) and `.coord.alt` (Angle-like).
             fmt: 'png' (default) or 'svg'.
 
@@ -75,7 +75,7 @@ class VisibilityPlotter:  # pylint: disable=too-few-public-methods
         try:
             times = []
             alts = []
-            for ac in data.visibility.az_cords:
+            for ac in data.visibility.az_coords:
                 try:
                     dt = ac.time.to_datetime()
                 except (AttributeError, TypeError, ValueError):

@@ -29,7 +29,7 @@ class DummyVisibilityFactory:
 
 def test_rochester_uses_injected_visibility_factory():
     # Build a minimal HTML row similar to provider tests
-    snList: List[SupernovaDTO] = []
+    sn_list: List[SupernovaDTO] = []
     sn = SupernovaDTO(
         name="SN2025abc",
         host="NGC 1234",
@@ -37,11 +37,11 @@ def test_rochester_uses_injected_visibility_factory():
         decl="+12:34:56",
         mag=15.3,
         last_observed_date="2025/12/01",
-        date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
+        last_observed_date_obj=datetime.strptime("2025/12/01", "%Y/%m/%d").date(),
         coordinates=SkyCoord("12:34:56", "+12:34:56", frame="icrs", unit=(u.hourangle, u.deg)),
         type="Ia",
     )
-    snList.append(sn)
+    sn_list.append(sn)
 
     html = """
     <table>
@@ -67,7 +67,7 @@ def test_rochester_uses_injected_visibility_factory():
 
     # Run selection with permissive thresholds so the single row is included
     results = rv.select_supernovae(
-        snList,
+        sn_list,
         max_mag="16",
         observation_day=datetime.now(),
         local_start_time="21:00",
@@ -86,4 +86,4 @@ def test_rochester_uses_injected_visibility_factory():
     sn = results[0]
     assert getattr(sn, "visibility", None) is not None
     assert getattr(sn.visibility, "visible", False) is True
-    assert len(getattr(sn.visibility, "az_cords", [])) == 1
+    assert len(getattr(sn.visibility, "az_coords", [])) == 1

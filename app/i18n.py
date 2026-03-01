@@ -14,7 +14,7 @@ DOMAIN = "getsupernovae"
 
 # current translation object (defaults to NullTranslations => identity)
 _current_trans = gettext.NullTranslations()
-_current_language: Optional[str] = None
+_CURRENT_LANGUAGE: Optional[str] = None
 
 
 def _(message: str) -> str:
@@ -29,22 +29,22 @@ def ngettext(singular: str, plural: str, n: int) -> str:
 
 def set_language(lang: Optional[str]) -> None:
     """Set the application language."""
-    global _current_trans, _current_language
+    global _current_trans, _CURRENT_LANGUAGE
     if not lang:
         _current_trans = gettext.NullTranslations()
-        _current_language = None
+        _CURRENT_LANGUAGE = None
     else:
         try:
             _current_trans = gettext.translation(DOMAIN, LOCALEDIR, languages=[lang], fallback=True)
-            _current_language = lang
+            _CURRENT_LANGUAGE = lang
         except (OSError, IOError, ValueError):
             _current_trans = gettext.NullTranslations()
-            _current_language = None
+            _CURRENT_LANGUAGE = None
 
 
 def get_language() -> Optional[str]:
     """Get the current language code."""
-    return _current_language
+    return _CURRENT_LANGUAGE
 
 
 # Do NOT auto-initialize from LANG - let the app explicitly set language

@@ -23,7 +23,7 @@ class Visibility:
     """Visibility metadata for a target: list of `AxCordInTime` samples."""
 
     visible: bool
-    az_cords: List[AxCordInTime] = field(default_factory=list)
+    az_coords: List[AxCordInTime] = field(default_factory=list)
     # Optional aggregated summary fields (degrees)
     min_alt: Optional[float] = None
     max_alt: Optional[float] = None

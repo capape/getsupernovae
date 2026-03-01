@@ -1,7 +1,7 @@
 {
   "name": "SN Test",
   "visibility": {
-    "azCords": [
+    "az_coords": [
       {"time": "2025-12-03T00:00:00", "alt": 10},
       {"time": "2025-12-03T00:30:00", "alt": 20},
       {"time": "2025-12-03T01:00:00", "alt": 30},

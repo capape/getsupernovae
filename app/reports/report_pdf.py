@@ -50,16 +50,16 @@ def add_supernova_to_pdf(text_object, data: Supernova):
         i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
         "",
         i18n._("    Visible from :{visible_from} to: {visible_to}").format(
-            visible_from=format_iso_datetime(data.visibility.az_cords[0].time),
-            visible_to=format_iso_datetime(data.visibility.az_cords[-1].time),
+            visible_from=format_iso_datetime(data.visibility.az_coords[0].time),
+            visible_to=format_iso_datetime(data.visibility.az_coords[-1].time),
         ),
         i18n._("    AzCoords az:{az0}, lat: {alt0}").format(
-            az0=data.visibility.az_cords[0].coord.az.to_string(sep=" ", precision=2),
-            alt0=data.visibility.az_cords[0].coord.alt.to_string(sep=" ", precision=2),
+            az0=data.visibility.az_coords[0].coord.az.to_string(sep=" ", precision=2),
+            alt0=data.visibility.az_coords[0].coord.alt.to_string(sep=" ", precision=2),
         ),
         i18n._("    Last azCoords az:{az1}, lat: {alt1}").format(
-            az1=data.visibility.az_cords[-1].coord.az.to_string(sep=" ", precision=2),
-            alt1=data.visibility.az_cords[-1].coord.alt.to_string(sep=" ", precision=2),
+            az1=data.visibility.az_coords[-1].coord.az.to_string(sep=" ", precision=2),
+            alt1=data.visibility.az_coords[-1].coord.alt.to_string(sep=" ", precision=2),
         ),
         "",
         i18n._(
@@ -87,7 +87,7 @@ def create_pdf(
     visibility_window_name=None,
 ):
     """Generate a comprehensive PDF report of supernova observations.
-    
+
     Args:
         supernovas: List of Supernova objects with visibility data
         from_date: Start date of search period
@@ -96,7 +96,7 @@ def create_pdf(
         site: EarthLocation of observation site
         _min_latitude: Minimum altitude threshold (unused, kept for compatibility)
         visibility_window_name: Optional visibility window configuration name
-        
+
     Returns:
         Path to the generated PDF file
     """
@@ -227,16 +227,16 @@ def create_pdf(
             i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
             "",
             i18n._("  Visible from : {from_} to: {to}").format(
-                from_=format_iso_datetime(data.visibility.az_cords[0].time),
-                to=format_iso_datetime(data.visibility.az_cords[-1].time),
+                from_=format_iso_datetime(data.visibility.az_coords[0].time),
+                to=format_iso_datetime(data.visibility.az_coords[-1].time),
             ),
             i18n._("  AzCoords az: {az}, lat: {lat}").format(
-                az=data.visibility.az_cords[0].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.az_cords[0].coord.alt.to_string(sep=" ", precision=2),
+                az=data.visibility.az_coords[0].coord.az.to_string(sep=" ", precision=2),
+                lat=data.visibility.az_coords[0].coord.alt.to_string(sep=" ", precision=2),
             ),
             i18n._("  Last azCoords az: {az}, lat: {lat}").format(
-                az=data.visibility.az_cords[-1].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.az_cords[-1].coord.alt.to_string(sep=" ", precision=2),
+                az=data.visibility.az_coords[-1].coord.az.to_string(sep=" ", precision=2),
+                lat=data.visibility.az_coords[-1].coord.alt.to_string(sep=" ", precision=2),
             ),
             "",
             i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(

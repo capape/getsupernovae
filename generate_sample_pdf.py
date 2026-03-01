@@ -7,19 +7,19 @@ from astropy.time import Time
 # import app helpers
 import getsupernovae as gs
 from app.models.snmodels import AxCordInTime, Supernova, Visibility
-from i18n import _
+from app.i18n import _
 
-# build visibility az_cords: 10 time points over next 5 hours
+# build visibility az_coords: 10 time points over next 5 hours
 now = Time.now()
-az_cords = []
+az_coords = []
 for i in range(10):
     t = now + timedelta(minutes=30 * i)
     coord = type("Coord", (), {})()
     coord.alt = Angle(20.0 + i * 3.0, u.deg)
     coord.az = Angle(100.0 + i * 4.0, u.deg)
-    az_cords.append(AxCordInTime(t, coord))
+    az_coords.append(AxCordInTime(t, coord))
 
-vis = Visibility(True, az_cords)
+vis = Visibility(True, az_coords)
 
 sn = Supernova(
     name="2025aftz",

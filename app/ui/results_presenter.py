@@ -35,7 +35,7 @@ def format_observation_time(visibility: Any) -> str:
     try:
         if not visibility:
             return ""
-        az = getattr(visibility, "az_cords", None)
+        az = getattr(visibility, "az_coords", None)
         if not az or len(az) == 0:
             return ""
         tfrom = getattr(az[0], "time", None)
@@ -89,8 +89,8 @@ class ResultsPresenter:  # pylint: disable=too-few-public-methods
         # If a visibility summary is available, append max altitude for quick glance
         try:
             max_alt = getattr(visibility, "max_alt", None)
-            if max_alt is None and getattr(visibility, "az_cords", None):
-                summary = visibility_summary(visibility.az_cords)
+            if max_alt is None and getattr(visibility, "az_coords", None):
+                summary = visibility_summary(visibility.az_coords)
                 if summary:
                     max_alt = summary.get("max_alt")
             if max_alt is not None:

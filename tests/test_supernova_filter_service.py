@@ -51,7 +51,7 @@ class MockVisibilityFactory:
 def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00"):
     """Helper to create test supernova DTOs."""
     coords = SkyCoord(ra, dec, frame="icrs", unit=(u.hourangle, u.deg))
-    date_obj = datetime.strptime(date_str, "%Y/%m/%d").date()
+    last_observed_date_obj = datetime.strptime(date_str, "%Y/%m/%d").date()
 
     return SupernovaDTO(
         name=name,
@@ -60,15 +60,15 @@ def create_test_supernova_dto(name, mag, date_str, ra="12:00:00", dec="+45:00:00
         decl=dec,
         mag=mag,
         last_observed_date=date_str,
-        date_obj=date_obj,
+        last_observed_date_obj=last_observed_date_obj,
         coordinates=coords,
         type="Ia",
         first_observed=date_str,
         max_magnitude=mag,
         max_magnitude_date=date_str,
         link=f"http://example.com/{name}",
-        first_observed_obj=date_obj,
-        max_magnitude_date_obj=date_obj,
+        first_observed_obj=last_observed_date_obj,
+        max_magnitude_date_obj=last_observed_date_obj,
     )
 
 

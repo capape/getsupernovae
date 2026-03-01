@@ -25,7 +25,7 @@ def test_visibility_plotter_offline_fixture():
         def __init__(self, alt):
             self.alt = alt
 
-    for item in payload["visibility"]["az_cords"]:
+    for item in payload["visibility"]["az_coords"]:
         t = Time(item["time"])
         coord = SimpleCoord(item["alt"] * u.deg)
         az_list.append(AxCordInTime(t, coord))
