@@ -16,13 +16,16 @@ class RochesterProvider:
     """Abstract base class for Rochester providers."""
 
     def parse_html(self, html: bytes | str) -> List[SupernovaDTO]:
+        html_str: str
         if isinstance(html, bytes):
             try:
-                html = html.decode("utf-8")
-            except Exception:
-                html = html.decode(errors="replace")
+                html_str = html.decode("utf-8")
+            except UnicodeDecodeError:
+                html_str = html.decode(errors="replace")
+        else:
+            html_str = html
 
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(html_str, "html.parser")
         rows = soup.find_all("tr")
         result: List[SupernovaDTO] = []
         for row in rows:
@@ -60,7 +63,7 @@ class FileRochesterProvider(RochesterProvider):
     - parse_html(html): parse and return list of Supernova
     """
 
-    def __init__(self, source: str, timeout: int = 20):
+    def __init__(self, source: str, timeout: int = 20) -> None:
         self.timeout = timeout
         self.source = source
 
@@ -81,11 +84,11 @@ class NetworkRochesterProvider(RochesterProvider):
     and raw HTML rows. It uses `RochesterProvider.parse_html` to parse content.
     """
 
-    def __init__(self, timeout: int = 20):
+    def __init__(self, timeout: int = 20) -> None:
         self.timeout = timeout
         self.source = "https://www.rochesterastronomy.org/snimages/snactive.html"
 
-    def fetch(self):
+    def fetch(self) -> List[SupernovaDTO]:
         """Fetch from `Rochester source` Returns (parsed_list, rows).
 
         parsed_list: List[Supernova]

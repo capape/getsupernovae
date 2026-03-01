@@ -8,7 +8,7 @@ supernova data without any UI dependencies.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Set, Tuple
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
@@ -29,7 +29,7 @@ class SupernovaFilterService:
     tested independently.
     """
 
-    def __init__(self, visibility_factory=None):
+    def __init__(self, visibility_factory: Optional[Callable] = None) -> None:
         """Initialize the filter service.
 
         Args:
@@ -239,7 +239,7 @@ class SupernovaFilterService:
                 supernova = Supernova(
                     name=sn_dto.name,
                     date=sn_dto.date,
-                    mag=str(sn_dto.mag) if sn_dto.mag is not None else "",
+                    mag=sn_dto.mag,
                     host=sn_dto.host,
                     ra=sn_dto.ra,
                     decl=sn_dto.decl,

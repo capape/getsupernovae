@@ -241,7 +241,7 @@ def test_convert_to_domain_models():
 
     assert isinstance(sn, Supernova)
     assert sn.name == "SN2025a"
-    assert sn.mag == "14.5"
+    assert sn.mag == 14.5
     assert sn.host == "Host of SN2025a"
     assert sn.visibility == visibility
 
@@ -293,8 +293,8 @@ def test_sort_by_magnitude_reverse():
 
     sorted_sn = service.sort_by_magnitude(supernovae, reverse=True)
 
-    assert sorted_sn[0].mag == "16.0"  # Dimmest first
-    assert sorted_sn[1].mag == "14.0"
+    assert sorted_sn[0].mag == 16.0  # Dimmest first
+    assert sorted_sn[1].mag == 14.0
 
 
 def test_empty_input_handling():
