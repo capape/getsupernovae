@@ -125,6 +125,7 @@ def make_sky_chart(
         ra_vals = star_coords.ra.to(u.deg).value
         dec_vals = star_coords.dec.to(u.deg).value
 
+        # pylint: disable=import-outside-toplevel  # Heavy imports, lazy load matplotlib
         import matplotlib.pyplot as plt
         from astropy.coordinates import Angle
         from matplotlib.ticker import FuncFormatter
@@ -189,6 +190,7 @@ def make_sky_chart(
 
 def _mag_to_marker_size(mags):
     try:
+        # pylint: disable=import-outside-toplevel  # Lazy load numpy
         import numpy as _np
 
         arr = _np.array(mags, dtype=float)

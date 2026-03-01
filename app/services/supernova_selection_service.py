@@ -8,6 +8,7 @@ supernovae.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from astropy.coordinates import EarthLocation
@@ -108,8 +109,6 @@ class SupernovaSelectionService:
         Returns:
             List of Supernova objects sorted by observation time
         """
-        from datetime import timedelta
-
         # Calculate observation end time
         observation_end = observation_start + timedelta(hours=observation_hours)
 

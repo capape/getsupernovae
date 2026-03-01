@@ -136,7 +136,7 @@ class ResultsTreeCoordinator:
 
     def find_stars_in_simbad(self):
         """Query SIMBAD for objects near the selected supernova."""
-        # Import here to avoid circular dependency
+        # pylint: disable=import-outside-toplevel  # Avoid circular dependency
         from app.i18n import _
 
         try:

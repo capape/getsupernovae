@@ -167,7 +167,7 @@ class ReportCoordinator:
             return
 
         try:
-            # Import here to avoid circular dependency with i18n
+            # pylint: disable=import-outside-toplevel  # Avoid circular dependency
             from app.i18n import _
 
             msg = _("PDF report saved to:\n{path}").format(path=pdf_path)

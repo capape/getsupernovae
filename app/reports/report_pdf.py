@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 from pathlib import Path
+from urllib.parse import quote
 
 from reportlab.lib.colors import Color, black, blue
 from reportlab.lib.pagesizes import A4
@@ -313,8 +314,6 @@ def create_pdf(
             name = getattr(data, "name", None)
             if name:
                 try:
-                    from urllib.parse import quote
-
                     tnser = f"https://www.wis-tns.org/object/{quote(name)}"
                     second_y = (
                         link_y - leading

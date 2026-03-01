@@ -107,6 +107,7 @@ class VisibilityPlotter:  # pylint: disable=too-few-public-methods
                     )
                     # shade when moon above horizon
                     try:
+                        # pylint: disable=import-outside-toplevel  # Lazy load numpy
                         import numpy as _np
 
                         moon_arr = _np.array(moon_alts)

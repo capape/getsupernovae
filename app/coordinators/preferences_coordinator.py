@@ -189,6 +189,7 @@ class PreferencesCoordinator:
             old_prefs = load_user_prefs()
             if old_prefs and isinstance(old_prefs, dict):
                 # Migrate old flat dict format to new state structure
+                # pylint: disable=import-outside-toplevel  # Avoid circular dependency
                 from app.state.app_state import AppState
 
                 loaded_state = AppState()

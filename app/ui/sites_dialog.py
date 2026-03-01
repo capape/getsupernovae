@@ -9,6 +9,7 @@ add, edit and persist observing site definitions (a simple mapping of name
 import json
 import os
 import tkinter as tk
+from tkinter import font as tkfont
 from tkinter import messagebox, ttk
 from typing import Dict, Optional
 
@@ -251,8 +252,6 @@ class SitesDialog(tk.Toplevel):
 
     def _autosize_columns(self):
         try:
-            from tkinter import font as tkfont
-
             font = tkfont.Font(font=self.tree.cget("font"))
         except (ImportError, AttributeError, tk.TclError):
             font = None

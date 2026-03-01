@@ -1,5 +1,6 @@
 """Provider module for fetching supernova data from various sources."""
 
+import ssl
 import urllib.request
 from typing import List, Protocol
 
@@ -96,8 +97,6 @@ class NetworkRochesterProvider(RochesterProvider):
         parsed_list: List[Supernova]
         rows: ResultSet of <tr> elements (BeautifulSoup list)
         """
-        import ssl
-
         source = self.source
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
