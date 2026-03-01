@@ -39,7 +39,10 @@ class SupernovaSelectionService:
             filter_service: Optional filter service instance. If None, creates a new one.
             visibility_windows: Optional dictionary of named visibility window configs.
         """
-        self.filter_service = filter_service if filter_service is not None else SupernovaFilterService()
+        self.filter_service = (
+            filter_service if filter_service is not None
+            else SupernovaFilterService()
+        )
         self.visibility_windows = visibility_windows or {}
 
     def get_visibility_window_params(
@@ -160,8 +163,16 @@ class SupernovaSelectionService:
                 if sn.visibility and hasattr(sn.visibility, 'azCords') and sn.visibility.azCords:
                     az_coords = sn.visibility.azCords
                     if len(az_coords) > 0:
-                        start_time = az_coords[0].time if hasattr(az_coords[0], 'time') else float('inf')
-                        end_time = az_coords[-1].time if hasattr(az_coords[-1], 'time') else float('inf')
+                        start_time = (
+                            az_coords[0].time
+                            if hasattr(az_coords[0], 'time')
+                            else float('inf')
+                        )
+                        end_time = (
+                            az_coords[-1].time
+                            if hasattr(az_coords[-1], 'time')
+                            else float('inf')
+                        )
                         return (start_time, end_time)
             except (AttributeError, IndexError, TypeError):
                 pass
@@ -266,7 +277,10 @@ class SupernovaSelectionService:
 
                 # Check observation duration
                 if hasattr(az_coords[0], 'time') and hasattr(az_coords[-1], 'time'):
-                    duration_minutes = (az_coords[-1].time - az_coords[0].time) * 60 * 24  # Convert days to minutes
+                    # Convert days to minutes
+                    duration_minutes = (
+                        (az_coords[-1].time - az_coords[0].time) * 60 * 24
+                    )
                     if duration_minutes < min_observation_duration_minutes:
                         continue
 

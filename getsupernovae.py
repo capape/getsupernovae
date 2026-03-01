@@ -92,6 +92,7 @@ class SupernovaCallBackData:
 
 
 class RochesterSupernova:
+    """Main class for fetching and selecting supernovae from Rochester catalog."""
 
     def __init__(
         self,
@@ -213,6 +214,7 @@ class RochesterSupernova:
 
 
 class SearchFilters:
+    """Data class to hold supernova search filter parameters."""
     def __init__(
         self,
         magnitude: str,
@@ -236,7 +238,7 @@ class SearchFilters:
 
 class SupernovasApp(tk.Tk):
     """Main application class for Get Supernovae.
-    
+
     Many attributes are initialized by InitializationBuilder.build().
     """
     # Type hints for attributes set by InitializationBuilder
@@ -269,6 +271,7 @@ class SupernovasApp(tk.Tk):
             log_exception(logger, "Failed to add unset trace callback")
 
     def getDataToSearch(self):
+        """Retrieve current search filter parameters from UI variables."""
         try:
             callbackData = SupernovaCallBackData(
                 self.magnitude.get(),
@@ -294,7 +297,8 @@ class SupernovasApp(tk.Tk):
     # Check if there is already a search done with current filters
     #
     def has_results(self):
-        if self.supernovasFound == None:
+        """Check if there are search results available."""
+        if self.supernovasFound is None:
             return False
         return True
 
@@ -487,7 +491,7 @@ class SupernovasApp(tk.Tk):
 
     def on_clear_results(self, _var, _index, _mode):
         """Clear results when any filter variable changes.
-        
+
         Args:
             _var: Variable that changed (unused, required by trace callback)
             _index: Index (unused, required by trace callback)
@@ -819,6 +823,7 @@ class SupernovasApp(tk.Tk):
 
 
 def representsInt(s):
+    """Check if a string represents an integer."""
     try:
         int(s)
     except ValueError:
@@ -828,7 +833,7 @@ def representsInt(s):
 
 
 def main():
-
+    """Main entry point for the application."""
     if len(sys.argv) > 3:
         raise ValueError(_("Usage: getsupernovae.py maxMag lastDays"))
 
@@ -843,6 +848,7 @@ def main():
         if representsInt(sys.argv[1]):
             mag = sys.argv[1]
 
+    # pylint: disable=no-member  # astropy.units members exist at runtime
     site = EarthLocation(lat=41.55 * u.deg, lon=2.09 * u.deg, height=224 * u.m)
 
     site = list(sites.keys())[0]

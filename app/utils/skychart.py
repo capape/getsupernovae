@@ -1,7 +1,8 @@
+"""Sky chart generation module for supernova reports."""
 import io
 import logging
 
-import astropy.units as u
+import astropy.units as u  # pylint: disable=no-member
 from reportlab.lib.utils import ImageReader
 
 # Try to import astroquery; availability flagged in HAS_ASTROQUERY

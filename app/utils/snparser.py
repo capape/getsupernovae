@@ -118,6 +118,7 @@ def _parse_row_safe(row: Tag):
         first_observed_obj, first_observed = parse_date(raw_first_observed)
 
         try:
+            # pylint: disable=no-member  # astropy.units members exist at runtime
             coord = SkyCoord(ra_text, dec_text, frame="icrs", unit=(u.hourangle, u.deg))
         except Exception:
             return None

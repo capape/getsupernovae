@@ -48,6 +48,7 @@ def format_ra_dec(coord: Optional[SkyCoord]) -> Tuple[str, str]:
     if coord is None:
         return "", ""
     try:
+        # pylint: disable=no-member  # astropy.units members exist at runtime
         ra = coord.ra.to_string(unit=u.hour, sep=":", precision=1)
         dec = coord.dec.to_string(unit=u.degree, sep=":", precision=1, alwayssign=True)
         return ra, dec

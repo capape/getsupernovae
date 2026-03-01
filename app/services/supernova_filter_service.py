@@ -142,7 +142,9 @@ class SupernovaFilterService:
         """
         factory = visibility_factory or self.visibility_factory
         if factory is None:
-            raise ValueError("visibility_factory must be provided either in __init__ or as parameter")
+            raise ValueError(
+                "visibility_factory must be provided either in __init__ or as parameter"
+            )
 
         visibility_calculator = factory(min_altitude, max_altitude, min_azimuth, max_azimuth)
 
@@ -244,7 +246,11 @@ class SupernovaFilterService:
                     ra=sn_dto.ra,
                     decl=sn_dto.decl,
                     link=sn_dto.link or "",
-                    constellation=sn_dto.coordinates.get_constellation() if sn_dto.coordinates else "Unknown",
+                    constellation=(
+                        sn_dto.coordinates.get_constellation()
+                        if sn_dto.coordinates
+                        else "Unknown"
+                    ),
                     coordinates=sn_dto.coordinates,
                     firstObserved=sn_dto.firstObserved,
                     maxMagnitude=sn_dto.maxMagnitude,

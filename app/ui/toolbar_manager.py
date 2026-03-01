@@ -28,12 +28,12 @@ class ToolbarCallbacks:
 
 class ToolbarManager:
     """Manages toolbar UI components and their interactions.
-    
+
     This class is responsible for:
     - Creating the toolbar with action buttons (Find Stars, Ignore SN, Edit Old, Dark Mode)
     - Managing button states (enable/disable)
     - Coordinating with callbacks for business logic
-    
+
     Follows Single Responsibility Principle by focusing only on toolbar UI management.
     """
 
@@ -47,7 +47,7 @@ class ToolbarManager:
         columnspan: int = 2
     ):
         """Initialize the toolbar manager.
-        
+
         Args:
             parent: Parent widget to contain the toolbar
             callbacks: ToolbarCallbacks object with event handlers
@@ -62,11 +62,11 @@ class ToolbarManager:
         self.grid_column = grid_column
         self.grid_row = grid_row
         self.columnspan = columnspan
-        
+
         # Widget references
         self.widgets: Dict[str, tk.Widget] = {}
         self.toolbar_frame: Optional[ttk.Frame] = None
-        
+
     def build(self) -> None:
         """Build the toolbar with all its components."""
         try:
@@ -80,22 +80,22 @@ class ToolbarManager:
                 pady=5,
                 sticky="ew"
             )
-            
+
             # Configure grid weights
             try:
                 self.toolbar_frame.grid_columnconfigure(0, weight=1)
             except Exception:
                 log_exception(logger, "Failed to configure toolbar grid column")
-            
+
             # Build toolbar buttons
             self._build_find_stars_button()
             self._build_ignore_selected_button()
             self._build_edit_old_button()
             self._build_dark_mode_toggle()
-            
+
         except Exception:
             log_exception(logger, "Failed to build toolbar")
-    
+
     def _build_find_stars_button(self) -> None:
         """Build the Find Stars button."""
         try:
@@ -109,7 +109,7 @@ class ToolbarManager:
             self.widgets['button_find_stars'] = button
         except Exception:
             log_exception(logger, "Failed to build Find Stars button")
-    
+
     def _build_ignore_selected_button(self) -> None:
         """Build the Ignore Selected SN button."""
         try:
@@ -122,7 +122,7 @@ class ToolbarManager:
             self.widgets['button_ignore_selected'] = button
         except Exception:
             log_exception(logger, "Failed to build Ignore Selected SN button")
-    
+
     def _build_edit_old_button(self) -> None:
         """Build the Edit Ignored SN button."""
         try:
@@ -135,7 +135,7 @@ class ToolbarManager:
             self.widgets['button_edit_old'] = button
         except Exception:
             log_exception(logger, "Failed to build Edit Ignored SN button")
-    
+
     def _build_dark_mode_toggle(self) -> None:
         """Build the Dark Mode toggle."""
         try:
@@ -150,29 +150,29 @@ class ToolbarManager:
                 self.widgets['toggle_dark_mode'] = toggle
         except Exception:
             log_exception(logger, "Failed to build Dark Mode toggle")
-    
+
     def get_widget(self, name: str) -> Optional[tk.Widget]:
         """Get a specific toolbar widget by name.
-        
+
         Args:
             name: Widget identifier (e.g., 'button_find_stars', 'toggle_dark_mode')
-            
+
         Returns:
             The widget if found, None otherwise
         """
         return self.widgets.get(name)
-    
+
     def get_all_widgets(self) -> Dict[str, tk.Widget]:
         """Get all toolbar widgets.
-        
+
         Returns:
             Dictionary mapping widget names to widget instances
         """
         return self.widgets.copy()
-    
+
     def set_find_stars_state(self, state: str) -> None:
         """Set the state of the Find Stars button.
-        
+
         Args:
             state: Button state (tk.NORMAL, tk.DISABLED, etc.)
         """
@@ -182,10 +182,10 @@ class ToolbarManager:
                 button.config(state=state)  # type: ignore[attr-defined]
             except Exception:
                 log_exception(logger, "Failed to set Find Stars button state")
-    
+
     def set_ignore_selected_state(self, state: str) -> None:
         """Set the state of the Ignore Selected SN button.
-        
+
         Args:
             state: Button state (tk.NORMAL, tk.DISABLED, etc.)
         """
@@ -195,10 +195,10 @@ class ToolbarManager:
                 button.config(state=state)  # type: ignore[attr-defined]
             except Exception:
                 log_exception(logger, "Failed to set Ignore Selected SN button state")
-    
+
     def set_edit_old_state(self, state: str) -> None:
         """Set the state of the Edit Ignored SN button.
-        
+
         Args:
             state: Button state (tk.NORMAL, tk.DISABLED, etc.)
         """
@@ -208,10 +208,10 @@ class ToolbarManager:
                 button.config(state=state)  # type: ignore[attr-defined]
             except Exception:
                 log_exception(logger, "Failed to set Edit Ignored SN button state")
-    
+
     def set_all_buttons_state(self, state: str) -> None:
         """Set the state of all toolbar buttons.
-        
+
         Args:
             state: Button state to apply to all buttons
         """
@@ -221,7 +221,7 @@ class ToolbarManager:
                     widget.config(state=state)
                 except Exception:
                     log_exception(logger, f"Failed to set toolbar widget state: {name}")
-    
+
     def refresh_labels(self) -> None:
         """Refresh all button labels with current translations."""
         try:
@@ -229,25 +229,25 @@ class ToolbarManager:
             button = self.widgets.get('button_find_stars')
             if button:
                 button.config(text=_("Find stars"))
-            
+
             # Update Ignore Selected SN button
             button = self.widgets.get('button_ignore_selected')
             if button:
                 button.config(text=_("Ignore selected SN"))
-            
+
             # Update Edit Ignored SN button
             button = self.widgets.get('button_edit_old')
             if button:
                 button.config(text=_("Edit Ignored SN"))
-            
+
             # Update Dark Mode toggle
             toggle = self.widgets.get('toggle_dark_mode')
             if toggle:
                 toggle.config(text=_("Dark mode"))
-                
+
         except Exception:
             log_exception(logger, "Failed to refresh toolbar labels")
-    
+
     def destroy(self) -> None:
         """Destroy the toolbar and clean up resources."""
         try:

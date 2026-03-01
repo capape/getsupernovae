@@ -1,3 +1,4 @@
+"""Provider module for fetching supernova data from various sources."""
 import urllib.request
 from typing import List, Protocol
 
@@ -8,8 +9,10 @@ from app.utils.snparser import _parse_row_safe
 
 
 class ISupernovaProvider(Protocol):
+    """Protocol defining the interface for supernova data providers."""
+
     def fetch(self) -> List[SupernovaDTO]:
-        """Fetch supernovae from the provider's configured source and return list of SupernovaDTO."""
+        """Fetch supernovae from provider and return list of SupernovaDTO."""
 
 
 class RochesterProvider:
@@ -68,6 +71,7 @@ class FileRochesterProvider(RochesterProvider):
         self.source = source
 
     def fetch(self) -> List[SupernovaDTO]:
+        """Fetch supernova data from the source file."""
         # support local file paths and URLs
         try:
             with open(self.source, "rb") as fh:
