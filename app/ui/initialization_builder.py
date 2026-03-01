@@ -180,9 +180,9 @@ class InitializationBuilder:
             on_get_current_visibility_window=lambda: (
                 self.app.visibility_window.get() if hasattr(self.app, "visibility_window") else ""
             ),
-            get_combobox_site=lambda: (self.app.cbSite if hasattr(self.app, "cbSite") else None),
+            get_combobox_site=lambda: (self.app.cb_site if hasattr(self.app, "cb_site") else None),
             get_combobox_visibility=lambda: (
-                self.app.cbVisibility if hasattr(self.app, "cbVisibility") else None
+                self.app.cb_visibility if hasattr(self.app, "cb_visibility") else None
             ),
         )
 
@@ -294,18 +294,18 @@ class InitializationBuilder:
         try:
             self.app.language_coordinator = LanguageCoordinator(
                 root_window=self.app,
-                get_langvar=lambda: getattr(self.app, "langVar", None),
+                get_langvar=lambda: getattr(self.app, "lang_var", None),
                 get_filter_panel_manager=lambda: getattr(self.app, "filter_panel_manager", None),
                 get_results_panel_manager=lambda: getattr(self.app, "results_panel_manager", None),
                 get_toolbar_manager=lambda: getattr(self.app, "toolbar_manager", None),
                 get_widgets=lambda: {
                     "labelLatitud": getattr(self.app, "labelLatitud", None),
-                    "ignoreSelectedButton": getattr(self.app, "ignoreSelectedButton", None),
-                    "editOldButton": getattr(self.app, "editOldButton", None),
+                    "ignore_selected_button": getattr(self.app, "ignore_selected_button", None),
+                    "edit_old_button": getattr(self.app, "edit_old_button", None),
                     "pdfButton": getattr(self.app, "pdfButton", None),
                     "txtButton": getattr(self.app, "txtButton", None),
                     "searchButton": getattr(self.app, "searchButton", None),
-                    "exitButton": getattr(self.app, "exitButton", None),
+                    "exit_button": getattr(self.app, "exit_button", None),
                 },
                 on_configure_tree_styling=self.app.theme_coordinator.configure_results_tree_styling,
                 on_apply_theme=self.app.theme_coordinator.apply_theme,

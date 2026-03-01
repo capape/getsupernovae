@@ -54,9 +54,6 @@ class TestSearchState(unittest.TestCase):
 
     def test_to_dict(self):
         """Test serialization to dictionary."""
-
-    def test_to_dict(self):
-        """Test serialization to dictionary."""
         state = SearchState(magnitude="16.0", site="Test Site", visibility_window="Evening")
         result = state.to_dict()
 

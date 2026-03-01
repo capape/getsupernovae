@@ -77,7 +77,7 @@ class LanguageCoordinator:  # pylint: disable=too-few-public-methods
         self._update_visibility_ui()
 
     def _apply_selected_language(self):
-        """Apply the selected language from langVar."""
+        """Apply the selected language from lang_var."""
         try:
             langvar = self.get_langvar()
             if langvar is None:
@@ -152,11 +152,11 @@ class LanguageCoordinator:  # pylint: disable=too-few-public-methods
     def _refresh_toolbar_button_labels(self, widgets: Dict[str, Optional[tk.Widget]]):
         """Refresh ignore and edit toolbar button labels."""
         try:
-            ignore_button = widgets.get("ignoreSelectedButton")
+            ignore_button = widgets.get("ignore_selected_button")
             if ignore_button is not None:
                 ignore_button.config(text=_("Ignore selected SN"))
 
-            edit_button = widgets.get("editOldButton")
+            edit_button = widgets.get("edit_old_button")
             if edit_button is not None:
                 edit_button.config(text=_("Edit Ignored SN"))
         except (AttributeError, tk.TclError, TypeError, KeyError):
@@ -177,7 +177,7 @@ class LanguageCoordinator:  # pylint: disable=too-few-public-methods
             if search_button is not None:
                 search_button.config(text=_("Refresh Search"))
 
-            exit_button = widgets.get("exitButton")
+            exit_button = widgets.get("exit_button")
             if exit_button is not None:
                 exit_button.config(text=_("Exit"))
         except (AttributeError, tk.TclError, TypeError, KeyError):

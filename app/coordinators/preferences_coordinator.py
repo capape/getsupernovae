@@ -67,7 +67,7 @@ class PreferencesCoordinator:
 
         If a named visibility window is selected (present in `visibility_windows`),
         disable the `minLatitude` entry and show its numeric values in
-        `visibilityValuesLabel`. If no valid window is selected, enable the
+        `visibility_values_label`. If no valid window is selected, enable the
         `minLatitude` entry and clear the label.
         """
         try:

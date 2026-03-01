@@ -14,7 +14,7 @@ import sys
 import tkinter as tk
 from datetime import datetime, timedelta
 from tkinter import messagebox
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -241,11 +241,72 @@ class SupernovasApp(tk.Tk):
     """
 
     # Type hints for attributes set by InitializationBuilder
+    presenter: "ResultsPresenter"
     report_coordinator: "ReportCoordinator"
     search_coordinator: "SearchCoordinator"
-    presenter: "ResultsPresenter"
     site: tk.StringVar
     visibility_window: tk.StringVar
+
+    # State management
+    _initializing: bool
+    refreshing: bool
+    supernova_data: dict
+    supernovas_found: list | None
+
+    # Tk variables
+    dark_mode: tk.BooleanVar
+    days_to_search: tk.StringVar
+    lang_var: tk.StringVar
+    magnitude: tk.StringVar
+    min_latitud: tk.StringVar
+    observation_date: tk.StringVar
+    observation_duration: tk.StringVar
+    observation_time: tk.StringVar
+    results: tk.StringVar
+
+    # UI managers
+    filter_panel_manager: "FilterPanelManager"
+    results_panel_manager: "ResultsPanelManager"
+    toolbar_manager: "ToolbarManager"
+
+    # Coordinators (in addition to report_coordinator and search_coordinator above)
+    dialog_coordinator: "DialogCoordinator"
+    language_coordinator: "LanguageCoordinator"
+    preferences_coordinator: "PreferencesCoordinator"
+    theme_coordinator: "ThemeCoordinator"
+    tree_coordinator: "ResultsTreeCoordinator"
+
+    # Widget references from FilterPanelManager
+    cb_lang: Any
+    cb_site: Any
+    cb_visibility: Any
+    entry_latitud: Any
+    label_days_to_Search: Any
+    label_duration: Any
+    label_init_time: Any
+    label_lang: Any
+    label_latitud: Any
+    label_magnitude: Any
+    label_observation_date: Any
+    label_site: Any
+    label_visibility: Any
+    rochester_text: Any
+    visibility_values_label: Any
+
+    # Widget references from ResultsPanelManager
+    exit_button: Any
+    label_results: Any
+    pdf_button: Any
+    progress_bar: Any
+    results_tree: Any
+    search_button: Any
+    txt_button: Any
+
+    # Widget references from ToolbarManager
+    dark_toggle: Any
+    edit_old_button: Any
+    find_stars_button: Any
+    ignore_selected_button: Any
 
     #
     # Create object with filters to search
@@ -471,8 +532,8 @@ class SupernovasApp(tk.Tk):
             _button_name: Button name (not used, kept for interface compatibility)
         """
         try:
-            if hasattr(self, "findStarsButton") and self.findStarsButton:
-                self.findStarsButton.config(state=tk.NORMAL)
+            if hasattr(self, "find_stars_button") and self.find_stars_button:
+                self.find_stars_button.config(state=tk.NORMAL)
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to enable find stars button")
 
@@ -483,8 +544,8 @@ class SupernovasApp(tk.Tk):
             _button_name: Button name (not used, kept for interface compatibility)
         """
         try:
-            if hasattr(self, "findStarsButton") and self.findStarsButton:
-                self.findStarsButton.config(state=tk.DISABLED)
+            if hasattr(self, "find_stars_button") and self.find_stars_button:
+                self.find_stars_button.config(state=tk.DISABLED)
         except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to disable find stars button")
 
@@ -613,31 +674,31 @@ class SupernovasApp(tk.Tk):
             self.filter_panel_manager.build()
 
             # Store references to commonly accessed widgets for backward compatibility
-            self.cbSite = self.filter_panel_manager.widgets.get("combobox_site")
-            self.cbVisibility = self.filter_panel_manager.widgets.get("combobox_visibility")
-            self.entryLatitud = self.filter_panel_manager.widgets.get("entry_min_latitude")
-            self.visibilityValuesLabel = self.filter_panel_manager.widgets.get(
+            self.cb_site = self.filter_panel_manager.widgets.get("combobox_site")
+            self.cb_visibility = self.filter_panel_manager.widgets.get("combobox_visibility")
+            self.entry_latitud = self.filter_panel_manager.widgets.get("entry_min_latitude")
+            self.visibility_values_label = self.filter_panel_manager.widgets.get(
                 "label_visibility_values"
             )
 
             # Store widget references for language change updates
-            self.labelMagnitude = self.filter_panel_manager.widgets.get("label_magnitude")
-            self.labelDaysToSearch = self.filter_panel_manager.widgets.get("label_days_to_search")
-            self.labelObservationDate = self.filter_panel_manager.widgets.get(
+            self.label_magnitude = self.filter_panel_manager.widgets.get("label_magnitude")
+            self.label_days_to_Search = self.filter_panel_manager.widgets.get("label_days_to_search")
+            self.label_observation_date = self.filter_panel_manager.widgets.get(
                 "label_observation_date"
             )
-            self.labelInitTime = self.filter_panel_manager.widgets.get("label_init_time")
-            self.labelDuration = self.filter_panel_manager.widgets.get("label_duration")
-            self.labelSite = self.filter_panel_manager.widgets.get("label_site")
-            self.labelLang = self.filter_panel_manager.widgets.get("label_language")
-            self.labelVisibility = self.filter_panel_manager.widgets.get("label_visibility")
-            self.labelLatitud = self.filter_panel_manager.widgets.get("label_min_latitude")
-            self.rochesterText = self.filter_panel_manager.widgets.get("text_rochester")
-            self.cbLang = self.filter_panel_manager.widgets.get("combobox_language")
+            self.label_init_time = self.filter_panel_manager.widgets.get("label_init_time")
+            self.label_duration = self.filter_panel_manager.widgets.get("label_duration")
+            self.label_site = self.filter_panel_manager.widgets.get("label_site")
+            self.label_lang = self.filter_panel_manager.widgets.get("label_language")
+            self.label_visibility = self.filter_panel_manager.widgets.get("label_visibility")
+            self.label_latitud = self.filter_panel_manager.widgets.get("label_min_latitude")
+            self.rochester_text = self.filter_panel_manager.widgets.get("text_rochester")
+            self.cb_lang = self.filter_panel_manager.widgets.get("combobox_language")
 
-            # Get langVar from filter panel manager
+            # Get lang_var from filter panel manager
             if "language" in filter_variables:
-                self.langVar = filter_variables["language"]
+                self.lang_var = filter_variables["language"]
 
             # Apply persisted prefs if present (best-effort)
             try:
@@ -681,12 +742,12 @@ class SupernovasApp(tk.Tk):
 
             # Store references to commonly accessed widgets for backward compatibility
             self.results_tree = self.results_panel_manager.get_tree()
-            self.labelResults = self.results_panel_manager.widgets.get("label_results")
+            self.label_results = self.results_panel_manager.widgets.get("label_results")
             self.pdf_button = self.results_panel_manager.widgets.get("button_pdf")
             self.txt_button = self.results_panel_manager.widgets.get("button_txt")
             self.search_button = self.results_panel_manager.widgets.get("button_refresh")
-            self.exitButton = self.results_panel_manager.widgets.get("button_exit")
-            self.progressBar = self.results_panel_manager.widgets.get("progress_bar")
+            self.exit_button = self.results_panel_manager.widgets.get("button_exit")
+            self.progress_bar = self.results_panel_manager.widgets.get("progress_bar")
 
             # Use manager's data storage
             self.supernova_data = self.results_panel_manager.supernova_data
@@ -771,10 +832,10 @@ class SupernovasApp(tk.Tk):
             self.toolbar_manager.build()
 
             # Store toolbar widget references
-            self.findStarsButton = self.toolbar_manager.get_widget("button_find_stars")
-            self.ignoreSelectedButton = self.toolbar_manager.get_widget("button_ignore_selected")
-            self.editOldButton = self.toolbar_manager.get_widget("button_edit_old")
-            self.darkToggle = self.toolbar_manager.get_widget("toggle_dark_mode")
+            self.find_stars_button = self.toolbar_manager.get_widget("button_find_stars")
+            self.ignore_selected_button = self.toolbar_manager.get_widget("button_ignore_selected")
+            self.edit_old_button = self.toolbar_manager.get_widget("button_edit_old")
+            self.dark_toggle = self.toolbar_manager.get_widget("toggle_dark_mode")
 
             # Configure results tree styling
             self.theme_coordinator.configure_results_tree_styling()
