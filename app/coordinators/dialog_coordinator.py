@@ -8,19 +8,18 @@ This coordinator handles:
 
 It uses callbacks to interact with the UI without tight coupling.
 """
-
 import os
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Callable, Optional
+from typing import Callable, Any, Optional
 
+from app.utils.logger import log_exception, get_logger
 from app.config.snconfig import (
     get_user_config_dir,
     load_old_supernovae,
     load_sites,
-    load_visibility_windows,
+    load_visibility_windows
 )
-from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
 
@@ -41,7 +40,7 @@ class DialogCoordinator:
         on_get_current_site: Callable[[], str],
         on_get_current_visibility_window: Callable[[], str],
         get_combobox_site: Callable[[], Optional[tk.Widget]],
-        get_combobox_visibility: Callable[[], Optional[tk.Widget]],
+        get_combobox_visibility: Callable[[], Optional[tk.Widget]]
     ):
         """Initialize the dialog coordinator.
 
@@ -80,12 +79,10 @@ class DialogCoordinator:
         # Get selected supernova from UI
         sn = self.get_selected_supernova()
         if sn is None:
-            self.on_show_info(
-                _("No selection"), _("No supernova selected in the Results table.")
-            )
+            self.on_show_info(_("No selection"), _("No supernova selected in the Results table."))
             return
 
-        name = getattr(sn, "name", "").strip()
+        name = getattr(sn, 'name', '').strip()
         if not name:
             self.on_show_info(_("No selection"), _("Selected supernova has no name."))
             return
@@ -102,17 +99,12 @@ class DialogCoordinator:
         existing = []
         try:
             with open(path, "r", encoding="utf-8") as fh:
-                existing = [
-                    l.strip() for l in fh if l.strip() and not l.strip().startswith("#")
-                ]
+                existing = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
         except Exception:
             existing = []
 
         if name in existing:
-            self.on_show_info(
-                _("Already present"),
-                _("'{name}' is already ignored.").format(name=name),
-            )
+            self.on_show_info(_("Already present"), _("'{name}' is already ignored.").format(name=name))
             return
 
         # Add and write back sorted unique list
@@ -127,14 +119,11 @@ class DialogCoordinator:
             # Reload global old list
             try:
                 import getsupernovae
-
                 getsupernovae.old = load_old_supernovae(path)
             except Exception:
                 log_exception(logger, "Failed to reload ignored supernovae after add")
 
-            self.on_show_info(
-                _("Added"), _("Added '{name}' to ignored supernovae.").format(name=name)
-            )
+            self.on_show_info(_("Added"), _("Added '{name}' to ignored supernovae.").format(name=name))
 
             # Auto-reload results using cached rows when possible
             try:
@@ -144,13 +133,9 @@ class DialogCoordinator:
                 try:
                     self.on_search_async({}, "REFRESH")
                 except Exception:
-                    log_exception(
-                        logger, "Failed to refresh after adding ignored supernova"
-                    )
+                    log_exception(logger, "Failed to refresh after adding ignored supernova")
         except Exception as ex:
-            self.on_show_error(
-                _("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex)
-            )
+            self.on_show_error(_("Save error"), _("Failed to update ignore file: {ex}").format(ex=ex))
 
     def edit_old_supernovae(self):
         """Open a dialog to edit the old_supernovae.txt file."""
@@ -173,10 +158,7 @@ class DialogCoordinator:
             # Try to load from global old list
             try:
                 import getsupernovae
-
-                current = (
-                    "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
-                )
+                current = "" if getsupernovae.old is None else "\n".join(getsupernovae.old)
             except Exception:
                 current = ""
 
@@ -207,26 +189,19 @@ class DialogCoordinator:
         # Apply theme colors to Text widget
         try:
             from app.config.ui_constants import THEME_COLORS
-
             dark_mode = False
-            if hasattr(self.parent, "dark_mode"):
+            if hasattr(self.parent, 'dark_mode'):
                 try:
                     dark_mode = self.parent.dark_mode.get()
                 except Exception:
                     pass
 
             if dark_mode:
-                txt.configure(
-                    bg=THEME_COLORS.DARK_ENTRY_BG,
-                    fg=THEME_COLORS.DARK_FG,
-                    insertbackground=THEME_COLORS.DARK_FG,
-                )
+                txt.configure(bg=THEME_COLORS.DARK_ENTRY_BG, fg=THEME_COLORS.DARK_FG,
+                             insertbackground=THEME_COLORS.DARK_FG)
             else:
-                txt.configure(
-                    bg=THEME_COLORS.LIGHT_ENTRY_BG,
-                    fg=THEME_COLORS.LIGHT_FG,
-                    insertbackground=THEME_COLORS.LIGHT_FG,
-                )
+                txt.configure(bg=THEME_COLORS.LIGHT_ENTRY_BG, fg=THEME_COLORS.LIGHT_FG,
+                             insertbackground=THEME_COLORS.LIGHT_FG)
         except Exception:
             pass
 
@@ -237,11 +212,8 @@ class DialogCoordinator:
             content = txt.get("1.0", "end").strip()
             try:
                 # Normalize: keep only non-empty, non-comment lines
-                lines = [
-                    line.strip()
-                    for line in content.splitlines()
-                    if line.strip() and not line.strip().startswith("#")
-                ]
+                lines = [line.strip() for line in content.splitlines()
+                         if line.strip() and not line.strip().startswith("#")]
                 # Deduplicate and sort (case-insensitive)
                 unique_sorted = sorted(set(lines), key=lambda s: s.lower())
 
@@ -252,12 +224,9 @@ class DialogCoordinator:
                 # Update global old list
                 try:
                     import getsupernovae
-
                     getsupernovae.old = load_old_supernovae(path)
                 except Exception:
-                    log_exception(
-                        logger, "Failed to reload ignored supernovae after edit"
-                    )
+                    log_exception(logger, "Failed to reload ignored supernovae after edit")
 
                 editor.destroy()
 
@@ -268,13 +237,9 @@ class DialogCoordinator:
                     try:
                         self.on_search_async({}, "REFRESH")
                     except Exception:
-                        log_exception(
-                            logger, "Failed to refresh after editing ignored supernovae"
-                        )
+                        log_exception(logger, "Failed to refresh after editing ignored supernovae")
             except Exception as ex:
-                self.on_show_error(
-                    _("Save error"), _("Failed to save file: {ex}").format(ex=ex)
-                )
+                self.on_show_error(_("Save error"), _("Failed to save file: {ex}").format(ex=ex))
 
         # Close handler
         def do_close():
@@ -292,6 +257,7 @@ class DialogCoordinator:
 
     def open_sites_dialog(self):
         """Open the Sites configuration dialog."""
+        from app.i18n import _
 
         try:
             from app.ui.sites_dialog import SitesDialog
@@ -319,27 +285,18 @@ class DialogCoordinator:
                 # Update global sites
                 try:
                     import getsupernovae
-
                     getsupernovae.sites = new_sites
                 except Exception:
                     pass
 
                 try:
                     # Update UI combobox values
-                    vals = (
-                        sorted(list(new_sites.keys()))
-                        if isinstance(new_sites, dict) or hasattr(new_sites, "keys")
-                        else []
-                    )
+                    vals = sorted(list(new_sites.keys())) if isinstance(new_sites, dict) or hasattr(new_sites, 'keys') else []
 
                     # Prefer newly added site, otherwise preserve selection
                     sel_name = None
                     try:
-                        old_keys = (
-                            set(current_sites.keys())
-                            if isinstance(current_sites, dict)
-                            else set()
-                        )
+                        old_keys = set(current_sites.keys()) if isinstance(current_sites, dict) else set()
                         new_keys = set(vals)
                         added = sorted(new_keys - old_keys)
                         if added:
@@ -370,18 +327,15 @@ class DialogCoordinator:
                             if cb:
                                 cb.update_idletasks()
                         except Exception:
-                            log_exception(
-                                logger, "Failed to update site combobox after dialog"
-                            )
+                            log_exception(logger, "Failed to update site combobox after dialog")
                 except Exception:
-                    log_exception(
-                        logger, "Failed to refresh site values after site dialog"
-                    )
+                    log_exception(logger, "Failed to refresh site values after site dialog")
         except Exception:
             log_exception(logger, "Failed to process site dialog result")
 
     def open_visibility_window_dialog(self):
         """Open the Visibility Window configuration dialog."""
+        from app.i18n import _
 
         try:
             from app.ui.visibility_dialog import VisibilityDialog
@@ -411,7 +365,6 @@ class DialogCoordinator:
                 # Update global visibility_windows
                 try:
                     import getsupernovae
-
                     getsupernovae.visibility_windows = new_vis
                 except Exception:
                     pass
@@ -423,9 +376,7 @@ class DialogCoordinator:
                     # Prefer newly added window
                     sel_name = None
                     try:
-                        old_keys = (
-                            set(current.keys()) if isinstance(current, dict) else set()
-                        )
+                        old_keys = set(current.keys()) if isinstance(current, dict) else set()
                         new_keys = set(new_vis.keys())
                         added = sorted(new_keys - old_keys)
                         if added:
@@ -456,14 +407,8 @@ class DialogCoordinator:
                             if cb:
                                 cb.update_idletasks()
                         except Exception:
-                            log_exception(
-                                logger,
-                                "Failed to update visibility window combobox after dialog",
-                            )
+                            log_exception(logger, "Failed to update visibility window combobox after dialog")
                 except Exception:
-                    log_exception(
-                        logger,
-                        "Failed to refresh visibility window values after dialog",
-                    )
+                    log_exception(logger, "Failed to refresh visibility window values after dialog")
         except Exception:
             log_exception(logger, "Failed to process visibility window dialog result")
