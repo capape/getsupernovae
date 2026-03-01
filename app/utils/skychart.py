@@ -177,11 +177,11 @@ def make_sky_chart(
             plt.close(fig)
             bio.seek(0)
             return bio
-        else:
-            fig.savefig(bio, format="png", dpi=dpi)
-            plt.close(fig)
-            bio.seek(0)
-            return ImageReader(bio)
+
+        fig.savefig(bio, format="png", dpi=dpi)
+        plt.close(fig)
+        bio.seek(0)
+        return ImageReader(bio)
     except (OSError, ValueError, TypeError):
         logger.exception("failed to generate sky chart for %s", getattr(data, "name", None))
         return None

@@ -13,7 +13,7 @@ from app.utils.logger import get_logger, log_exception
 logger = get_logger(__name__)
 
 
-class LanguageCoordinator:
+class LanguageCoordinator:  # pylint: disable=too-few-public-methods
     """Coordinates language switching and UI label refreshing.
 
     This coordinator handles:

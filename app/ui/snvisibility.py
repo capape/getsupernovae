@@ -10,7 +10,9 @@ from app.models.snmodels import AxCordInTime, Visibility
 from app.services.visibility import visibility_summary
 
 
-class VisibilityWindow:
+class VisibilityWindow:  # pylint: disable=too-few-public-methods
+    """Data class for visibility window configuration."""
+
     def __init__(
         self,
         min_alt: float = 0,

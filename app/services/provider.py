@@ -9,14 +9,14 @@ from app.models.dto import SupernovaDTO
 from app.utils.snparser import _parse_row_safe
 
 
-class ISupernovaProvider(Protocol):
+class ISupernovaProvider(Protocol):  # pylint: disable=too-few-public-methods
     """Protocol defining the interface for supernova data providers."""
 
     def fetch(self) -> List[SupernovaDTO]:
         """Fetch supernovae from provider and return list of SupernovaDTO."""
 
 
-class RochesterProvider:
+class RochesterProvider:  # pylint: disable=too-few-public-methods
     """Abstract base class for Rochester providers."""
 
     def parse_html(self, html: bytes | str) -> List[SupernovaDTO]:

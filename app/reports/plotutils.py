@@ -29,7 +29,7 @@ except (ImportError, AttributeError):
 from app.utils.snparser import format_iso_datetime
 
 
-class VisibilityPlotter:
+class VisibilityPlotter:  # pylint: disable=too-few-public-methods
     """Helper to create visibility charts for supernovas.
 
     By default `make_image()` returns a ReportLab `ImageReader` (SVG) so it
@@ -143,10 +143,10 @@ class VisibilityPlotter:
                 plt.close(fig)
                 bio.seek(0)
                 return bio
-            else:
-                fig.savefig(bio, format="png", dpi=self.dpi)
-                plt.close(fig)
-                bio.seek(0)
-                return ImageReader(bio)
+
+            fig.savefig(bio, format="png", dpi=self.dpi)
+            plt.close(fig)
+            bio.seek(0)
+            return ImageReader(bio)
         except (OSError, ValueError, TypeError, AttributeError):
             return None

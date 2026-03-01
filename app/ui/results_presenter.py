@@ -72,7 +72,7 @@ def format_magnitude(mag: Any) -> str:
         return str(mag)
 
 
-class ResultsPresenter:
+class ResultsPresenter:  # pylint: disable=too-few-public-methods
     """Present Supernova domain object as UI row values."""
 
     ROCH_ICON = "🔗"

@@ -55,7 +55,7 @@ visibility_windows = load_visibility_windows()
 logger = get_logger(__name__)
 
 
-class SupernovaCallBackData:
+class SupernovaCallBackData:  # pylint: disable=too-few-public-methods
     """Data container for supernova observation search parameters.
 
     This class holds the search criteria and observation parameters
@@ -210,7 +210,7 @@ class RochesterSupernova:
 # at the top of this module. Do not redefine them here to avoid drift.
 
 
-class SearchFilters:
+class SearchFilters:  # pylint: disable=too-few-public-methods
     """Data class to hold supernova search filter parameters."""
 
     def __init__(
