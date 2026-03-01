@@ -49,7 +49,7 @@ class InitializationBuilder:
         # Initialize ThemeCoordinator (will get persist callback later from preferences coordinator)
         self.app.theme_coordinator = ThemeCoordinator(
             root_window=self.app,
-            get_results_tree=lambda: getattr(self.app, "resultsTree", None),
+            get_results_tree=lambda: getattr(self.app, "results_tree", None),
             get_supernova_data=lambda: getattr(self.app, "supernova_data", {}),
             get_dark_mode=lambda: (
                 self.app.dark_mode.get() if hasattr(self.app, "dark_mode") else False

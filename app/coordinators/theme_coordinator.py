@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
-from app.config.ui_constants import THEME_COLORS, UI_CONSTANTS, UI_STRINGS
+from app.config.ui_constants import DEFAULT_VALUES, THEME_COLORS, UI_CONSTANTS, UI_STRINGS
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -57,8 +57,16 @@ class ThemeCoordinator:
             # Configure alternating row colors based on current theme
             dark = self.get_dark_mode()
             if dark:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW,
+                    background=THEME_COLORS.DARK_EVEN_ROW,
+                    foreground=THEME_COLORS.DARK_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW,
+                    background=THEME_COLORS.DARK_ODD_ROW,
+                    foreground=THEME_COLORS.DARK_FG,
+                )
                 tree.tag_configure(
                     UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
                     background=THEME_COLORS.DARK_EVEN_ROW,
@@ -70,8 +78,16 @@ class ThemeCoordinator:
                     foreground=THEME_COLORS.BRIGHT_FG_DARK,
                 )
             else:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW,
+                    background=THEME_COLORS.LIGHT_EVEN_ROW,
+                    foreground=THEME_COLORS.LIGHT_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW,
+                    background=THEME_COLORS.LIGHT_ODD_ROW,
+                    foreground=THEME_COLORS.LIGHT_FG,
+                )
                 tree.tag_configure(
                     UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
                     background=THEME_COLORS.LIGHT_EVEN_ROW,
@@ -103,14 +119,25 @@ class ThemeCoordinator:
                         sn = supernova_data[item]
                         mag = getattr(sn, "mag", None)
                         try:
-                            is_bright = mag is not None and float(mag) < 15
+                            is_bright = (
+                                mag is not None
+                                and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
+                            )
                         except (ValueError, TypeError):
                             is_bright = False
 
                         if is_bright:
-                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            tag = (
+                                UI_STRINGS.TAG_EVEN_ROW_BRIGHT
+                                if index % 2 == 0
+                                else UI_STRINGS.TAG_ODD_ROW_BRIGHT
+                            )
                         else:
-                            tag = "evenrow" if index % 2 == 0 else "oddrow"
+                            tag = (
+                                UI_STRINGS.TAG_EVEN_ROW
+                                if index % 2 == 0
+                                else UI_STRINGS.TAG_ODD_ROW
+                            )
 
                         tree.item(item, tags=(tag,))
                 except (AttributeError, tk.TclError, TypeError, KeyError):
@@ -157,18 +184,19 @@ class ThemeCoordinator:
                 style.configure("TButton", background=btn_bg, foreground=fg)
                 style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
                 style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
+                # Explicitly clear foreground in Treeview style to allow tag foreground colors
                 style.configure(
                     "Treeview",
                     background=tree_bg,
                     fieldbackground=tree_bg,
-                    foreground=fg,
+                    foreground="",
                     rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
                 )
                 style.configure(
                     UI_STRINGS.RESULTS_TREE_STYLE,
                     background=tree_bg,
                     fieldbackground=tree_bg,
-                    foreground=fg,
+                    foreground="",
                     rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
                 )
                 style.configure("TFrame", background=bg)

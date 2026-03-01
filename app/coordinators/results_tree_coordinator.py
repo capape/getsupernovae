@@ -13,7 +13,13 @@ import urllib.parse
 import webbrowser
 from typing import Any, Callable, Dict
 
-from app.config.ui_constants import NETWORK_CONSTANTS, THEME_COLORS, UI_CONSTANTS
+from app.config.ui_constants import (
+    DEFAULT_VALUES,
+    NETWORK_CONSTANTS,
+    THEME_COLORS,
+    UI_CONSTANTS,
+    UI_STRINGS,
+)
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -104,14 +110,25 @@ class ResultsTreeCoordinator:
                         sn = self.supernova_data[item]
                         mag = getattr(sn, "mag", None)
                         try:
-                            is_bright = mag is not None and float(mag) < 15
+                            is_bright = (
+                                mag is not None
+                                and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
+                            )
                         except (ValueError, TypeError):
                             is_bright = False
 
                         if is_bright:
-                            tag = "evenrow_bright" if index % 2 == 0 else "oddrow_bright"
+                            tag = (
+                                UI_STRINGS.TAG_EVEN_ROW_BRIGHT
+                                if index % 2 == 0
+                                else UI_STRINGS.TAG_ODD_ROW_BRIGHT
+                            )
                         else:
-                            tag = "evenrow" if index % 2 == 0 else "oddrow"
+                            tag = (
+                                UI_STRINGS.TAG_EVEN_ROW
+                                if index % 2 == 0
+                                else UI_STRINGS.TAG_ODD_ROW
+                            )
 
                         self.tree.item(item, tags=(tag,))
                 except (AttributeError, tk.TclError, TypeError, KeyError):
