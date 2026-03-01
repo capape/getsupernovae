@@ -65,9 +65,7 @@ def test_rochester_uses_injected_visibility_factory():
 
     # Instantiate RochesterSupernova with the dummy factory
     rv = RochesterSupernova(
-        old_supernovae=set(),
-        visibility_windows={},
-        visibility_factory=DummyVisibilityFactory
+        old_supernovae=set(), visibility_windows={}, visibility_factory=DummyVisibilityFactory
     )
 
     # Run selection with permissive thresholds so the single row is included

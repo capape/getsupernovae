@@ -73,9 +73,7 @@ class RochesterSupernova:
             )
         )
 
-    def select_and_sort_supernovae(
-        self, callback_data, supernovae_list: List[SupernovaDTO]
-    ):
+    def select_and_sort_supernovae(self, callback_data, supernovae_list: List[SupernovaDTO]):
         """Select and sort supernovae using the selection service.
 
         This method now delegates to SupernovaSelectionService for all

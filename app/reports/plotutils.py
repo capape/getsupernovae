@@ -2,6 +2,7 @@
 
 Provides VisibilityPlotter class for generating matplotlib-based visibility charts.
 """
+
 import io
 
 from reportlab.lib.utils import ImageReader

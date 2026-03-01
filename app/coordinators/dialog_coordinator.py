@@ -8,6 +8,7 @@ This coordinator handles:
 
 It uses callbacks to interact with the UI without tight coupling.
 """
+
 # pylint: disable=cyclic-import  # Lazy imports in methods break cycle at runtime
 
 import os
@@ -168,7 +169,11 @@ class DialogCoordinator:
             try:
                 import getsupernovae
 
-                current = "" if getsupernovae.old_supernovae is None else "\n".join(getsupernovae.old_supernovae)
+                current = (
+                    ""
+                    if getsupernovae.old_supernovae is None
+                    else "\n".join(getsupernovae.old_supernovae)
+                )
             except (ImportError, AttributeError, TypeError):
                 current = ""
 

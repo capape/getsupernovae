@@ -3,6 +3,7 @@
 This module creates comprehensive PDF reports with supernova data, sky charts,
 and visibility plots.
 """
+
 import logging
 import os
 import platform

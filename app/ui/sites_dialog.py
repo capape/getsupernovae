@@ -5,6 +5,7 @@ add, edit and persist observing site definitions (a simple mapping of name
 -> lat/lon/height). The dialog is intentionally lightweight and testable: a
 `path` may be provided to control where `sites.json` is read/written.
 """
+
 # pylint: disable=duplicate-code  # Similar UI patterns to visibility_dialog
 
 import json

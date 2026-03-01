@@ -2,6 +2,7 @@
 
 This module generates plain text reports with supernova data and visibility information.
 """
+
 from typing import List
 
 from app import i18n

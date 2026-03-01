@@ -42,7 +42,7 @@ def test_async_uses_injected_provider():
         visibility_windows={},
         visibility_factory=None,
         provider_factory=DummyProvider,
-        reporter=None
+        reporter=None,
     )
 
     # run downloader with dummy provider factory
@@ -69,6 +69,6 @@ def test_reporter_propagation_to_rochester():
         visibility_windows={},
         visibility_factory=None,
         provider_factory=None,
-        reporter=dr
+        reporter=dr,
     )
     assert getattr(rs, "reporter", None) is dr
