@@ -18,14 +18,17 @@ _current_language: Optional[str] = None
 
 
 def _(message: str) -> str:
+    """Translate a message using the current language."""
     return _current_trans.gettext(message)
 
 
 def ngettext(singular: str, plural: str, n: int) -> str:
+    """Translate a message with plural forms."""
     return _current_trans.ngettext(singular, plural, n)
 
 
 def set_language(lang: Optional[str]) -> None:
+    """Set the application language."""
     global _current_trans, _current_language
     if not lang:
         _current_trans = gettext.NullTranslations()
@@ -40,6 +43,7 @@ def set_language(lang: Optional[str]) -> None:
 
 
 def get_language() -> Optional[str]:
+    """Get the current language code."""
     return _current_language
 
 

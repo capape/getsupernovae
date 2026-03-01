@@ -343,7 +343,7 @@ class FilterPanelManager:
             try:
                 if "language" in self.variables:
                     self._safe_trace_add(
-                        self.variables["language"], lambda *a: self.callbacks.on_persist_prefs(*a)
+                        self.variables["language"], self.callbacks.on_persist_prefs
                     )
             except (AttributeError, TypeError):
                 log_exception(logger, "Failed to add language trace callback")

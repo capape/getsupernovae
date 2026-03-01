@@ -20,8 +20,6 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
-from app.models.dto import SupernovaDTO
-
 # ensure local modules in this directory can be imported when script run directly
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -31,19 +29,10 @@ from app.config.snconfig import (
     load_sites,
     load_visibility_windows,
 )
-from app.config.ui_constants import (
-    DEFAULT_VALUES,
-    UI_STRINGS,
-)
+from app.config.ui_constants import DEFAULT_VALUES, UI_STRINGS
 from app.coordinators.results_tree_coordinator import ResultsTreeCoordinator
-
-# import the external plotter helper
 from app.i18n import _
-
-if TYPE_CHECKING:
-    from app.coordinators.report_coordinator import ReportCoordinator
-    from app.coordinators.search_coordinator import SearchCoordinator
-    from app.ui.results_presenter import ResultsPresenter
+from app.models.dto import SupernovaDTO
 from app.services.observation_time_service import ObservationTimeService
 from app.services.provider import NetworkRochesterProvider
 from app.services.supernova_filter_service import SupernovaFilterService
@@ -53,6 +42,11 @@ from app.ui.results_panel_manager import ResultsPanelCallbacks, ResultsPanelMana
 from app.ui.snvisibility import VisibilityWindow
 from app.ui.toolbar_manager import ToolbarCallbacks, ToolbarManager
 from app.utils.logger import get_logger, log_exception
+
+if TYPE_CHECKING:
+    from app.coordinators.report_coordinator import ReportCoordinator
+    from app.coordinators.search_coordinator import SearchCoordinator
+    from app.ui.results_presenter import ResultsPresenter
 
 bootstrap_config()
 old = load_old_supernovae()
@@ -827,7 +821,7 @@ class SupernovasApp(tk.Tk):
         builder.build(presenter, visibility_factory, provider_factory, reporter)
 
 
-def representsInt(s):
+def represents_int(s):
     """Check if a string represents an integer."""
     try:
         int(s)
@@ -845,11 +839,11 @@ def main():
     daysToSearch = DEFAULT_VALUES.DAYS_TO_SEARCH
 
     if len(sys.argv) == 3:
-        if representsInt(sys.argv[2]):
+        if represents_int(sys.argv[2]):
             daysToSearch = int(sys.argv[2])
             mag = sys.argv[1]
     elif len(sys.argv) == 2:
-        if representsInt(sys.argv[1]):
+        if represents_int(sys.argv[1]):
             mag = sys.argv[1]
 
     # pylint: disable=no-member  # astropy.units members exist at runtime

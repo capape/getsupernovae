@@ -1,3 +1,5 @@
+"""Parser utilities for supernova data from Rochester astronomy website."""
+
 import re
 import urllib.parse
 from datetime import datetime

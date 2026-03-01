@@ -20,6 +20,7 @@ class RochesterProvider:
     """Abstract base class for Rochester providers."""
 
     def parse_html(self, html: bytes | str) -> List[SupernovaDTO]:
+        """Parse HTML content and return list of SupernovaDTO objects."""
         html_str: str
         if isinstance(html, bytes):
             try:
@@ -98,14 +99,10 @@ class NetworkRochesterProvider(RochesterProvider):
         import ssl
 
         source = self.source
-        try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
-                html = resp.read()
-
-        except (OSError, IOError, urllib.error.URLError):
-            raise
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
+            html = resp.read()
 
         return self.parse_html(html)

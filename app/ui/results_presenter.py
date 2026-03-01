@@ -1,3 +1,5 @@
+"""Results presenter for formatting supernova data for display."""
+
 from typing import Any, Optional, Tuple
 
 import astropy.units as u
@@ -77,6 +79,7 @@ class ResultsPresenter:
     TNS_ICON = "🔗"
 
     def present(self, sn: Any) -> Tuple[str, str, str, str, str, str, str, str, str, str, str]:
+        """Format supernova data for tree view display."""
         name = getattr(sn, "name", "") or ""
         sn_type = getattr(sn, "type", "") or ""
         mag_str = format_magnitude(getattr(sn, "mag", ""))

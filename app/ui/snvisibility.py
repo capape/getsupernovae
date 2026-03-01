@@ -1,3 +1,5 @@
+"""Visibility window calculations for supernova observations."""
+
 from datetime import timedelta
 
 from astropy.coordinates import AltAz

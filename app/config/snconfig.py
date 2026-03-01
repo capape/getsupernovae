@@ -98,6 +98,7 @@ def load_sites(path: str | None = None):
 
 
 def get_config_candidates(path: str | None, config_file: str):
+    """Get list of candidate paths for config file."""
     candidates = []
     if path:
         candidates.append(path)
@@ -108,6 +109,7 @@ def get_config_candidates(path: str | None, config_file: str):
 
 
 def load_visibility_windows(path: str | None = None):
+    """Load visibility windows from config file."""
     defaults = {"Default": {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}}
 
     candidates = get_config_candidates(path, "visibility_windows.json")
