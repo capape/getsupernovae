@@ -14,15 +14,15 @@ def setup_module_logger(
     fmt: str = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 ) -> logging.Logger:
     """Set up and return a module logger with StreamHandler.
-    
+
     Ensures the logger has a handler configured with the specified format.
     Only adds a handler if the logger doesn't already have one.
-    
+
     Args:
         name: Logger name (typically __name__)
         level: Logging level (default: INFO)
         fmt: Log message format string
-    
+
     Returns:
         Configured Logger instance
     """

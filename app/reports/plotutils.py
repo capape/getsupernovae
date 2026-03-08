@@ -34,6 +34,31 @@ except (ImportError, AttributeError):
 from app.utils.snparser import format_iso_datetime
 
 
+def save_matplotlib_figure(fig, fmt: str = "png", dpi: int = 150):
+    """Save matplotlib figure to buffer and return appropriate object.
+    
+    Args:
+        fig: Matplotlib figure object
+        fmt: Output format ('png' or 'svg')
+        dpi: DPI for PNG output (ignored for SVG)
+    
+    Returns:
+        For PNG: ImageReader object (for ReportLab)
+        For SVG: io.BytesIO containing SVG data
+    """
+    bio = io.BytesIO()
+    if fmt == "svg":
+        fig.savefig(bio, format="svg")
+        plt.close(fig)
+        bio.seek(0)
+        return bio
+    
+    fig.savefig(bio, format="png", dpi=dpi)
+    plt.close(fig)
+    bio.seek(0)
+    return ImageReader(bio)
+
+
 class VisibilityPlotter:  # pylint: disable=too-few-public-methods
     """Helper to create visibility charts for supernovas.
 
@@ -142,17 +167,6 @@ class VisibilityPlotter:  # pylint: disable=too-few-public-methods
             fig.autofmt_xdate(rotation=90, ha="center")
             plt.tight_layout()
 
-            bio = io.BytesIO()
-            if fmt == "svg":
-                # write SVG bytes to buffer and return it
-                fig.savefig(bio, format="svg")
-                plt.close(fig)
-                bio.seek(0)
-                return bio
-
-            fig.savefig(bio, format="png", dpi=self.dpi)
-            plt.close(fig)
-            bio.seek(0)
-            return ImageReader(bio)
+            return save_matplotlib_figure(fig, fmt=fmt, dpi=self.dpi)
         except (OSError, ValueError, TypeError, AttributeError):
             return None

@@ -18,11 +18,11 @@ except (ImportError, ModuleNotFoundError, AttributeError) as e:
 
 from astropy.coordinates import SkyCoord
 
+from app.reports.plotutils import save_matplotlib_figure
 from app.utils.logger import setup_module_logger
 
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
 logger = setup_module_logger(__name__)
-
 
 def make_sky_chart(
     data,
@@ -169,17 +169,7 @@ def make_sky_chart(
         ax.tick_params(axis="y", labelsize=6)
         plt.tight_layout()
 
-        bio = io.BytesIO()
-        if fmt == "svg":
-            fig.savefig(bio, format="svg")
-            plt.close(fig)
-            bio.seek(0)
-            return bio
-
-        fig.savefig(bio, format="png", dpi=dpi)
-        plt.close(fig)
-        bio.seek(0)
-        return ImageReader(bio)
+        return save_matplotlib_figure(fig, fmt=fmt, dpi=dpi)
     except (OSError, ValueError, TypeError):
         logger.exception("failed to generate sky chart for %s", getattr(data, "name", None))
         return None
