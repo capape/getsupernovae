@@ -788,7 +788,6 @@ def main():
         if represents_int(sys.argv[1]):
             mag = sys.argv[1]
 
-    # pylint: disable=no-member  # astropy.units members exist at runtime
     site = EarthLocation(lat=41.55 * u.deg, lon=2.09 * u.deg, height=224 * u.m)
 
     site = list(sites.keys())[0]

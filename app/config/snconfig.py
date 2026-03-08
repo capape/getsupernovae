@@ -81,7 +81,7 @@ def load_sites(path: str | None = None):
                 lat = float(v.get("lat", 0.0))
                 lon = float(v.get("lon", 0.0))
                 h = float(v.get("height", 0.0))
-                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
+                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator]
             except (ValueError, TypeError, KeyError, AttributeError):
                 continue
 
@@ -96,7 +96,7 @@ def load_sites(path: str | None = None):
                         lat = float(v.lat.value)
                         lon = float(v.lon.value)
                         h = float(v.height.value)
-                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator] # pylint: disable=no-member
+                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator]
                 except (ValueError, TypeError, KeyError, AttributeError):
                     continue
     except (ValueError, TypeError, KeyError, AttributeError):

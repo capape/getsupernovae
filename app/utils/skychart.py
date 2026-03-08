@@ -2,7 +2,7 @@
 
 import logging
 
-import astropy.units as u  # pylint: disable=no-member
+import astropy.units as u
 
 # Try to import astroquery; availability flagged in HAS_ASTROQUERY
 try:
