@@ -121,9 +121,7 @@ class InitializationBuilder:
             self.app.visibility_factory,
             self.app.provider_factory,
             self.app.reporter,
-        ) = initialize_rochester_factories(
-            visibility_factory, provider_factory, reporter
-        )
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
 
         # Initialize RochesterSupernova
         from app.services.rochester_supernova import RochesterSupernova

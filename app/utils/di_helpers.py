@@ -6,7 +6,7 @@ following the dependency injection pattern used throughout the application.
 
 from typing import Any, Callable, Optional, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def default_if_none(value: Optional[T], default: T) -> T:

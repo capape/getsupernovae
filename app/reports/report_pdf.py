@@ -139,9 +139,24 @@ def add_supernova_to_pdf(text_object, data: Supernova):
     for line in lines:
         text_object.textLine(line)
 
+
 # PDF layout settings
 class PDFSettings:
-    """Container for PDF layout configuration."""
+    """Container for PDF layout configuration.
+
+    Attributes:
+        fontsize: Base font size in points
+        leading: Line spacing (fontsize * 1.25)
+        marginx: Horizontal margin in cm
+        margintop: Top margin in cm
+        marginbottom: Bottom margin in cm
+        topy: Y-coordinate of top content area
+        page_width: Total page width (A4: 21 cm)
+        usable_width: Content width excluding margins
+        bottom_threshold: Bottom threshold
+        used_font: Name of the registered font to use
+    """
+
     def __init__(self):
         self.fontsize = 10
         self.leading = self.fontsize * 1.25
@@ -151,8 +166,22 @@ class PDFSettings:
         self.topy = 29.7 * cm - self.margintop
         self.page_width = 21.0 * cm
         self.usable_width = self.page_width - (2 * self.marginx)
+        self.bottom_threshold = self.marginbottom + self.leading
+        # Register Unicode-compatible font for better mobile compatibility
+        self.used_font = _register_pdf_font()
+
 
 class _Header:
+    """Container for PDF report header data.
+
+    Attributes:
+        from_date: Start date of observation period
+        observation_date: End date of observation period
+        magnitude: Maximum magnitude filter threshold
+        site: EarthLocation of observation site
+        visibility_window_name: Optional name of visibility window configuration
+    """
+
     def __init__(self, from_date, observation_date, magnitude, site, visibility_window_name):
         self.from_date = from_date
         self.observation_date = observation_date
@@ -161,7 +190,14 @@ class _Header:
         self.visibility_window_name = visibility_window_name
 
 
-def write_header(txtobj, header, settings, full=True):
+def write_page_header(txtobj, header, full=True):
+    """Write header section to PDF text object.
+
+    Args:
+        txtobj: ReportLab text object to write to
+        header: _Header instance with report metadata
+        full: If True, write complete header with site details; if False, minimal header
+    """
     # full header (printed only on first page)
     if full:
         txtobj.textLine(
@@ -199,13 +235,52 @@ def write_header(txtobj, header, settings, full=True):
         # minimal header on continued pages: leave a blank line for spacing
         txtobj.textLine("")
 
+
+def supernova_lines_info(data):
+    """Generate formatted text lines for a supernova entry.
+    Args:
+        data: Supernova object with observation data
+    Returns:
+        List of formatted strings for PDF text output
+    """
+    lines = [
+        "",
+        i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(
+            date=data.last_observed_date, mag=data.mag, type=data.type, name=data.name
+        ),
+        i18n._("  Const: {const}, Host: {host}").format(const=data.constellation, host=data.host),
+        i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
+        "",
+        i18n._("  Visible from : {from_} to: {to}").format(
+            from_=format_iso_datetime(data.visibility.az_coords[0].time),
+            to=format_iso_datetime(data.visibility.az_coords[-1].time),
+        ),
+        i18n._("  AzCoords az: {az}, lat: {lat}").format(
+            az=data.visibility.az_coords[0].coord.az.to_string(sep=" ", precision=2),
+            lat=data.visibility.az_coords[0].coord.alt.to_string(sep=" ", precision=2),
+        ),
+        i18n._("  Last azCoords az: {az}, lat: {lat}").format(
+            az=data.visibility.az_coords[-1].coord.az.to_string(sep=" ", precision=2),
+            lat=data.visibility.az_coords[-1].coord.alt.to_string(sep=" ", precision=2),
+        ),
+        "",
+        i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
+            first=data.first_observed,
+            max=data.max_magnitude,
+            on=data.max_magnitude_date,
+        ),
+        "",
+        "",
+    ]
+    return lines
+
+
 def create_pdf(
     supernovas,
     from_date: str,
     observation_date: str,
     magnitude,
     site,
-    _min_latitude,
     visibility_window_name=None,
 ):
     """Generate a comprehensive PDF report of supernova observations.
@@ -216,7 +291,6 @@ def create_pdf(
         observation_date: End date of search period
         magnitude: Maximum magnitude filter value
         site: EarthLocation of observation site
-        _min_latitude: Minimum altitude threshold (unused, kept for compatibility)
         visibility_window_name: Optional visibility window configuration name
 
     Returns:
@@ -224,11 +298,7 @@ def create_pdf(
     """
     logger.info("Creating pdf")
 
-
     settings = PDFSettings()
-
-    # Register Unicode-compatible font for better mobile compatibility
-    used_font = _register_pdf_font()
 
     # Determine user-friendly save location
     docs = _determine_pdf_output_directory()
@@ -238,224 +308,314 @@ def create_pdf(
         canvas.setPageCompression(0)
     except (AttributeError, RuntimeError):
         logger.exception("failed to set page compression (non-fatal)")
-    canvas.setFont(used_font, settings.fontsize)
+    canvas.setFont(settings.used_font, settings.fontsize)
     canvas.setFillColor(black)
 
     text_object = canvas.beginText()
     text_object.setTextOrigin(settings.marginx, settings.topy)
-    text_object.setFont(used_font, settings.fontsize)
+    text_object.setFont(settings.used_font, settings.fontsize)
     text_object.setLeading(settings.leading)
 
     header = _Header(from_date, observation_date, magnitude, site, visibility_window_name)
 
-    write_header(text_object, header, settings)
-
-    def supernova_lines(data):
-        lines = [
-            "",
-            i18n._("Date: {date}, Mag: {mag}, T: {type}, Name: {name}").format(
-                date=data.last_observed_date, mag=data.mag, type=data.type, name=data.name
-            ),
-            i18n._("  Const: {const}, Host: {host}").format(
-                const=data.constellation, host=data.host
-            ),
-            i18n._("  RA: {ra}, DECL. {decl}").format(ra=data.ra, decl=data.decl),
-            "",
-            i18n._("  Visible from : {from_} to: {to}").format(
-                from_=format_iso_datetime(data.visibility.az_coords[0].time),
-                to=format_iso_datetime(data.visibility.az_coords[-1].time),
-            ),
-            i18n._("  AzCoords az: {az}, lat: {lat}").format(
-                az=data.visibility.az_coords[0].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.az_coords[0].coord.alt.to_string(sep=" ", precision=2),
-            ),
-            i18n._("  Last azCoords az: {az}, lat: {lat}").format(
-                az=data.visibility.az_coords[-1].coord.az.to_string(sep=" ", precision=2),
-                lat=data.visibility.az_coords[-1].coord.alt.to_string(sep=" ", precision=2),
-            ),
-            "",
-            i18n._("  Discovered: {first} , MAX Mag: {max} on: {on}").format(
-                first=data.first_observed,
-                max=data.max_magnitude,
-                on=data.max_magnitude_date,
-            ),
-            "",
-            "",
-        ]
-        return lines
+    write_page_header(text_object, header)
 
     plotter = VisibilityPlotter()
-    bottom_threshold = settings.marginbottom + settings.leading
 
     for data in supernovas:
-        lines = supernova_lines(data)
+
         img = plotter.make_image(data, "png", True, site)
-        img_height_pts = (6 * cm) if img else 0
-        lines_height = len(lines) * settings.leading
-        required_space = lines_height + img_height_pts + settings.leading
+        sky_img = make_sky_chart_image(data)
 
-        if text_object.getY() - required_space < bottom_threshold:
-            canvas.drawText(text_object)
-            canvas.showPage()
-            text_object = canvas.beginText()
-            # on subsequent pages print only a minimal header
-            write_header(text_object, header, settings, full=False)
-            canvas.setFont(used_font, settings.fontsize)
-            canvas.setFillColor(black)
-
-        origin_y = text_object.getY()
-
-        # draw highlight behind first four lines
-        try:
-            highlight_lines = 4
-            pad = max(2, settings.fontsize * 0.25)
-            rect_top = origin_y + pad
-            rect_bottom = origin_y - (highlight_lines * settings.leading) - pad
-            rect_height = rect_top - rect_bottom
-            canvas.saveState()
-            canvas.setFillColor(Color(0.95, 0.95, 0.95))
-            canvas.rect(settings.marginx, rect_bottom, settings.usable_width, rect_height, fill=1, stroke=0)
-            # draw a subtle top border on the highlight box
-            try:
-                canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
-                canvas.setLineWidth(0.6)
-                canvas.line(settings.marginx, rect_top, settings.marginx + settings.usable_width, rect_top)
-            except (AttributeError, TypeError, ValueError):
-                logger.exception(
-                    "failed drawing highlight top border for %s",
-                    getattr(data, "name", None),
-                )
-            canvas.restoreState()
-        except (AttributeError, TypeError, ValueError):
-            logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
-
-        for line in lines:
-            if text_object.getY() - settings.leading < bottom_threshold:
-                canvas.drawText(text_object)
-                canvas.showPage()
-                text_object = canvas.beginText()
-                write_header(text_object, header, settings, full=False)
-                canvas.setFont(used_font, settings.fontsize)
-                canvas.setFillColor(black)
-
-            text_object.textLine(line)
-
-        y_after_text = text_object.getY()
-        canvas.drawText(text_object)
-
-        try:
-            link = getattr(data, "link", None) or ""
-            if link:
-                discovered_index = None
-                for idx, txt in enumerate(lines):
-                    if isinstance(txt, str) and txt.strip().startswith("Discovered:"):
-                        discovered_index = idx
-                        break
-
-                if discovered_index is None:
-                    discovered_index = len(lines) - 3
-
-                link_y = origin_y - ((discovered_index + 1) * settings.leading)
-                canvas.setFillColor(blue)
-                canvas.setFont(used_font, settings.fontsize)
-                canvas.drawString(settings.marginx, link_y, link)
-                w = pdfmetrics.stringWidth(link, used_font, settings.fontsize)
-                canvas.linkURL(
-                    link,
-                    (settings.marginx, link_y - 2, settings.marginx + w, link_y + settings.fontsize + 2),
-                    relative=0,
-                )
-                canvas.setFillColor(black)
-        except (AttributeError, TypeError, ValueError):
-            logger.exception("failed to draw link for %s", getattr(data, "name", None))
-
-        try:
-            name = getattr(data, "name", None)
-            if name:
-                try:
-                    tnser = f"https://www.wis-tns.org/object/{quote(name)}"
-                    second_y = (
-                        link_y - settings.leading
-                        if "link_y" in locals()
-                        else origin_y - ((len(lines) - 2) * settings.leading)
-                    )
-                    canvas.setFillColor(blue)
-                    canvas.setFont(used_font, settings.fontsize)
-                    canvas.drawString(settings.marginx, second_y, tnser)
-                    w2 = pdfmetrics.stringWidth(tnser, used_font, settings.fontsize)
-                    canvas.linkURL(
-                        tnser,
-                        (settings.marginx, second_y - 2, settings.marginx + w2, second_y + settings.fontsize + 2),
-                        relative=0,
-                    )
-                    canvas.setFillColor(black)
-                except (AttributeError, TypeError, ValueError, ImportError):
-                    logger.exception(
-                        "failed to draw tnser link for %s", getattr(data, "name", None)
-                    )
-        except (AttributeError, TypeError):
-            logger.exception(
-                "error while attempting to add tnser link for %s",
-                getattr(data, "name", None),
-            )
-
-        try:
-            sky_img = make_sky_chart(data, fmt="png")
-        except (OSError, ValueError, TypeError, AttributeError, ImportError):
-            logger.exception(
-                "make_sky_chart raised an exception for %s", getattr(data, "name", None)
-            )
-            sky_img = None
-
-        logger.info(
-            "adding images for %s: plot=%s skychart=%s",
-            getattr(data, "name", None),
-            "yes" if img else "no",
-            "yes" if sky_img else "no",
-        )
-        if img or sky_img:
-            try:
-                gap = 0.5 * cm
-                if img and sky_img:
-                    img_w = settings.usable_width * 0.66
-                    sky_w = settings.usable_width - img_w - gap
-                else:
-                    img_w = min(12.0 * cm, settings.usable_width)
-                    sky_w = 0
-
-                img_h = img_height_pts
-                img_x = settings.marginx
-                img_y = y_after_text - img_h - (0.2 * cm)
-
-                if img_y < settings.marginbottom:
-                    canvas.showPage()
-                    # start a fresh text object and print only the minimal header
-                    text_object = canvas.beginText()
-                    write_header(text_object, header, settings, full=False)
-                    canvas.setFont(used_font, settings.fontsize)
-                    canvas.setFillColor(black)
-                    # compute image origin below header
-                    img_y = text_object.getY() - img_h - (0.2 * cm)
-
-                if img:
-                    canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
-
-                if sky_img:
-                    sky_x = img_x + img_w + gap
-                    if sky_x + sky_w > settings.marginx + settings.usable_width:
-                        sky_w = settings.marginx + settings.usable_width - sky_x
-                    canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
-            except (AttributeError, TypeError, ValueError, OSError):
-                logger.exception("failed to draw images for %s", getattr(data, "name", None))
+        img_y = add_supernova_to_report(settings, canvas, text_object, header, data, img, sky_img)
 
         text_object = canvas.beginText()
         text_object.setTextOrigin(settings.marginx, img_y - (0.2 * cm) if img else settings.topy)
-        text_object.setFont(used_font, settings.fontsize)
+        text_object.setFont(settings.used_font, settings.fontsize)
         text_object.setLeading(settings.leading)
-        canvas.setFont(used_font, settings.fontsize)
+        canvas.setFont(settings.used_font, settings.fontsize)
         canvas.setFillColor(black)
 
     canvas.drawText(text_object)
     canvas.save()
 
     return str(pdf_filename)
+
+
+def add_supernova_to_report(settings, canvas, text_object, header, data, img, sky_img):
+    """Add a complete supernova entry to the PDF report with text, links, and images.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        text_object: ReportLab text object for text rendering
+        header: _Header instance with report metadata
+        data: Supernova object with observation data
+        img: visibility image
+        sky_img: skychart image
+
+    Returns:
+        img_y is the Y-coordinate after placing images
+    """
+    supernova_main_info = supernova_lines_info(data)
+    img_height_pts = (6 * cm) if img else 0
+    lines_height = len(supernova_main_info) * settings.leading
+    required_space = lines_height + img_height_pts + settings.leading
+
+    if text_object.getY() - required_space < settings.bottom_threshold:
+        canvas.drawText(text_object)
+        canvas.showPage()
+        text_object = canvas.beginText()
+        text_object.setTextOrigin(settings.marginx, settings.topy)
+        text_object.setFont(settings.used_font, settings.fontsize)
+        text_object.setLeading(settings.leading)
+        # on subsequent pages print only a minimal header
+        write_page_header(text_object, header, full=False)
+        canvas.setFont(settings.used_font, settings.fontsize)
+        canvas.setFillColor(black)
+
+    origin_y = text_object.getY()
+
+    highlight_box(settings, canvas, data, origin_y)
+
+    for line in supernova_main_info:
+        if text_object.getY() - settings.leading < settings.bottom_threshold:
+            canvas.drawText(text_object)
+            canvas.showPage()
+            text_object = canvas.beginText()
+            text_object.setTextOrigin(settings.marginx, settings.topy)
+            text_object.setFont(settings.used_font, settings.fontsize)
+            text_object.setLeading(settings.leading)
+            write_page_header(text_object, header, full=False)
+            canvas.setFont(settings.used_font, settings.fontsize)
+            canvas.setFillColor(black)
+
+        text_object.textLine(line)
+
+    y_after_text = text_object.getY()
+    canvas.drawText(text_object)
+
+    posy_rochester_link = add_rochester_link(settings, canvas, data, supernova_main_info, origin_y)
+
+    add_tns_link(settings, canvas, data, supernova_main_info, origin_y, posy_rochester_link)
+
+    img_y = add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_after_text)
+    return img_y
+
+
+def add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_after_text):
+    """Add visibility plot and sky chart images to PDF report.
+
+    Handles page breaks when images don't fit on current page.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        header: _Header instance with report metadata
+        data: Supernova object (used for error logging)
+        img: Visibility plot image object or None
+        sky_img: Sky chart image object or None
+        img_height_pts: Height of images in points
+        y_after_text: Y-coordinate where images should start
+
+    Returns:
+        Y-coordinate after placing images
+    """
+    logger.info(
+        "adding images for %s: plot=%s skychart=%s",
+        getattr(data, "name", None),
+        "yes" if img else "no",
+        "yes" if sky_img else "no",
+    )
+    img_y = y_after_text  # Default return value if no images
+    if img or sky_img:
+        try:
+            gap = 0.5 * cm
+            if img and sky_img:
+                img_w = settings.usable_width * 0.66
+                sky_w = settings.usable_width - img_w - gap
+            else:
+                img_w = min(12.0 * cm, settings.usable_width)
+                sky_w = 0
+
+            img_h = img_height_pts
+            img_x = settings.marginx
+            img_y = y_after_text - img_h - (0.2 * cm)
+
+            if img_y < settings.marginbottom:
+                canvas.showPage()
+                # start a fresh text object and print only the minimal header
+                text_object = canvas.beginText()
+                text_object.setTextOrigin(settings.marginx, settings.topy)
+                text_object.setFont(settings.used_font, settings.fontsize)
+                text_object.setLeading(settings.leading)
+                write_page_header(text_object, header, full=False)
+                # draw the header before continuing
+                canvas.drawText(text_object)
+                # compute image origin below the header we just drew
+                img_y = settings.topy - (2 * settings.leading) - img_h - (0.2 * cm)
+                canvas.setFont(settings.used_font, settings.fontsize)
+                canvas.setFillColor(black)
+
+            if img:
+                canvas.drawImage(img, img_x, img_y, width=img_w, height=img_h)
+
+            if sky_img:
+                sky_x = img_x + img_w + gap
+                if sky_x + sky_w > settings.marginx + settings.usable_width:
+                    sky_w = settings.marginx + settings.usable_width - sky_x
+                canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
+        except (AttributeError, TypeError, ValueError, OSError):
+            logger.exception("failed to draw images for %s", getattr(data, "name", None))
+    return img_y
+
+
+def add_tns_link(settings, canvas, data, supernova_main_info, origin_y, previous_data_posy):
+    """Add clickable TNS (Transient Name Server) link to PDF report.
+
+    Positions the link below the Rochester link if present, or at a calculated position.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        data: Supernova object with name for TNS URL
+        supernova_main_info: List of formatted text lines (for positioning)
+        origin_y: Original Y-coordinate before text rendering
+        previous_data_posy: Y-coordinate of Rochester link, or None if not present
+    """
+    try:
+        name = getattr(data, "name", None)
+        if name:
+            try:
+                tnser = f"https://www.wis-tns.org/object/{quote(name)}"
+                pos_y = (
+                    previous_data_posy - settings.leading
+                    if previous_data_posy is not None
+                    else origin_y - ((len(supernova_main_info) - 2) * settings.leading)
+                )
+                canvas.setFillColor(blue)
+                canvas.setFont(settings.used_font, settings.fontsize)
+                canvas.drawString(settings.marginx, pos_y, tnser)
+                w2 = pdfmetrics.stringWidth(tnser, settings.used_font, settings.fontsize)
+                canvas.linkURL(
+                    tnser,
+                    (
+                        settings.marginx,
+                        pos_y - 2,
+                        settings.marginx + w2,
+                        pos_y + settings.fontsize + 2,
+                    ),
+                    relative=0,
+                )
+                canvas.setFillColor(black)
+            except (AttributeError, TypeError, ValueError, ImportError):
+                logger.exception("failed to draw tnser link for %s", getattr(data, "name", None))
+    except (AttributeError, TypeError):
+        logger.exception(
+            "error while attempting to add tnser link for %s",
+            getattr(data, "name", None),
+        )
+
+
+def add_rochester_link(settings, canvas, data, supernova_main_info, origin_y):
+    """Add clickable Rochester supernova link to PDF report.
+
+    Positions the link on the Discovery line if found, otherwise near the bottom.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        data: Supernova object with Rochester link URL
+        supernova_main_info: List of formatted text lines (for positioning)
+        origin_y: Original Y-coordinate before text rendering
+
+    Returns:
+        Y-coordinate of the drawn link, or None if no link was drawn
+    """
+    try:
+        link = getattr(data, "link", None) or ""
+        if link:
+            discovered_index = None
+            for idx, txt in enumerate(supernova_main_info):
+                if isinstance(txt, str) and txt.strip().startswith("Discovered:"):
+                    discovered_index = idx
+                    break
+
+            if discovered_index is None:
+                discovered_index = len(supernova_main_info) - 3
+
+            link_y = origin_y - ((discovered_index + 1) * settings.leading)
+            canvas.setFillColor(blue)
+            canvas.setFont(settings.used_font, settings.fontsize)
+            canvas.drawString(settings.marginx, link_y, link)
+            w = pdfmetrics.stringWidth(link, settings.used_font, settings.fontsize)
+            canvas.linkURL(
+                link,
+                (
+                    settings.marginx,
+                    link_y - 2,
+                    settings.marginx + w,
+                    link_y + settings.fontsize + 2,
+                ),
+                relative=0,
+            )
+            canvas.setFillColor(black)
+            return link_y
+    except (AttributeError, TypeError, ValueError):
+        logger.exception("failed to draw link for %s", getattr(data, "name", None))
+    return None
+
+
+def make_sky_chart_image(data):
+    """Generate a sky chart image for a supernova with error handling.
+
+    Args:
+        data: Supernova object with observation data
+
+    Returns:
+        Sky chart image object (PNG format) or None if generation fails
+    """
+    try:
+        sky_img = make_sky_chart(data, fmt="png")
+    except (OSError, ValueError, TypeError, AttributeError, ImportError):
+        logger.exception("make_sky_chart raised an exception for %s", getattr(data, "name", None))
+        sky_img = None
+    return sky_img
+
+
+def highlight_box(settings, canvas, data, origin_y):
+    """Draw a highlight box behind supernova entry header lines.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        data: Supernova object (used for error logging)
+        origin_y: Y-coordinate of the top of the text to highlight
+    """
+    try:
+        highlight_lines = 4
+        pad = max(2, settings.fontsize * 0.25)
+        rect_top = origin_y + pad
+        rect_bottom = origin_y - (highlight_lines * settings.leading) - pad
+        rect_height = rect_top - rect_bottom
+        canvas.saveState()
+        canvas.setFillColor(Color(0.95, 0.95, 0.95))
+        canvas.rect(
+            settings.marginx, rect_bottom, settings.usable_width, rect_height, fill=1, stroke=0
+        )
+
+        # draw a subtle top border on the highlight box
+        try:
+            canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
+            canvas.setLineWidth(0.6)
+            canvas.line(
+                settings.marginx, rect_top, settings.marginx + settings.usable_width, rect_top
+            )
+        except (AttributeError, TypeError, ValueError):
+            logger.exception(
+                "failed drawing highlight top border for %s",
+                getattr(data, "name", None),
+            )
+        canvas.restoreState()
+    except (AttributeError, TypeError, ValueError):
+        logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))

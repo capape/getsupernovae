@@ -1,6 +1,5 @@
 """Unit tests for dependency injection helpers."""
 
-
 from app.utils.di_helpers import default_if_none, initialize_rochester_factories
 
 

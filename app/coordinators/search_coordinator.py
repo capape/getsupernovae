@@ -51,9 +51,7 @@ class AsyncRochesterDownload(Thread):
             self.visibility_factory,
             self.provider_factory,
             self.reporter,
-        ) = initialize_rochester_factories(
-            visibility_factory, provider_factory, reporter
-        )
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
         self.dto_list = None
 
     def run(self):
@@ -125,9 +123,7 @@ class SearchCoordinator:
             self.visibility_factory,
             self.provider_factory,
             self.reporter,
-        ) = initialize_rochester_factories(
-            visibility_factory, provider_factory, reporter
-        )
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
 
         # UI callbacks
         self.on_results_updated = on_results_updated

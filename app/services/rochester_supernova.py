@@ -45,9 +45,7 @@ class RochesterSupernova:
             self.visibility_factory,
             self.provider_factory,
             self.reporter,
-        ) = initialize_rochester_factories(
-            visibility_factory, provider_factory, reporter
-        )
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
 
         # Store old supernovae and visibility windows
         self.old_supernovae = old_supernovae if old_supernovae is not None else set()

@@ -68,6 +68,18 @@ class SupernovaCallBackData:  # pylint: disable=too-few-public-methods
         min_latitude,
         visibility_window_name=None,
     ):
+        """Initialize supernova callback data with search parameters.
+
+        Args:
+            magnitude: Maximum magnitude threshold for filtering
+            observation_date: Date of observation (YYYY-MM-DD format)
+            observation_time: Time of observation (HH:MM:SS format)
+            observation_hours: Duration of observation window in hours
+            days_to_search: Number of days to search back from observation date
+            site: EarthLocation object for observation site
+            min_latitude: Minimum altitude threshold in degrees
+            visibility_window_name: Optional name of visibility window configuration
+        """
         self.magnitude = magnitude
         self.observation_date = observation_date
         self.observation_time = ObservationTimeService.normalize_time(observation_time)
@@ -95,6 +107,18 @@ class SearchFilters:  # pylint: disable=too-few-public-methods
         min_latitude: float,
         visibility_window_name: str | None = None,
     ):
+        """Initialize search filter parameters.
+
+        Args:
+            magnitude: Maximum magnitude threshold as string
+            days_to_search: Number of days to search back
+            observation_date: Date of observation
+            observation_time: Time of observation as string (HH:MM:SS)
+            observation_hours: Duration of observation window in hours
+            site: Name of observation site (key in sites dictionary)
+            min_latitude: Minimum altitude threshold in degrees
+            visibility_window_name: Optional name of visibility window configuration
+        """
         self.magnitude = magnitude
         self.days_to_search = days_to_search
         self.observation_date = observation_date
@@ -745,7 +769,15 @@ class SupernovasApp(tk.Tk):
     def __init__(
         self, filters, presenter=None, visibility_factory=None, provider_factory=None, reporter=None
     ):
+        """Initialize the main Get Supernovae application.
 
+        Args:
+            filters: SearchFilters instance with initial filter values
+            presenter: Optional custom ResultsPresenter for formatting results
+            visibility_factory: Optional factory for creating visibility calculators
+            provider_factory: Optional factory for creating data providers
+            reporter: Optional custom reporter for generating reports
+        """
         super().__init__()
 
         # Use InitializationBuilder to handle complex setup

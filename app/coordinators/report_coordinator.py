@@ -95,7 +95,6 @@ class ReportCoordinator:
                 search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.min_latitude),
                 getattr(search_criteria, "visibility_window_name", None),
             )
 

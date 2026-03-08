@@ -25,22 +25,13 @@ def get_tree_row_tag(supernova: Any, row_index: int) -> str:
     # Determine if supernova is bright
     mag = getattr(supernova, "mag", None)
     try:
-        is_bright = (
-            mag is not None
-            and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
-        )
+        is_bright = mag is not None and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
     except (ValueError, TypeError):
         is_bright = False
 
     # Return appropriate tag based on brightness and row position
     if is_bright:
         return (
-            UI_STRINGS.TAG_EVEN_ROW_BRIGHT
-            if row_index % 2 == 0
-            else UI_STRINGS.TAG_ODD_ROW_BRIGHT
+            UI_STRINGS.TAG_EVEN_ROW_BRIGHT if row_index % 2 == 0 else UI_STRINGS.TAG_ODD_ROW_BRIGHT
         )
-    return (
-        UI_STRINGS.TAG_EVEN_ROW
-        if row_index % 2 == 0
-        else UI_STRINGS.TAG_ODD_ROW
-    )
+    return UI_STRINGS.TAG_EVEN_ROW if row_index % 2 == 0 else UI_STRINGS.TAG_ODD_ROW

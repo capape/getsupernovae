@@ -22,6 +22,7 @@ from app.utils.logger import setup_module_logger
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
 logger = setup_module_logger(__name__)
 
+
 def make_sky_chart(
     data,
     fov_deg: float = 0.32,

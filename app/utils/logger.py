@@ -11,7 +11,7 @@ def get_logger(name: str) -> logging.Logger:
 def setup_module_logger(
     name: str,
     level: int = logging.INFO,
-    fmt: str = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+    fmt: str = "%(asctime)s %(levelname)s %(name)s: %(message)s",
 ) -> logging.Logger:
     """Set up and return a module logger with StreamHandler.
 
