@@ -17,6 +17,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 
 from app import i18n
+from app.config.snconfig import (
+    SYSTEM_FONT_CANDIDATES,
+)
 from app.config.snconfig import load_visibility_windows as _load_visibility_windows
 from app.models.snmodels import Supernova
 from app.reports.plotutils import VisibilityPlotter
@@ -102,14 +105,7 @@ def create_pdf(
     used_font = "Courier"
     # prefer bundled font in package/fonts if available
     bundled_font = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
-    font_candidates = [
-        bundled_font,
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-        "/Library/Fonts/Arial Unicode.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-    ]
+    font_candidates = [bundled_font] + SYSTEM_FONT_CANDIDATES
     for fp in font_candidates:
         try:
             if not fp:

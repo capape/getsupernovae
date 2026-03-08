@@ -16,6 +16,15 @@ from collections import OrderedDict
 import astropy.units as u
 from astropy.coordinates import EarthLocation
 
+# System font candidates for PDF generation (cross-platform)
+SYSTEM_FONT_CANDIDATES = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+]
+
 
 def load_old_supernovae(path: str | None = None):
     """Load old supernova names from a file (one per line). If the file
@@ -250,14 +259,7 @@ def save_user_prefs(prefs: dict):
         os.makedirs(package_fonts, exist_ok=True)
         bundled = os.path.join(package_fonts, "DejaVuSans.ttf")
         if not os.path.exists(bundled):
-            sys_candidates = [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-                "/Library/Fonts/Arial Unicode.ttf",
-                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            ]
-            for sc in sys_candidates:
+            for sc in SYSTEM_FONT_CANDIDATES:
                 try:
                     if sc and os.path.exists(sc):
                         shutil.copyfile(sc, bundled)
