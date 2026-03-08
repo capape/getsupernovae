@@ -12,8 +12,7 @@ from typing import Any, Callable, List, Optional
 
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
-from app.services.provider import NetworkRochesterProvider
-from app.ui.snvisibility import VisibilityWindow
+from app.utils.di_helpers import initialize_rochester_factories
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -48,11 +47,13 @@ class AsyncRochesterDownload(Thread):
         self.error = None
         self.config = search_criteria
         self.rochester_supernova = rochester_supernova
-        self.visibility_factory = visibility_factory
-        self.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
+        (
+            self.visibility_factory,
+            self.provider_factory,
+            self.reporter,
+        ) = initialize_rochester_factories(
+            visibility_factory, provider_factory, reporter
         )
-        self.reporter = reporter
         self.dto_list = None
 
     def run(self):
@@ -120,13 +121,13 @@ class SearchCoordinator:
             after_callback: Callback for scheduling delayed execution (delay_ms, callback)
         """
         self.rochester_supernova = rochester_supernova
-        self.visibility_factory = (
-            visibility_factory if visibility_factory is not None else VisibilityWindow
+        (
+            self.visibility_factory,
+            self.provider_factory,
+            self.reporter,
+        ) = initialize_rochester_factories(
+            visibility_factory, provider_factory, reporter
         )
-        self.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
-        )
-        self.reporter = reporter
 
         # UI callbacks
         self.on_results_updated = on_results_updated

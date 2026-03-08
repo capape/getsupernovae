@@ -112,19 +112,18 @@ class InitializationBuilder:
 
     def initialize_services(self, presenter, visibility_factory, provider_factory, reporter):
         """Initialize service layer components."""
-        from app.services.provider import NetworkRochesterProvider
         from app.ui.results_presenter import ResultsPresenter
-        from app.ui.snvisibility import VisibilityWindow
+        from app.utils.di_helpers import initialize_rochester_factories
 
         # Set up dependency injection
         self.app.presenter = presenter if presenter is not None else ResultsPresenter()
-        self.app.visibility_factory = (
-            visibility_factory if visibility_factory is not None else VisibilityWindow
+        (
+            self.app.visibility_factory,
+            self.app.provider_factory,
+            self.app.reporter,
+        ) = initialize_rochester_factories(
+            visibility_factory, provider_factory, reporter
         )
-        self.app.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
-        )
-        self.app.reporter = reporter
 
         # Initialize RochesterSupernova
         from app.services.rochester_supernova import RochesterSupernova

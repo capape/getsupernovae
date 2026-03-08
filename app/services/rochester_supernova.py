@@ -11,10 +11,9 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
 from app.models.dto import SupernovaDTO
-from app.services.provider import NetworkRochesterProvider
 from app.services.supernova_filter_service import SupernovaFilterService
 from app.services.supernova_selection_service import SupernovaSelectionService
-from app.ui.snvisibility import VisibilityWindow
+from app.utils.di_helpers import initialize_rochester_factories
 
 
 class RochesterSupernova:
@@ -41,18 +40,14 @@ class RochesterSupernova:
             old_supernovae: Set of supernova names to exclude
             visibility_windows: Dict of named visibility windows
         """
-        # visibility_factory should be a callable/class that creates a
-        # visibility window instance with signature
-        # VisibilityWindow(min_alt, max_alt, min_az, max_az)
-        self.visibility_factory = (
-            visibility_factory if visibility_factory is not None else VisibilityWindow
+        # Initialize factories with defaults using DI helper
+        (
+            self.visibility_factory,
+            self.provider_factory,
+            self.reporter,
+        ) = initialize_rochester_factories(
+            visibility_factory, provider_factory, reporter
         )
-        # provider_factory constructs a provider used to fetch Rochester data
-        self.provider_factory = (
-            provider_factory if provider_factory is not None else NetworkRochesterProvider
-        )
-        # reporter is optional; selection logic does not require it but keep for DI consistency
-        self.reporter = reporter
 
         # Store old supernovae and visibility windows
         self.old_supernovae = old_supernovae if old_supernovae is not None else set()
