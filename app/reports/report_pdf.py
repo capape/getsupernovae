@@ -4,6 +4,7 @@ This module creates comprehensive PDF reports with supernova data, sky charts,
 and visibility plots.
 """
 
+from ast import excepthandler
 import os
 import platform
 from pathlib import Path
@@ -31,6 +32,70 @@ from app.utils.snparser import format_iso_datetime
 logger = setup_module_logger(__name__)
 
 
+def _determine_pdf_output_directory() -> Path:
+    """Determine user-friendly save location for PDF reports.
+
+    Returns:
+        Path object for the output directory (Documents, Desktop, or cwd)
+    """
+    if platform.system() == "Windows":
+        # Try Documents folder first, fall back to Desktop, then current dir
+        try:
+            docs = Path.home() / "Documents"
+            if not docs.exists():
+                docs = Path.home() / "Desktop"
+            if not docs.exists():
+                docs = Path.cwd()
+        except (OSError, AttributeError, RuntimeError):
+            logger.exception(
+                "failed to determine Documents/Desktop path on Windows; falling back to cwd"
+            )
+            docs = Path.cwd()
+    else:
+        # Linux/Mac: use Documents or home directory
+        try:
+            docs = Path.home() / "Documents"
+            if not docs.exists():
+                docs = Path.home()
+        except (OSError, AttributeError, RuntimeError):
+            logger.exception("failed to determine Documents/home path; falling back to cwd")
+            docs = Path.cwd()
+
+    return docs
+
+
+def _register_pdf_font() -> str:
+    """Register a Unicode-compatible font for PDF generation.
+
+    Tries to register DejaVuSans font from various locations. Falls back
+    to Courier if no suitable font is found.
+
+    Returns:
+        Name of the registered font to use ("DejaVuSans" or "Courier")
+    """
+    used_font = "Courier"
+    bundled_font = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
+    font_candidates = [bundled_font] + SYSTEM_FONT_CANDIDATES
+
+    for fp in font_candidates:
+        try:
+            if not fp:
+                continue
+            if os.path.exists(fp):
+                try:
+                    pdfmetrics.registerFont(TTFont("DejaVuSans", fp))
+                    used_font = "DejaVuSans"
+                    break
+                except (OSError, IOError, ValueError, RuntimeError):
+                    logger.exception("failed to register font %s", fp)
+                    continue
+        except (AttributeError, TypeError, OSError):
+            logger.exception("unexpected error while checking font candidate %s", fp)
+            continue
+
+    return used_font
+
+
 def add_supernova_to_pdf(text_object, data: Supernova):
     """Add a single supernova's information to a PDF text object.
 
@@ -39,7 +104,7 @@ def add_supernova_to_pdf(text_object, data: Supernova):
         data: Supernova object with observation data
     """
     lines = [
-        i18n.i18n._("-------------------------------------------------"),
+        i18n._("-------------------------------------------------"),
         i18n._("Date: {date}, Mag:{mag}, T: {type}, Name:{name}").format(
             date=data.last_observed_date, mag=data.mag, type=data.type, name=data.name
         ),
@@ -75,6 +140,65 @@ def add_supernova_to_pdf(text_object, data: Supernova):
     for line in lines:
         text_object.textLine(line)
 
+# PDF layout settings
+class PDFSettings:
+    """Container for PDF layout configuration."""
+    def __init__(self):
+        self.fontsize = 10
+        self.leading = self.fontsize * 1.25
+        self.marginx = 1.0 * cm
+        self.margintop = 1.0 * cm
+        self.marginbottom = 1.0 * cm
+        self.topy = 29.7 * cm - self.margintop
+        self.page_width = 21.0 * cm
+        self.usable_width = self.page_width - (2 * self.marginx)
+
+class _Header:
+    def __init__(self, from_date, observation_date, magnitude, site, visibility_window_name):
+        self.from_date = from_date
+        self.observation_date = observation_date
+        self.magnitude = magnitude
+        self.site = site
+        self.visibility_window_name = visibility_window_name
+
+
+def write_header(txtobj, header, settings, full=True):
+    # full header (printed only on first page)
+    if full:
+        txtobj.textLine(
+            i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
+                from_date=header.from_date, to=header.observation_date, magnitude=header.magnitude
+            )
+        )
+        # reuse local visibility windows loader for header/site summary
+        vis = _load_visibility_windows()
+        site = header.site
+        site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
+            lon=site.lon.value, lat=site.lat.value, height=site.height.value
+        )
+        if header.visibility_window_name and header.visibility_window_name in vis:
+            cfg = vis.get(header.visibility_window_name, {})
+            window_msg = (
+                " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
+                "min_az {min_az:.1f}º max_az {max_az:.1f}º"
+            )
+            site_info = site_info + i18n._(window_msg).format(
+                min_alt=float(cfg.get("min_alt", 0.0)),
+                max_alt=float(cfg.get("max_alt", 90.0)),
+                min_az=float(cfg.get("min_az", 0.0)),
+                max_az=float(cfg.get("max_az", 360.0)),
+            )
+        # place site info on two lines if it contains window details
+        if ". Window:" in site_info:
+            part0, part1 = site_info.split(". Window:", 1)
+            txtobj.textLine(part0.strip() + ".")
+            txtobj.textLine(i18n._("Window: {rest}").format(rest=part1.strip()))
+        else:
+            txtobj.textLine(site_info)
+        txtobj.textLine("")
+    else:
+        # minimal header on continued pages: leave a blank line for spacing
+        txtobj.textLine("")
 
 def create_pdf(
     supernovas,
@@ -101,111 +225,31 @@ def create_pdf(
     """
     logger.info("Creating pdf")
 
-    # choose a font to embed for better mobile compatibility (Unicode, degree sign)
-    used_font = "Courier"
-    # prefer bundled font in package/fonts if available
-    bundled_font = os.path.join(os.path.dirname(__file__), "fonts", "DejaVuSans.ttf")
-    font_candidates = [bundled_font] + SYSTEM_FONT_CANDIDATES
-    for fp in font_candidates:
-        try:
-            if not fp:
-                continue
-            if os.path.exists(fp):
-                try:
-                    pdfmetrics.registerFont(TTFont("DejaVuSans", fp))
-                    used_font = "DejaVuSans"
-                    break
-                except (OSError, IOError, ValueError, RuntimeError):
-                    logger.exception("failed to register font %s", fp)
-                    continue
-        except (AttributeError, TypeError, OSError):
-            logger.exception("unexpected error while checking font candidate %s", fp)
-            continue
 
-    fontsize = 10
-    leading = fontsize * 1.25
-    marginx = 1.0 * cm
-    margintop = 1.0 * cm
-    marginbotton = 1.0 * cm
+    settings = PDFSettings()
 
-    topy = 29.7 * cm - margintop
+    # Register Unicode-compatible font for better mobile compatibility
+    used_font = _register_pdf_font()
 
     # Determine user-friendly save location
-    if platform.system() == "Windows":
-        # Try Documents folder first, fall back to Desktop, then current dir
-        try:
-            docs = Path.home() / "Documents"
-            if not docs.exists():
-                docs = Path.home() / "Desktop"
-            if not docs.exists():
-                docs = Path.cwd()
-        except (OSError, AttributeError, RuntimeError):
-            logger.exception(
-                "failed to determine Documents/Desktop path on Windows; falling back to cwd"
-            )
-            docs = Path.cwd()
-    else:
-        # Linux/Mac: use Documents or home directory
-        try:
-            docs = Path.home() / "Documents"
-            if not docs.exists():
-                docs = Path.home()
-        except (OSError, AttributeError, RuntimeError):
-            logger.exception("failed to determine Documents/home path; falling back to cwd")
-            docs = Path.cwd()
-
+    docs = _determine_pdf_output_directory()
     pdf_filename = docs / f"{observation_date}.pdf"
     canvas = Canvas(str(pdf_filename), pagesize=A4)
     try:
         canvas.setPageCompression(0)
     except (AttributeError, RuntimeError):
         logger.exception("failed to set page compression (non-fatal)")
-    canvas.setFont(used_font, fontsize)
+    canvas.setFont(used_font, settings.fontsize)
     canvas.setFillColor(black)
 
-    def write_header(txtobj, full=True):
-        txtobj.setTextOrigin(marginx, topy)
-        txtobj.setFont(used_font, fontsize)
-        txtobj.setLeading(leading)
-        # full header (printed only on first page)
-        if full:
-            txtobj.textLine(
-                i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
-                    from_date=from_date, to=observation_date, magnitude=magnitude
-                )
-            )
-            # reuse local visibility windows loader for header/site summary
-            vis = _load_visibility_windows()
-            site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
-                lon=site.lon.value, lat=site.lat.value, height=site.height.value
-            )
-            if visibility_window_name and visibility_window_name in vis:
-                cfg = vis.get(visibility_window_name, {})
-                window_msg = (
-                    " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
-                    "min_az {min_az:.1f}º max_az {max_az:.1f}º"
-                )
-                site_info = site_info + i18n._(window_msg).format(
-                    min_alt=float(cfg.get("min_alt", 0.0)),
-                    max_alt=float(cfg.get("max_alt", 90.0)),
-                    min_az=float(cfg.get("min_az", 0.0)),
-                    max_az=float(cfg.get("max_az", 360.0)),
-                )
-
-            # place site info on two lines if it contains window details
-            if ". Window:" in site_info:
-                part0, part1 = site_info.split(". Window:", 1)
-                txtobj.textLine(part0.strip() + ".")
-                txtobj.textLine(i18n._("Window: {rest}").format(rest=part1.strip()))
-            else:
-                txtobj.textLine(site_info)
-            txtobj.textLine("")
-        else:
-            # minimal header on continued pages: leave a blank line for spacing
-            txtobj.textLine("")
-
     text_object = canvas.beginText()
-    write_header(text_object)
+    text_object.setTextOrigin(settings.marginx, settings.topy)
+    text_object.setFont(used_font, settings.fontsize)
+    text_object.setLeading(settings.leading)
+
+    header = _Header(from_date, observation_date, magnitude, site, visibility_window_name)
+
+    write_header(text_object, header, settings)
 
     def supernova_lines(data):
         lines = [
@@ -242,22 +286,22 @@ def create_pdf(
         return lines
 
     plotter = VisibilityPlotter()
-    bottom_threshold = marginbotton + leading
+    bottom_threshold = settings.marginbottom + settings.leading
 
     for data in supernovas:
         lines = supernova_lines(data)
         img = plotter.make_image(data, "png", True, site)
         img_height_pts = (6 * cm) if img else 0
-        lines_height = len(lines) * leading
-        required_space = lines_height + img_height_pts + leading
+        lines_height = len(lines) * settings.leading
+        required_space = lines_height + img_height_pts + settings.leading
 
         if text_object.getY() - required_space < bottom_threshold:
             canvas.drawText(text_object)
             canvas.showPage()
             text_object = canvas.beginText()
             # on subsequent pages print only a minimal header
-            write_header(text_object, full=False)
-            canvas.setFont(used_font, fontsize)
+            write_header(text_object, header, settings, full=False)
+            canvas.setFont(used_font, settings.fontsize)
             canvas.setFillColor(black)
 
         origin_y = text_object.getY()
@@ -265,19 +309,18 @@ def create_pdf(
         # draw highlight behind first four lines
         try:
             highlight_lines = 4
-            pad = max(2, fontsize * 0.25)
-            usable_width = (21.0 * cm) - (2 * marginx)
+            pad = max(2, settings.fontsize * 0.25)
             rect_top = origin_y + pad
-            rect_bottom = origin_y - (highlight_lines * leading) - pad
+            rect_bottom = origin_y - (highlight_lines * settings.leading) - pad
             rect_height = rect_top - rect_bottom
             canvas.saveState()
             canvas.setFillColor(Color(0.95, 0.95, 0.95))
-            canvas.rect(marginx, rect_bottom, usable_width, rect_height, fill=1, stroke=0)
+            canvas.rect(settings.marginx, rect_bottom, settings.usable_width, rect_height, fill=1, stroke=0)
             # draw a subtle top border on the highlight box
             try:
                 canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
                 canvas.setLineWidth(0.6)
-                canvas.line(marginx, rect_top, marginx + usable_width, rect_top)
+                canvas.line(settings.marginx, rect_top, settings.marginx + settings.usable_width, rect_top)
             except (AttributeError, TypeError, ValueError):
                 logger.exception(
                     "failed drawing highlight top border for %s",
@@ -288,12 +331,12 @@ def create_pdf(
             logger.exception("failed drawing highlight box for %s", getattr(data, "name", None))
 
         for line in lines:
-            if text_object.getY() - leading < bottom_threshold:
+            if text_object.getY() - settings.leading < bottom_threshold:
                 canvas.drawText(text_object)
                 canvas.showPage()
                 text_object = canvas.beginText()
-                write_header(text_object, full=False)
-                canvas.setFont(used_font, fontsize)
+                write_header(text_object, header, settings, full=False)
+                canvas.setFont(used_font, settings.fontsize)
                 canvas.setFillColor(black)
 
             text_object.textLine(line)
@@ -313,14 +356,14 @@ def create_pdf(
                 if discovered_index is None:
                     discovered_index = len(lines) - 3
 
-                link_y = origin_y - ((discovered_index + 1) * leading)
+                link_y = origin_y - ((discovered_index + 1) * settings.leading)
                 canvas.setFillColor(blue)
-                canvas.setFont(used_font, fontsize)
-                canvas.drawString(marginx, link_y, link)
-                w = pdfmetrics.stringWidth(link, used_font, fontsize)
+                canvas.setFont(used_font, settings.fontsize)
+                canvas.drawString(settings.marginx, link_y, link)
+                w = pdfmetrics.stringWidth(link, used_font, settings.fontsize)
                 canvas.linkURL(
                     link,
-                    (marginx, link_y - 2, marginx + w, link_y + fontsize + 2),
+                    (settings.marginx, link_y - 2, settings.marginx + w, link_y + settings.fontsize + 2),
                     relative=0,
                 )
                 canvas.setFillColor(black)
@@ -333,17 +376,17 @@ def create_pdf(
                 try:
                     tnser = f"https://www.wis-tns.org/object/{quote(name)}"
                     second_y = (
-                        link_y - leading
+                        link_y - settings.leading
                         if "link_y" in locals()
-                        else origin_y - ((len(lines) - 2) * leading)
+                        else origin_y - ((len(lines) - 2) * settings.leading)
                     )
                     canvas.setFillColor(blue)
-                    canvas.setFont(used_font, fontsize)
-                    canvas.drawString(marginx, second_y, tnser)
-                    w2 = pdfmetrics.stringWidth(tnser, used_font, fontsize)
+                    canvas.setFont(used_font, settings.fontsize)
+                    canvas.drawString(settings.marginx, second_y, tnser)
+                    w2 = pdfmetrics.stringWidth(tnser, used_font, settings.fontsize)
                     canvas.linkURL(
                         tnser,
-                        (marginx, second_y - 2, marginx + w2, second_y + fontsize + 2),
+                        (settings.marginx, second_y - 2, settings.marginx + w2, second_y + settings.fontsize + 2),
                         relative=0,
                     )
                     canvas.setFillColor(black)
@@ -373,25 +416,24 @@ def create_pdf(
         )
         if img or sky_img:
             try:
-                usable_width = (21.0 * cm) - (2 * marginx)
                 gap = 0.5 * cm
                 if img and sky_img:
-                    img_w = usable_width * 0.66
-                    sky_w = usable_width - img_w - gap
+                    img_w = settings.usable_width * 0.66
+                    sky_w = settings.usable_width - img_w - gap
                 else:
-                    img_w = min(12.0 * cm, usable_width)
+                    img_w = min(12.0 * cm, settings.usable_width)
                     sky_w = 0
 
                 img_h = img_height_pts
-                img_x = marginx
+                img_x = settings.marginx
                 img_y = y_after_text - img_h - (0.2 * cm)
 
-                if img_y < marginbotton:
+                if img_y < settings.marginbottom:
                     canvas.showPage()
                     # start a fresh text object and print only the minimal header
                     text_object = canvas.beginText()
-                    write_header(text_object, full=False)
-                    canvas.setFont(used_font, fontsize)
+                    write_header(text_object, header, settings, full=False)
+                    canvas.setFont(used_font, settings.fontsize)
                     canvas.setFillColor(black)
                     # compute image origin below header
                     img_y = text_object.getY() - img_h - (0.2 * cm)
@@ -401,17 +443,17 @@ def create_pdf(
 
                 if sky_img:
                     sky_x = img_x + img_w + gap
-                    if sky_x + sky_w > marginx + usable_width:
-                        sky_w = marginx + usable_width - sky_x
+                    if sky_x + sky_w > settings.marginx + settings.usable_width:
+                        sky_w = settings.marginx + settings.usable_width - sky_x
                     canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
             except (AttributeError, TypeError, ValueError, OSError):
                 logger.exception("failed to draw images for %s", getattr(data, "name", None))
 
         text_object = canvas.beginText()
-        text_object.setTextOrigin(marginx, img_y - (0.2 * cm) if img else topy)
-        text_object.setFont(used_font, fontsize)
-        text_object.setLeading(leading)
-        canvas.setFont(used_font, fontsize)
+        text_object.setTextOrigin(settings.marginx, img_y - (0.2 * cm) if img else settings.topy)
+        text_object.setFont(used_font, settings.fontsize)
+        text_object.setLeading(settings.leading)
+        canvas.setFont(used_font, settings.fontsize)
         canvas.setFillColor(black)
 
     canvas.drawText(text_object)
