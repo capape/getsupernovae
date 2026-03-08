@@ -4,7 +4,6 @@ This module creates comprehensive PDF reports with supernova data, sky charts,
 and visibility plots.
 """
 
-from ast import excepthandler
 import os
 import platform
 from pathlib import Path
