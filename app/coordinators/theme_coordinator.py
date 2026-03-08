@@ -12,12 +12,12 @@ from tkinter import ttk
 from typing import Any, Callable, Dict, Optional
 
 from app.config.ui_constants import (
-    DEFAULT_VALUES,
     THEME_COLORS,
     UI_CONSTANTS,
     UI_STRINGS,
 )
 from app.utils.logger import get_logger, log_exception
+from app.utils.ui_helpers import get_tree_row_tag
 
 logger = get_logger(__name__)
 
@@ -122,28 +122,7 @@ class ThemeCoordinator:
                 try:
                     if item in supernova_data:
                         sn = supernova_data[item]
-                        mag = getattr(sn, "mag", None)
-                        try:
-                            is_bright = (
-                                mag is not None
-                                and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
-                            )
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = (
-                                UI_STRINGS.TAG_EVEN_ROW_BRIGHT
-                                if index % 2 == 0
-                                else UI_STRINGS.TAG_ODD_ROW_BRIGHT
-                            )
-                        else:
-                            tag = (
-                                UI_STRINGS.TAG_EVEN_ROW
-                                if index % 2 == 0
-                                else UI_STRINGS.TAG_ODD_ROW
-                            )
-
+                        tag = get_tree_row_tag(sn, index)
                         tree.item(item, tags=(tag,))
                 except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to reapply tree tag for item")

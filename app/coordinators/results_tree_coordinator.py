@@ -14,13 +14,12 @@ import webbrowser
 from typing import Any, Callable, Dict
 
 from app.config.ui_constants import (
-    DEFAULT_VALUES,
     NETWORK_CONSTANTS,
     THEME_COLORS,
     UI_CONSTANTS,
-    UI_STRINGS,
 )
 from app.utils.logger import get_logger, log_exception
+from app.utils.ui_helpers import get_tree_row_tag
 
 logger = get_logger(__name__)
 
@@ -108,28 +107,7 @@ class ResultsTreeCoordinator:
                 try:
                     if item in self.supernova_data:
                         sn = self.supernova_data[item]
-                        mag = getattr(sn, "mag", None)
-                        try:
-                            is_bright = (
-                                mag is not None
-                                and float(mag) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
-                            )
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = (
-                                UI_STRINGS.TAG_EVEN_ROW_BRIGHT
-                                if index % 2 == 0
-                                else UI_STRINGS.TAG_ODD_ROW_BRIGHT
-                            )
-                        else:
-                            tag = (
-                                UI_STRINGS.TAG_EVEN_ROW
-                                if index % 2 == 0
-                                else UI_STRINGS.TAG_ODD_ROW
-                            )
-
+                        tag = get_tree_row_tag(sn, index)
                         self.tree.item(item, tags=(tag,))
                 except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to re-tag sorted tree row")
