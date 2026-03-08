@@ -153,7 +153,7 @@ class PDFSettings:
         topy: Y-coordinate of top content area
         page_width: Total page width (A4: 21 cm)
         usable_width: Content width excluding margins
-        bottom_threshold: Bottom threshold
+        bottom_threshold: Bottom threshold to create new page
         used_font: Name of the registered font to use
     """
 
@@ -190,50 +190,45 @@ class _Header:
         self.visibility_window_name = visibility_window_name
 
 
-def write_page_header(txtobj, header, full=True):
+def write_page_header(txtobj, header):
     """Write header section to PDF text object.
 
     Args:
         txtobj: ReportLab text object to write to
         header: _Header instance with report metadata
-        full: If True, write complete header with site details; if False, minimal header
     """
-    # full header (printed only on first page)
-    if full:
-        txtobj.textLine(
-            i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
-                from_date=header.from_date, to=header.observation_date, magnitude=header.magnitude
-            )
+
+    txtobj.textLine(
+        i18n._("Supernovae from: {from_date} to {to}. Magnitud <= {magnitude}").format(
+            from_date=header.from_date, to=header.observation_date, magnitude=header.magnitude
         )
-        # reuse local visibility windows loader for header/site summary
-        vis = _load_visibility_windows()
-        site = header.site
-        site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
-            lon=site.lon.value, lat=site.lat.value, height=site.height.value
+    )
+    # reuse local visibility windows loader for header/site summary
+    vis = _load_visibility_windows()
+    site = header.site
+    site_info = i18n._("Site: lon: {lon:.2f} lat: {lat:.2f} height: {height:.2f}m").format(
+        lon=site.lon.value, lat=site.lat.value, height=site.height.value
+    )
+    if header.visibility_window_name and header.visibility_window_name in vis:
+        cfg = vis.get(header.visibility_window_name, {})
+        window_msg = (
+            " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
+            "min_az {min_az:.1f}º max_az {max_az:.1f}º"
         )
-        if header.visibility_window_name and header.visibility_window_name in vis:
-            cfg = vis.get(header.visibility_window_name, {})
-            window_msg = (
-                " . Window: min_alt {min_alt:.1f}º max_alt {max_alt:.1f}º "
-                "min_az {min_az:.1f}º max_az {max_az:.1f}º"
-            )
-            site_info = site_info + i18n._(window_msg).format(
-                min_alt=float(cfg.get("min_alt", 0.0)),
-                max_alt=float(cfg.get("max_alt", 90.0)),
-                min_az=float(cfg.get("min_az", 0.0)),
-                max_az=float(cfg.get("max_az", 360.0)),
-            )
-        # place site info on two lines if it contains window details
-        if ". Window:" in site_info:
-            part0, part1 = site_info.split(". Window:", 1)
-            txtobj.textLine(part0.strip() + ".")
-            txtobj.textLine(i18n._("Window: {rest}").format(rest=part1.strip()))
-        else:
-            txtobj.textLine(site_info)
-        txtobj.textLine("")
+        site_info = site_info + i18n._(window_msg).format(
+            min_alt=float(cfg.get("min_alt", 0.0)),
+            max_alt=float(cfg.get("max_alt", 90.0)),
+            min_az=float(cfg.get("min_az", 0.0)),
+            max_az=float(cfg.get("max_az", 360.0)),
+        )
+    # place site info on two lines if it contains window details
+    if ". Window:" in site_info:
+        part0, part1 = site_info.split(". Window:", 1)
+        txtobj.textLine(part0.strip() + ".")
+        txtobj.textLine(i18n._("Window: {rest}").format(rest=part1.strip()))
     else:
-        # minimal header on continued pages: leave a blank line for spacing
-        txtobj.textLine("")
+        txtobj.textLine(site_info)
+    txtobj.textLine("")
 
 
 def supernova_lines_info(data):
@@ -269,8 +264,6 @@ def supernova_lines_info(data):
             max=data.max_magnitude,
             on=data.max_magnitude_date,
         ),
-        "",
-        "",
     ]
     return lines
 
@@ -327,7 +320,7 @@ def create_pdf(
         img = plotter.make_image(data, "png", True, site)
         sky_img = make_sky_chart_image(data)
 
-        img_y = add_supernova_to_report(settings, canvas, text_object, header, data, img, sky_img)
+        img_y = add_supernova_to_report(settings, canvas, text_object, data, img, sky_img)
 
         text_object = canvas.beginText()
         text_object.setTextOrigin(settings.marginx, img_y - (0.2 * cm) if img else settings.topy)
@@ -342,14 +335,13 @@ def create_pdf(
     return str(pdf_filename)
 
 
-def add_supernova_to_report(settings, canvas, text_object, header, data, img, sky_img):
+def add_supernova_to_report(settings, canvas, text_object, data, img, sky_img):
     """Add a complete supernova entry to the PDF report with text, links, and images.
 
     Args:
         settings: PDFSettings instance with layout configuration
         canvas: ReportLab Canvas object for drawing
         text_object: ReportLab text object for text rendering
-        header: _Header instance with report metadata
         data: Supernova object with observation data
         img: visibility image
         sky_img: skychart image
@@ -363,47 +355,52 @@ def add_supernova_to_report(settings, canvas, text_object, header, data, img, sk
     required_space = lines_height + img_height_pts + settings.leading
 
     if text_object.getY() - required_space < settings.bottom_threshold:
-        canvas.drawText(text_object)
-        canvas.showPage()
-        text_object = canvas.beginText()
-        text_object.setTextOrigin(settings.marginx, settings.topy)
-        text_object.setFont(settings.used_font, settings.fontsize)
-        text_object.setLeading(settings.leading)
-        # on subsequent pages print only a minimal header
-        write_page_header(text_object, header, full=False)
-        canvas.setFont(settings.used_font, settings.fontsize)
-        canvas.setFillColor(black)
+        text_object = create_new_page(settings, canvas, text_object)
 
-    origin_y = text_object.getY()
+    new_posy = text_object.getY()
 
-    highlight_box(settings, canvas, data, origin_y)
+    highlight_box(settings, canvas, data, new_posy)
 
     for line in supernova_main_info:
         if text_object.getY() - settings.leading < settings.bottom_threshold:
-            canvas.drawText(text_object)
-            canvas.showPage()
-            text_object = canvas.beginText()
-            text_object.setTextOrigin(settings.marginx, settings.topy)
-            text_object.setFont(settings.used_font, settings.fontsize)
-            text_object.setLeading(settings.leading)
-            write_page_header(text_object, header, full=False)
-            canvas.setFont(settings.used_font, settings.fontsize)
-            canvas.setFillColor(black)
-
+            text_object = create_new_page(settings, canvas, text_object)
         text_object.textLine(line)
 
-    y_after_text = text_object.getY()
     canvas.drawText(text_object)
 
-    posy_rochester_link = add_rochester_link(settings, canvas, data, supernova_main_info, origin_y)
+    new_posy = text_object.getY()
 
-    add_tns_link(settings, canvas, data, supernova_main_info, origin_y, posy_rochester_link)
-
-    img_y = add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_after_text)
+    new_posy = add_rochester_link(settings, canvas, data, new_posy)
+    new_posy = add_tns_link(settings, canvas, data, new_posy)
+    img_y = add_images(settings, canvas, data, img, sky_img, img_height_pts, new_posy)
     return img_y
 
+def create_new_page(settings, canvas, text_object):
+    """Create new page.
 
-def add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_after_text):
+    Create a new page.
+
+    Args:
+        settings: PDFSettings instance with layout configuration
+        canvas: ReportLab Canvas object for drawing
+        text_object: ReportLab text object for text rendering
+
+    Return:
+        Text object udpated
+    """
+    canvas.drawText(text_object)
+    canvas.showPage()
+    text_object = canvas.beginText()
+    text_object.setTextOrigin(settings.marginx, settings.topy)
+    text_object.setFont(settings.used_font, settings.fontsize)
+    text_object.setLeading(settings.leading)
+    text_object.textLine("")
+    canvas.setFont(settings.used_font, settings.fontsize)
+    canvas.setFillColor(black)
+    return text_object
+
+
+def add_images(settings, canvas, data, img, sky_img, img_height_pts, y_after_text):
     """Add visibility plot and sky chart images to PDF report.
 
     Handles page breaks when images don't fit on current page.
@@ -411,7 +408,6 @@ def add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_a
     Args:
         settings: PDFSettings instance with layout configuration
         canvas: ReportLab Canvas object for drawing
-        header: _Header instance with report metadata
         data: Supernova object (used for error logging)
         img: Visibility plot image object or None
         sky_img: Sky chart image object or None
@@ -449,7 +445,7 @@ def add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_a
                 text_object.setTextOrigin(settings.marginx, settings.topy)
                 text_object.setFont(settings.used_font, settings.fontsize)
                 text_object.setLeading(settings.leading)
-                write_page_header(text_object, header, full=False)
+                text_object.textLine("")
                 # draw the header before continuing
                 canvas.drawText(text_object)
                 # compute image origin below the header we just drew
@@ -470,7 +466,7 @@ def add_images(settings, canvas, header, data, img, sky_img, img_height_pts, y_a
     return img_y
 
 
-def add_tns_link(settings, canvas, data, supernova_main_info, origin_y, previous_data_posy):
+def add_tns_link(settings, canvas, data, posy):
     """Add clickable TNS (Transient Name Server) link to PDF report.
 
     Positions the link below the Rochester link if present, or at a calculated position.
@@ -479,45 +475,40 @@ def add_tns_link(settings, canvas, data, supernova_main_info, origin_y, previous
         settings: PDFSettings instance with layout configuration
         canvas: ReportLab Canvas object for drawing
         data: Supernova object with name for TNS URL
-        supernova_main_info: List of formatted text lines (for positioning)
-        origin_y: Original Y-coordinate before text rendering
-        previous_data_posy: Y-coordinate of Rochester link, or None if not present
+        posy: Y-coordinate of Rochester link, or None if not present
     """
     try:
         name = getattr(data, "name", None)
         if name:
             try:
                 tnser = f"https://www.wis-tns.org/object/{quote(name)}"
-                pos_y = (
-                    previous_data_posy - settings.leading
-                    if previous_data_posy is not None
-                    else origin_y - ((len(supernova_main_info) - 2) * settings.leading)
-                )
+                new_posy = posy - settings.leading
                 canvas.setFillColor(blue)
                 canvas.setFont(settings.used_font, settings.fontsize)
-                canvas.drawString(settings.marginx, pos_y, tnser)
+                canvas.drawString(settings.marginx, new_posy, tnser)
                 w2 = pdfmetrics.stringWidth(tnser, settings.used_font, settings.fontsize)
                 canvas.linkURL(
                     tnser,
                     (
                         settings.marginx,
-                        pos_y - 2,
+                        new_posy - 2,
                         settings.marginx + w2,
-                        pos_y + settings.fontsize + 2,
+                        new_posy + settings.fontsize + 2,
                     ),
                     relative=0,
                 )
                 canvas.setFillColor(black)
+                return new_posy
             except (AttributeError, TypeError, ValueError, ImportError):
                 logger.exception("failed to draw tnser link for %s", getattr(data, "name", None))
     except (AttributeError, TypeError):
         logger.exception(
             "error while attempting to add tnser link for %s",
-            getattr(data, "name", None),
-        )
+            getattr(data, "name", None))
+    return posy
 
 
-def add_rochester_link(settings, canvas, data, supernova_main_info, origin_y):
+def add_rochester_link(settings, canvas, data, posy):
     """Add clickable Rochester supernova link to PDF report.
 
     Positions the link on the Discovery line if found, otherwise near the bottom.
@@ -526,8 +517,7 @@ def add_rochester_link(settings, canvas, data, supernova_main_info, origin_y):
         settings: PDFSettings instance with layout configuration
         canvas: ReportLab Canvas object for drawing
         data: Supernova object with Rochester link URL
-        supernova_main_info: List of formatted text lines (for positioning)
-        origin_y: Original Y-coordinate before text rendering
+        posy: Original Y-coordinate before text rendering
 
     Returns:
         Y-coordinate of the drawn link, or None if no link was drawn
@@ -535,35 +525,27 @@ def add_rochester_link(settings, canvas, data, supernova_main_info, origin_y):
     try:
         link = getattr(data, "link", None) or ""
         if link:
-            discovered_index = None
-            for idx, txt in enumerate(supernova_main_info):
-                if isinstance(txt, str) and txt.strip().startswith("Discovered:"):
-                    discovered_index = idx
-                    break
 
-            if discovered_index is None:
-                discovered_index = len(supernova_main_info) - 3
-
-            link_y = origin_y - ((discovered_index + 1) * settings.leading)
+            new_posy = posy - settings.leading
             canvas.setFillColor(blue)
             canvas.setFont(settings.used_font, settings.fontsize)
-            canvas.drawString(settings.marginx, link_y, link)
+            canvas.drawString(settings.marginx, new_posy, link)
             w = pdfmetrics.stringWidth(link, settings.used_font, settings.fontsize)
             canvas.linkURL(
                 link,
                 (
                     settings.marginx,
-                    link_y - 2,
+                    new_posy - 2,
                     settings.marginx + w,
-                    link_y + settings.fontsize + 2,
+                    new_posy + settings.fontsize + 2,
                 ),
                 relative=0,
             )
             canvas.setFillColor(black)
-            return link_y
+            return new_posy
     except (AttributeError, TypeError, ValueError):
         logger.exception("failed to draw link for %s", getattr(data, "name", None))
-    return None
+    return posy
 
 
 def make_sky_chart_image(data):
