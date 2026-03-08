@@ -146,11 +146,9 @@ class PDFSettings:
 
     Attributes:
         fontsize: Base font size in points
-        leading: Line spacing (fontsize * 1.25)
         marginx: Horizontal margin in cm
         margintop: Top margin in cm
         marginbottom: Bottom margin in cm
-        topy: Y-coordinate of top content area
         page_width: Total page width (A4: 21 cm)
         usable_width: Content width excluding margins
         bottom_threshold: Bottom threshold to create new page
@@ -159,16 +157,43 @@ class PDFSettings:
 
     def __init__(self):
         self.fontsize = 10
-        self.leading = self.fontsize * 1.25
         self.marginx = 1.0 * cm
         self.margintop = 1.0 * cm
         self.marginbottom = 1.0 * cm
-        self.topy = 29.7 * cm - self.margintop
         self.page_width = 21.0 * cm
-        self.usable_width = self.page_width - (2 * self.marginx)
-        self.bottom_threshold = self.marginbottom + self.leading
-        # Register Unicode-compatible font for better mobile compatibility
         self.used_font = _register_pdf_font()
+
+    def leading(self):
+        """Calculate leading from config.
+
+        Returns:
+            Leading (fontsize * 1.25)
+        """
+        return self.fontsize * 1.25
+
+    def topy(self):
+        """Calulate max position at top of page.
+
+        Returns:
+            Top y position
+        """
+        return 29.7 * cm - self.margintop
+
+    def usable_width(self):
+        """Width without margins.
+
+        Returns:
+            Width of document
+        """
+        return self.page_width - (2 * self.marginx)
+
+    def bottom_threshold(self):
+        """Bottom threshold.
+
+        Returns:
+            Limit of vertical position before creating a page for text
+        """
+        return self.marginbottom + self.leading()
 
 
 class _Header:
@@ -305,9 +330,9 @@ def create_pdf(
     canvas.setFillColor(black)
 
     text_object = canvas.beginText()
-    text_object.setTextOrigin(settings.marginx, settings.topy)
+    text_object.setTextOrigin(settings.marginx, settings.topy())
     text_object.setFont(settings.used_font, settings.fontsize)
-    text_object.setLeading(settings.leading)
+    text_object.setLeading(settings.leading())
 
     header = _Header(from_date, observation_date, magnitude, site, visibility_window_name)
 
@@ -323,9 +348,9 @@ def create_pdf(
         img_y = add_supernova_to_report(settings, canvas, text_object, data, img, sky_img)
 
         text_object = canvas.beginText()
-        text_object.setTextOrigin(settings.marginx, img_y - (0.2 * cm) if img else settings.topy)
+        text_object.setTextOrigin(settings.marginx, img_y - (0.2 * cm) if img else settings.topy())
         text_object.setFont(settings.used_font, settings.fontsize)
-        text_object.setLeading(settings.leading)
+        text_object.setLeading(settings.leading())
         canvas.setFont(settings.used_font, settings.fontsize)
         canvas.setFillColor(black)
 
@@ -351,10 +376,10 @@ def add_supernova_to_report(settings, canvas, text_object, data, img, sky_img):
     """
     supernova_main_info = supernova_lines_info(data)
     img_height_pts = (6 * cm) if img else 0
-    lines_height = len(supernova_main_info) * settings.leading
-    required_space = lines_height + img_height_pts + settings.leading
+    lines_height = len(supernova_main_info) * settings.leading()
+    required_space = lines_height + img_height_pts + settings.leading()
 
-    if text_object.getY() - required_space < settings.bottom_threshold:
+    if text_object.getY() - required_space < settings.bottom_threshold():
         text_object = create_new_page(settings, canvas, text_object)
 
     new_posy = text_object.getY()
@@ -362,7 +387,7 @@ def add_supernova_to_report(settings, canvas, text_object, data, img, sky_img):
     highlight_box(settings, canvas, data, new_posy)
 
     for line in supernova_main_info:
-        if text_object.getY() - settings.leading < settings.bottom_threshold:
+        if text_object.getY() - settings.leading() < settings.bottom_threshold():
             text_object = create_new_page(settings, canvas, text_object)
         text_object.textLine(line)
 
@@ -374,6 +399,7 @@ def add_supernova_to_report(settings, canvas, text_object, data, img, sky_img):
     new_posy = add_tns_link(settings, canvas, data, new_posy)
     img_y = add_images(settings, canvas, data, img, sky_img, img_height_pts, new_posy)
     return img_y
+
 
 def create_new_page(settings, canvas, text_object):
     """Create new page.
@@ -391,9 +417,9 @@ def create_new_page(settings, canvas, text_object):
     canvas.drawText(text_object)
     canvas.showPage()
     text_object = canvas.beginText()
-    text_object.setTextOrigin(settings.marginx, settings.topy)
+    text_object.setTextOrigin(settings.marginx, settings.topy())
     text_object.setFont(settings.used_font, settings.fontsize)
-    text_object.setLeading(settings.leading)
+    text_object.setLeading(settings.leading())
     text_object.textLine("")
     canvas.setFont(settings.used_font, settings.fontsize)
     canvas.setFillColor(black)
@@ -428,10 +454,10 @@ def add_images(settings, canvas, data, img, sky_img, img_height_pts, y_after_tex
         try:
             gap = 0.5 * cm
             if img and sky_img:
-                img_w = settings.usable_width * 0.66
-                sky_w = settings.usable_width - img_w - gap
+                img_w = settings.usable_width() * 0.66
+                sky_w = settings.usable_width() - img_w - gap
             else:
-                img_w = min(12.0 * cm, settings.usable_width)
+                img_w = min(12.0 * cm, settings.usable_width())
                 sky_w = 0
 
             img_h = img_height_pts
@@ -442,14 +468,14 @@ def add_images(settings, canvas, data, img, sky_img, img_height_pts, y_after_tex
                 canvas.showPage()
                 # start a fresh text object and print only the minimal header
                 text_object = canvas.beginText()
-                text_object.setTextOrigin(settings.marginx, settings.topy)
+                text_object.setTextOrigin(settings.marginx, settings.topy())
                 text_object.setFont(settings.used_font, settings.fontsize)
-                text_object.setLeading(settings.leading)
+                text_object.setLeading(settings.leading())
                 text_object.textLine("")
                 # draw the header before continuing
                 canvas.drawText(text_object)
                 # compute image origin below the header we just drew
-                img_y = settings.topy - (2 * settings.leading) - img_h - (0.2 * cm)
+                img_y = settings.topy() - (2 * settings.leading()) - img_h - (0.2 * cm)
                 canvas.setFont(settings.used_font, settings.fontsize)
                 canvas.setFillColor(black)
 
@@ -458,8 +484,8 @@ def add_images(settings, canvas, data, img, sky_img, img_height_pts, y_after_tex
 
             if sky_img:
                 sky_x = img_x + img_w + gap
-                if sky_x + sky_w > settings.marginx + settings.usable_width:
-                    sky_w = settings.marginx + settings.usable_width - sky_x
+                if sky_x + sky_w > settings.marginx + settings.usable_width():
+                    sky_w = settings.marginx + settings.usable_width() - sky_x
                 canvas.drawImage(sky_img, sky_x, img_y, width=sky_w, height=img_h)
         except (AttributeError, TypeError, ValueError, OSError):
             logger.exception("failed to draw images for %s", getattr(data, "name", None))
@@ -482,7 +508,7 @@ def add_tns_link(settings, canvas, data, posy):
         if name:
             try:
                 tnser = f"https://www.wis-tns.org/object/{quote(name)}"
-                new_posy = posy - settings.leading
+                new_posy = posy - settings.leading()
                 canvas.setFillColor(blue)
                 canvas.setFont(settings.used_font, settings.fontsize)
                 canvas.drawString(settings.marginx, new_posy, tnser)
@@ -503,8 +529,8 @@ def add_tns_link(settings, canvas, data, posy):
                 logger.exception("failed to draw tnser link for %s", getattr(data, "name", None))
     except (AttributeError, TypeError):
         logger.exception(
-            "error while attempting to add tnser link for %s",
-            getattr(data, "name", None))
+            "error while attempting to add tnser link for %s", getattr(data, "name", None)
+        )
     return posy
 
 
@@ -526,7 +552,7 @@ def add_rochester_link(settings, canvas, data, posy):
         link = getattr(data, "link", None) or ""
         if link:
 
-            new_posy = posy - settings.leading
+            new_posy = posy - settings.leading()
             canvas.setFillColor(blue)
             canvas.setFont(settings.used_font, settings.fontsize)
             canvas.drawString(settings.marginx, new_posy, link)
@@ -578,12 +604,12 @@ def highlight_box(settings, canvas, data, origin_y):
         highlight_lines = 4
         pad = max(2, settings.fontsize * 0.25)
         rect_top = origin_y + pad
-        rect_bottom = origin_y - (highlight_lines * settings.leading) - pad
+        rect_bottom = origin_y - (highlight_lines * settings.leading()) - pad
         rect_height = rect_top - rect_bottom
         canvas.saveState()
         canvas.setFillColor(Color(0.95, 0.95, 0.95))
         canvas.rect(
-            settings.marginx, rect_bottom, settings.usable_width, rect_height, fill=1, stroke=0
+            settings.marginx, rect_bottom, settings.usable_width(), rect_height, fill=1, stroke=0
         )
 
         # draw a subtle top border on the highlight box
@@ -591,7 +617,7 @@ def highlight_box(settings, canvas, data, origin_y):
             canvas.setStrokeColor(Color(0.75, 0.75, 0.75))
             canvas.setLineWidth(0.6)
             canvas.line(
-                settings.marginx, rect_top, settings.marginx + settings.usable_width, rect_top
+                settings.marginx, rect_top, settings.marginx + settings.usable_width(), rect_top
             )
         except (AttributeError, TypeError, ValueError):
             logger.exception(
