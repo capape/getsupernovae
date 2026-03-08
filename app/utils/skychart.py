@@ -18,13 +18,10 @@ except (ImportError, ModuleNotFoundError, AttributeError) as e:
 
 from astropy.coordinates import SkyCoord
 
+from app.utils.logger import setup_module_logger
+
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
-logger = logging.getLogger(__name__)
-if not logger.hasHandlers():
-    _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    logger.addHandler(_handler)
-logger.setLevel(logging.INFO)
+logger = setup_module_logger(__name__)
 
 
 def make_sky_chart(
@@ -84,7 +81,7 @@ def make_sky_chart(
         radius = (fov_deg * (2**0.5)) / 2.0
         tbls = (
             viz.query_region(
-                center, radius=radius * u.degree, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
+                center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
             )
             if HAS_ASTROQUERY
             else []

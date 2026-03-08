@@ -21,16 +21,12 @@ from app import i18n
 from app.config.snconfig import load_visibility_windows as _load_visibility_windows
 from app.models.snmodels import Supernova
 from app.reports.plotutils import VisibilityPlotter
+from app.utils.logger import setup_module_logger
 from app.utils.skychart import make_sky_chart
 from app.utils.snparser import format_iso_datetime
 
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
-logger = logging.getLogger(__name__)
-if not logger.hasHandlers():
-    _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    logger.addHandler(_handler)
-logger.setLevel(logging.INFO)
+logger = setup_module_logger(__name__)
 
 
 def add_supernova_to_pdf(text_object, data: Supernova):
