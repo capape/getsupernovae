@@ -1,6 +1,7 @@
 """Unit tests for ObservationTimeService."""
 
 import pytest
+
 from app.services.observation_time_service import ObservationTimeService
 
 

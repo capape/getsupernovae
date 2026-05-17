@@ -1,35 +1,47 @@
-import io
+"""Sky chart generation module for supernova reports."""
+
 import logging
+
 import astropy.units as u
-from reportlab.lib.utils import ImageReader
 
 # Try to import astroquery; availability flagged in HAS_ASTROQUERY
 try:
     from astroquery.vizier import Vizier
+
     HAS_ASTROQUERY = True
-except Exception as e:
+except (ImportError, ModuleNotFoundError, AttributeError) as e:
     # Log the import failure so frozen executables expose the root cause
     logging.getLogger(__name__).exception("astroquery.vizier import failed: %s", e)
     HAS_ASTROQUERY = False
 
 from astropy.coordinates import SkyCoord
 
+from app.reports.plotutils import save_matplotlib_figure
+from app.utils.logger import setup_module_logger
+
 # Module logger: ensure a simple stderr StreamHandler so exceptions are visible
-logger = logging.getLogger(__name__)
-if not logger.hasHandlers():
-    _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    logger.addHandler(_handler)
-logger.setLevel(logging.INFO)
+logger = setup_module_logger(__name__)
 
 
-def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: str = "png", width_cm: float = 8.0, height_cm: float = 6.0, dpi: int = 150):
+def make_sky_chart(
+    data,
+    fov_deg: float = 0.32,
+    mag_limit: float = 17.0,
+    fmt: str = "png",
+    width_cm: float = 8.0,
+    height_cm: float = 6.0,
+    dpi: int = 150,
+):
     """Create a tiny sky chart centered on the supernova.
 
     Returns a ReportLab ImageReader (PNG) or an io.BytesIO (SVG) depending
     on `fmt`. Returns None on error or when dependencies are missing.
     """
-    logger.info("generating sky chart for %s, astroquery=%s", getattr(data, "name", None), "yes" if HAS_ASTROQUERY else "no")
+    logger.info(
+        "generating sky chart for %s, astroquery=%s",
+        getattr(data, "name", None),
+        "yes" if HAS_ASTROQUERY else "no",
+    )
     center = None
     try:
         if hasattr(data, "coordinates") and data.coordinates is not None:
@@ -40,24 +52,39 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
             if ra and dec:
                 try:
                     center = SkyCoord(ra, dec, frame="icrs", unit=(u.hourangle, u.deg))
-                except Exception:
-                    logger.exception("failed to create SkyCoord for %s", getattr(data, "name", None))
+                except (ValueError, TypeError, AttributeError):
+                    logger.exception(
+                        "failed to create SkyCoord for %s", getattr(data, "name", None)
+                    )
                     center = None
-    except Exception:
+    except (AttributeError, TypeError):
         logger.exception("error obtaining center coordinates for %s", getattr(data, "name", None))
         center = None
 
     if center is None:
-        logger.info("no valid coordinates for %s; cannot generate sky chart", getattr(data, "name", None))
+        logger.info(
+            "no valid coordinates for %s; cannot generate sky chart",
+            getattr(data, "name", None),
+        )
         return None
 
     if not HAS_ASTROQUERY:
         return None
 
     try:
-        viz = Vizier(columns=["RAJ2000", "DEJ2000", "Gmag"], column_filters={"Gmag": f"<{mag_limit}"}, row_limit=5000)
-        radius = (fov_deg * (2 ** 0.5)) / 2.0
-        tbls = viz.query_region(center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]) if HAS_ASTROQUERY else []
+        viz = Vizier(
+            columns=["RAJ2000", "DEJ2000", "Gmag"],
+            column_filters={"Gmag": f"<{mag_limit}"},
+            row_limit=5000,
+        )
+        radius = (fov_deg * (2**0.5)) / 2.0
+        tbls = (
+            viz.query_region(
+                center, radius=radius * u.deg, catalog=["I/345/gaia2", "I/352/gaiaedr3"]
+            )
+            if HAS_ASTROQUERY
+            else []
+        )
         stars = None
         if tbls and len(tbls) > 0:
             for t in tbls:
@@ -80,6 +107,7 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
                     break
 
         from astropy.table import Table
+
         tbl = Table()
         tbl["ra"] = ras
         tbl["dec"] = decs
@@ -93,9 +121,10 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
         ra_vals = star_coords.ra.to(u.deg).value
         dec_vals = star_coords.dec.to(u.deg).value
 
+        # pylint: disable=import-outside-toplevel  # Heavy imports, lazy load matplotlib
         import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
         from astropy.coordinates import Angle
+        from matplotlib.ticker import FuncFormatter
 
         w_in = width_cm / 2.54
         h_in = height_cm / 2.54
@@ -111,18 +140,18 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
         ax.scatter(ra_vals, dec_vals, s=_mag_to_marker_size(tbl["mag"]), c="k", alpha=0.7)
         ax.scatter([center_ra], [center_dec], s=30, c="red", marker="+", linewidths=1.2)
 
-        def ra_formatter(x, pos=None):
+        def ra_formatter(x, _pos=None):
             try:
                 # show hours and minutes only (no seconds)
                 return Angle(x * u.deg).to_string(unit=u.hourangle, sep=":", precision=0)
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
-        def dec_formatter(x, pos=None):
+        def dec_formatter(x, _pos=None):
             try:
                 # show degrees and arcminutes only (no seconds)
                 return Angle(x * u.deg).to_string(unit=u.deg, sep=":", precision=0, alwayssign=True)
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return f"{x:.2f}°"
 
         ax.xaxis.set_major_formatter(FuncFormatter(ra_formatter))
@@ -139,30 +168,21 @@ def make_sky_chart(data, fov_deg: float = 0.32, mag_limit: float = 17.0, fmt: st
         ax.tick_params(axis="y", labelsize=6)
         plt.tight_layout()
 
-        bio = io.BytesIO()
-        if fmt == "svg":
-            fig.savefig(bio, format="svg")
-            plt.close(fig)
-            bio.seek(0)
-            return bio
-        else:
-            fig.savefig(bio, format="png", dpi=dpi)
-            plt.close(fig)
-            bio.seek(0)
-            return ImageReader(bio)
-    except Exception:
+        return save_matplotlib_figure(fig, fmt=fmt, dpi=dpi)
+    except (OSError, ValueError, TypeError):
         logger.exception("failed to generate sky chart for %s", getattr(data, "name", None))
         return None
 
 
 def _mag_to_marker_size(mags):
     try:
+        # pylint: disable=import-outside-toplevel  # Lazy load numpy
         import numpy as _np
 
         arr = _np.array(mags, dtype=float)
         arr = _np.nan_to_num(arr, nan=99.0)
         sizes = 30.0 * (1.0 - (_np.clip(arr, 0, 17) / 17.0)) + 2.0
         return sizes
-    except Exception:
+    except (ValueError, TypeError, ImportError):
         logger.exception("error computing marker sizes from mags")
         return 4.0

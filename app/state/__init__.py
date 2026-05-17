@@ -7,27 +7,27 @@ Provides centralized state management with:
 """
 
 from app.state.app_state import (
-    SearchState,
-    ResultsState,
-    UIState,
     AppState,
     AppStateManager,
+    ResultsState,
+    SearchState,
+    UIState,
 )
 from app.state.preferences_manager import (
     PreferencesManager,
-    save_user_prefs,
     load_user_prefs,
     migrate_legacy_prefs,
+    save_user_prefs,
 )
 
 __all__ = [
-    'SearchState',
-    'ResultsState',
-    'UIState',
-    'AppState',
-    'AppStateManager',
-    'PreferencesManager',
-    'save_user_prefs',
-    'load_user_prefs',
-    'migrate_legacy_prefs',
+    "SearchState",
+    "ResultsState",
+    "UIState",
+    "AppState",
+    "AppStateManager",
+    "PreferencesManager",
+    "save_user_prefs",
+    "load_user_prefs",
+    "migrate_legacy_prefs",
 ]

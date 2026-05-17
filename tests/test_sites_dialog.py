@@ -4,14 +4,13 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 
-import pytest
-
 # Ensure package imports work when running this test standalone
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
     from app.i18n import _
 except Exception:
+
     def _(s):
         return s
 
@@ -91,6 +90,7 @@ def test_sites_dialog_save_creates_file(tmp_path):
         # restore global sites mapping in getsupernovae in case it was modified
         try:
             import getsupernovae as gs
+
             try:
                 gs.sites = gs.load_sites()
             except Exception:
@@ -123,7 +123,7 @@ def test_sites_dialog_overwrite_and_delete(tmp_path):
         # ensure selection callback runs to populate selected_name
         dlg.update_idletasks()
         dlg.update()
-        tree.event_generate('<<TreeviewSelect>>')
+        tree.event_generate("<<TreeviewSelect>>")
 
         # find Delete button and invoke
         del_text = str(_("Delete"))
@@ -148,6 +148,7 @@ def test_sites_dialog_overwrite_and_delete(tmp_path):
         # restore global sites mapping in getsupernovae in case it was modified
         try:
             import getsupernovae as gs
+
             try:
                 gs.sites = gs.load_sites()
             except Exception:

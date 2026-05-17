@@ -6,15 +6,17 @@ add, edit and persist observing site definitions (a simple mapping of name
 `path` may be provided to control where `sites.json` is read/written.
 """
 
+# pylint: disable=duplicate-code  # Similar UI patterns to visibility_dialog
+
 import json
 import os
+import tkinter as tk
+from tkinter import font as tkfont
+from tkinter import messagebox, ttk
 from typing import Dict, Optional
 
-import tkinter as tk
-from tkinter import messagebox, ttk
-
-from app.i18n import _
 from app.config.snconfig import get_user_config_dir, load_sites
+from app.i18n import _
 
 
 class SitesDialog(tk.Toplevel):
@@ -57,14 +59,14 @@ class SitesDialog(tk.Toplevel):
                 lon = float(v.get("lon"))
                 h = float(v.get("height", 0.0))
                 return {"lat": lat, "lon": lon, "height": h}
-        except Exception:
+        except (ValueError, TypeError, KeyError):
             pass
         try:
             lat = float(v.lat.value)
             lon = float(v.lon.value)
             h = float(v.height.value)
             return {"lat": lat, "lon": lon, "height": h}
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return {"lat": 0.0, "lon": 0.0, "height": 0.0}
 
     def _determine_path(self):
@@ -77,8 +79,12 @@ class SitesDialog(tk.Toplevel):
             cfgdir = get_user_config_dir()
             os.makedirs(cfgdir, exist_ok=True)
             return os.path.join(cfgdir, "sites.json") if self.path is None else self.path
-        except Exception:
-            return os.path.join(os.path.dirname(__file__), "sites.json") if self.path is None else self.path
+        except (OSError, IOError):
+            return (
+                os.path.join(os.path.dirname(__file__), "sites.json")
+                if self.path is None
+                else self.path
+            )
 
     def _load_current(self, path):
         """Load existing sites from `path` or fall back to `self._original_sites`.
@@ -89,19 +95,29 @@ class SitesDialog(tk.Toplevel):
             with open(path, "r", encoding="utf-8") as fh:
                 current = json.load(fh)
                 if not isinstance(current, dict):
-                    current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in self._original_sites.items()}
-        except Exception:
-            current = {k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value} for k, v in self._original_sites.items()}
+                    current = {
+                        k: {
+                            "lat": v.lat.value,
+                            "lon": v.lon.value,
+                            "height": v.height.value,
+                        }
+                        for k, v in self._original_sites.items()
+                    }
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
+            current = {
+                k: {"lat": v.lat.value, "lon": v.lon.value, "height": v.height.value}
+                for k, v in self._original_sites.items()
+            }
 
         try:
             current = {k: self._normalize_site_info(v) for k, v in current.items()}
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             current = {}
         try:
             for k, v in self._original_sites.items():
                 if k not in current:
                     current[k] = self._normalize_site_info(v)
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError):
             pass
 
         return current
@@ -117,9 +133,22 @@ class SitesDialog(tk.Toplevel):
         try:
             style = ttk.Style()
             style.configure("SiteTreeview.Treeview", rowheight=28)
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", style="SiteTreeview.Treeview", height=12)
-        except Exception:
-            self.tree = ttk.Treeview(frame_left, columns=self.columns, show="headings", selectmode="browse", height=12)
+            self.tree = ttk.Treeview(
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                style="SiteTreeview.Treeview",
+                height=12,
+            )
+        except (AttributeError, tk.TclError):
+            self.tree = ttk.Treeview(
+                frame_left,
+                columns=self.columns,
+                show="headings",
+                selectmode="browse",
+                height=12,
+            )
 
         for col in self.columns:
             self.tree.heading(col, text=col.capitalize())
@@ -136,21 +165,37 @@ class SitesDialog(tk.Toplevel):
         frame_right = ttk.Frame(self)
         frame_right.grid(column=1, row=0, sticky="ne", padx=8, pady=8)
 
-        ttk.Label(frame_right, text=_("Site name:")).grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Site name:")).grid(
+            column=0, row=0, sticky=tk.E, padx=5, pady=5
+        )
         self.name_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(column=1, row=0, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.name_var, width=30).grid(
+            column=1, row=0, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Latitude (deg):")).grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Latitude (deg):")).grid(
+            column=0, row=1, sticky=tk.E, padx=5, pady=5
+        )
         self.lat_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.lat_var, width=20).grid(column=1, row=1, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.lat_var, width=20).grid(
+            column=1, row=1, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Longitude (deg):")).grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Longitude (deg):")).grid(
+            column=0, row=2, sticky=tk.E, padx=5, pady=5
+        )
         self.lon_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.lon_var, width=20).grid(column=1, row=2, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.lon_var, width=20).grid(
+            column=1, row=2, padx=5, pady=5
+        )
 
-        ttk.Label(frame_right, text=_("Height (m):")).grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+        ttk.Label(frame_right, text=_("Height (m):")).grid(
+            column=0, row=3, sticky=tk.E, padx=5, pady=5
+        )
         self.height_var = tk.StringVar()
-        ttk.Entry(frame_right, textvariable=self.height_var, width=20).grid(column=1, row=3, padx=5, pady=5)
+        ttk.Entry(frame_right, textvariable=self.height_var, width=20).grid(
+            column=1, row=3, padx=5, pady=5
+        )
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(column=0, row=1, columnspan=2, sticky="ew", padx=8, pady=8)
@@ -171,7 +216,7 @@ class SitesDialog(tk.Toplevel):
         # try to align dialog visual theme to parent application
         try:
             self._apply_parent_theme()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             pass
 
     def _apply_parent_theme(self):
@@ -194,7 +239,7 @@ class SitesDialog(tk.Toplevel):
                 rowh = tree_cfg.get("rowheight")
                 if rowh:
                     style.configure("SiteTreeview.Treeview", rowheight=rowh)
-            except Exception:
+            except (AttributeError, tk.TclError, KeyError):
                 pass
 
             # set dialog background to match parent if available
@@ -202,16 +247,15 @@ class SitesDialog(tk.Toplevel):
                 bg = self.parent.cget("bg")
                 if bg:
                     self.configure(bg=bg)
-            except Exception:
+            except (AttributeError, tk.TclError):
                 pass
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             pass
 
     def _autosize_columns(self):
         try:
-            from tkinter import font as tkfont
             font = tkfont.Font(font=self.tree.cget("font"))
-        except Exception:
+        except (ImportError, AttributeError, tk.TclError):
             font = None
         max_widths = {col: 0 for col in self.columns}
         for col in self.columns:
@@ -234,7 +278,7 @@ class SitesDialog(tk.Toplevel):
         for col in self.columns:
             try:
                 self.tree.column(col, width=max_widths[col])
-            except Exception:
+            except (AttributeError, tk.TclError):
                 pass
 
     def _populate_tree(self):
@@ -247,13 +291,20 @@ class SitesDialog(tk.Toplevel):
                 lat_s = f"{lat:.2f}"
                 lon_s = f"{lon:.2f}"
                 height_s = f"{height:.2f}"
-            except Exception:
+            except (ValueError, TypeError, KeyError):
                 lat_s = lon_s = height_s = ""
             self.tree.insert("", "end", values=(nm, lat_s, lon_s, height_s))
         self._autosize_columns()
 
     def _persist_current(self):
-        normalized = {k: {"lat": float(v.get("lat", 0.0)), "lon": float(v.get("lon", 0.0)), "height": float(v.get("height", 0.0))} for k, v in self._current.items()}
+        normalized = {
+            k: {
+                "lat": float(v.get("lat", 0.0)),
+                "lon": float(v.get("lon", 0.0)),
+                "height": float(v.get("height", 0.0)),
+            }
+            for k, v in self._current.items()
+        }
         try:
             # Prefer an explicit path if the caller provided one (testable).
             if self.path:
@@ -265,12 +316,12 @@ class SitesDialog(tk.Toplevel):
             os.makedirs(os.path.dirname(target), exist_ok=True)
             with open(target, "w", encoding="utf-8") as fh:
                 json.dump(normalized, fh, indent=2)
-        except Exception:
+        except (OSError, IOError, TypeError):
             # Fallback to module-local path variable computed earlier in __init__
             try:
                 with open(self._effective_path, "w", encoding="utf-8") as fh:
                     json.dump(normalized, fh, indent=2)
-            except Exception:
+            except (OSError, IOError, TypeError):
                 # Give up silently; callers will be informed elsewhere.
                 pass
 
@@ -290,10 +341,10 @@ class SitesDialog(tk.Toplevel):
         self.lon_var.set(str(lon))
         self.height_var.set(str(height))
 
-    def _validate_coords(self, lat: float, lon: float, height: float):
-        if not (-90.0 <= lat <= 90.0):
+    def _validate_coords(self, lat: float, lon: float, _height: float):
+        if not -90.0 <= lat <= 90.0:
             raise ValueError(_("Latitude must be between -90 and 90 degrees"))
-        if not (-180.0 <= lon <= 180.0):
+        if not -180.0 <= lon <= 180.0:
             raise ValueError(_("Longitude must be between -180 and 180 degrees"))
 
     def _on_save(self):
@@ -312,13 +363,17 @@ class SitesDialog(tk.Toplevel):
 
         old = self._selected_name["value"]
         if nm in self._current and old is not None and nm != old:
-            if not messagebox.askyesno(_("Overwrite"), _("Site '{nm}' already exists. Overwrite?").format(nm=nm), parent=self):
+            if not messagebox.askyesno(
+                _("Overwrite"),
+                _("Site '{nm}' already exists. Overwrite?").format(nm=nm),
+                parent=self,
+            ):
                 return
 
         if old and old != nm and old in self._current:
             try:
                 del self._current[old]
-            except Exception:
+            except (KeyError, TypeError):
                 pass
 
         self._current[nm] = {"lat": lat, "lon": lon, "height": height}
@@ -326,17 +381,17 @@ class SitesDialog(tk.Toplevel):
             self._persist_current()
             try:
                 # attempt to refresh global sites mapping if available
-                global_sites = load_sites()
-            except Exception:
-                global_sites = None
-        except Exception as e:
+                load_sites()
+            except (OSError, IOError, ValueError, TypeError):
+                pass
+        except (OSError, IOError, PermissionError, ValueError, TypeError) as e:
             messagebox.showerror(_("Error"), _("Failed to save site: {e}").format(e=e), parent=self)
             return
 
         # Reload from disk to ensure UI reflects the persisted representation
         try:
             self._current = self._load_current(self._effective_path)
-        except Exception:
+        except (OSError, IOError, ValueError, TypeError):
             # fall back to in-memory copy already present
             pass
 
@@ -350,7 +405,7 @@ class SitesDialog(tk.Toplevel):
                     self.tree.selection_set(iid)
                     try:
                         self.tree.see(iid)
-                    except Exception:
+                    except (AttributeError, tk.TclError):
                         pass
                     break
             self._selected_name["value"] = nm
@@ -358,7 +413,7 @@ class SitesDialog(tk.Toplevel):
             self.lat_var.set(f"{float(self._current[nm].get('lat',0.0)):.2f}")
             self.lon_var.set(f"{float(self._current[nm].get('lon',0.0)):.2f}")
             self.height_var.set(f"{float(self._current[nm].get('height',0.0)):.2f}")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError, ValueError):
             pass
 
         # set result for caller
@@ -368,14 +423,18 @@ class SitesDialog(tk.Toplevel):
         nm = self._selected_name["value"]
         if not nm:
             return
-        if not messagebox.askyesno(_("Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=self):
+        if not messagebox.askyesno(
+            _("Delete"), _("Delete site '{nm}'?").format(nm=nm), parent=self
+        ):
             return
         try:
             if nm in self._current:
                 del self._current[nm]
             self._persist_current()
-        except Exception as e:
-            messagebox.showerror(_("Error"), _("Failed to delete site: {e}").format(e=e), parent=self)
+        except (OSError, IOError, PermissionError, ValueError, TypeError, KeyError) as e:
+            messagebox.showerror(
+                _("Error"), _("Failed to delete site: {e}").format(e=e), parent=self
+            )
             return
         self._populate_tree()
         self.name_var.set("")

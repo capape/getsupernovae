@@ -6,16 +6,18 @@ This coordinator handles:
 - Results tree row coloring and tagging
 - Theme persistence
 """
+
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, Callable, Optional, Any
+from typing import Any, Callable, Dict, Optional
 
-from app.utils.logger import log_exception, get_logger
 from app.config.ui_constants import (
-    UI_CONSTANTS,
     THEME_COLORS,
+    UI_CONSTANTS,
     UI_STRINGS,
 )
+from app.utils.logger import get_logger, log_exception
+from app.utils.ui_helpers import get_tree_row_tag
 
 logger = get_logger(__name__)
 
@@ -60,19 +62,51 @@ class ThemeCoordinator:
             # Configure alternating row colors based on current theme
             dark = self.get_dark_mode()
             if dark:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.DARK_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.DARK_ODD_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.DARK_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.DARK_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_DARK)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW,
+                    background=THEME_COLORS.DARK_EVEN_ROW,
+                    foreground=THEME_COLORS.DARK_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW,
+                    background=THEME_COLORS.DARK_ODD_ROW,
+                    foreground=THEME_COLORS.DARK_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
+                    background=THEME_COLORS.DARK_EVEN_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_DARK,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW_BRIGHT,
+                    background=THEME_COLORS.DARK_ODD_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_DARK,
+                )
             else:
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW, background=THEME_COLORS.LIGHT_EVEN_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW, background=THEME_COLORS.LIGHT_ODD_ROW)
-                tree.tag_configure(UI_STRINGS.TAG_EVEN_ROW_BRIGHT, background=THEME_COLORS.LIGHT_EVEN_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
-                tree.tag_configure(UI_STRINGS.TAG_ODD_ROW_BRIGHT, background=THEME_COLORS.LIGHT_ODD_ROW, foreground=THEME_COLORS.BRIGHT_FG_LIGHT)
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW,
+                    background=THEME_COLORS.LIGHT_EVEN_ROW,
+                    foreground=THEME_COLORS.LIGHT_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW,
+                    background=THEME_COLORS.LIGHT_ODD_ROW,
+                    foreground=THEME_COLORS.LIGHT_FG,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_EVEN_ROW_BRIGHT,
+                    background=THEME_COLORS.LIGHT_EVEN_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_LIGHT,
+                )
+                tree.tag_configure(
+                    UI_STRINGS.TAG_ODD_ROW_BRIGHT,
+                    background=THEME_COLORS.LIGHT_ODD_ROW,
+                    foreground=THEME_COLORS.BRIGHT_FG_LIGHT,
+                )
 
             # Reapply tags to all existing items to preserve bright highlighting
             self.reapply_tree_tags()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to configure results tree styling")
 
     def reapply_tree_tags(self):
@@ -83,117 +117,142 @@ class ThemeCoordinator:
                 return
 
             supernova_data = self.get_supernova_data()
-            items = tree.get_children('')
+            items = tree.get_children("")
             for index, item in enumerate(items):
                 try:
                     if item in supernova_data:
                         sn = supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
-                        try:
-                            is_bright = mag is not None and float(mag) < 15
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
-                        else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-
+                        tag = get_tree_row_tag(sn, index)
                         tree.item(item, tags=(tag,))
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to reapply tree tag for item")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to reapply tree tags")
 
-    def apply_theme(self):
-        """Apply light/dark theme to ttk widgets and some native widgets."""
-        try:
-            # Persist dark mode preference when changed
-            try:
-                self.on_persist_prefs()
-            except Exception:
-                log_exception(logger, "Failed to persist preferences during theme apply")
+    def _get_theme_colors(self) -> Dict[str, str]:
+        """Get theme colors based on current dark mode setting.
 
-            style = ttk.Style()
-            try:
-                style.theme_use("clam")
-            except Exception:
-                log_exception(logger, "Failed to apply ttk theme 'clam'")
-        except Exception:
-            style = None
-
+        Returns:
+            Dictionary with color keys: bg, fg, entry_bg, btn_bg, tree_bg
+        """
         dark = self.get_dark_mode()
         if dark:
-            bg = THEME_COLORS.DARK_BG
-            fg = THEME_COLORS.DARK_FG
-            entry_bg = THEME_COLORS.DARK_ENTRY_BG
-            btn_bg = THEME_COLORS.DARK_BUTTON_BG
-            tree_bg = THEME_COLORS.DARK_TREE_BG
-        else:
-            # Explicitly set light-mode colors so previously-applied dark
-            # styling is cleared when toggling off.
-            bg = THEME_COLORS.LIGHT_BG
-            fg = THEME_COLORS.LIGHT_FG
-            entry_bg = THEME_COLORS.LIGHT_ENTRY_BG
-            btn_bg = THEME_COLORS.LIGHT_BUTTON_BG
-            tree_bg = THEME_COLORS.LIGHT_TREE_BG
+            return {
+                "bg": THEME_COLORS.DARK_BG,
+                "fg": THEME_COLORS.DARK_FG,
+                "entry_bg": THEME_COLORS.DARK_ENTRY_BG,
+                "btn_bg": THEME_COLORS.DARK_BUTTON_BG,
+                "tree_bg": THEME_COLORS.DARK_TREE_BG,
+                "sel_color": THEME_COLORS.DARK_SELECTION,
+            }
+        return {
+            "bg": THEME_COLORS.LIGHT_BG,
+            "fg": THEME_COLORS.LIGHT_FG,
+            "entry_bg": THEME_COLORS.LIGHT_ENTRY_BG,
+            "btn_bg": THEME_COLORS.LIGHT_BUTTON_BG,
+            "tree_bg": THEME_COLORS.LIGHT_TREE_BG,
+            "sel_color": THEME_COLORS.LIGHT_SELECTION,
+        }
 
-        try:
-            if style is not None:
-                style.configure("TLabel", background=bg, foreground=fg)
-                style.configure("TButton", background=btn_bg, foreground=fg)
-                style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
-                style.configure("TCombobox", fieldbackground=entry_bg, foreground=fg)
-                style.configure("Treeview", background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-                style.configure(UI_STRINGS.RESULTS_TREE_STYLE, background=tree_bg, fieldbackground=tree_bg, foreground=fg, rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT)
-                style.configure("TFrame", background=bg)
-                style.configure("TCheckbutton", background=bg, foreground=fg)
-                # selection highlight for treeview — choose a subtle color per theme
-                try:
-                    sel_color = THEME_COLORS.DARK_SELECTION if dark else THEME_COLORS.LIGHT_SELECTION
-                    style.map('Treeview', background=[('selected', sel_color)])
-                except Exception:
-                    log_exception(logger, "Failed to map Treeview selection color")
-                try:
-                    # also set the main window background for non-ttk widgets
-                    try:
-                        self.root.configure(background=bg)
-                    except Exception:
-                        log_exception(logger, "Failed to configure root window background")
-                    # Treeview styling
-                    try:
-                        tree = self.get_results_tree()
-                        if tree is not None:
-                            tree.configure(style="Treeview")
-                    except Exception:
-                        log_exception(logger, "Failed to configure results tree style")
-                except Exception:
-                    log_exception(logger, "Failed while applying non-ttk theme updates")
-        except Exception:
-            log_exception(logger, "Failed to apply ttk theme configuration")
+    def _configure_ttk_styles(self, style: ttk.Style, colors: Dict[str, str]) -> None:
+        """Configure all ttk widget styles.
 
-        # Reapply results tree styling after theme change
-        try:
-            self.configure_results_tree_styling()
-        except Exception:
-            log_exception(logger, "Failed to reconfigure results tree after theme change")
+        Args:
+            style: The ttk.Style instance to configure
+            colors: Dictionary of theme colors
+        """
+        style.configure("TLabel", background=colors["bg"], foreground=colors["fg"])
+        style.configure("TButton", background=colors["btn_bg"], foreground=colors["fg"])
+        style.configure("TEntry", fieldbackground=colors["entry_bg"], foreground=colors["fg"])
+        style.configure("TCombobox", fieldbackground=colors["entry_bg"], foreground=colors["fg"])
+        # Explicitly clear foreground in Treeview style to allow tag foreground colors
+        style.configure(
+            "Treeview",
+            background=colors["tree_bg"],
+            fieldbackground=colors["tree_bg"],
+            foreground="",
+            rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
+        )
+        style.configure(
+            UI_STRINGS.RESULTS_TREE_STYLE,
+            background=colors["tree_bg"],
+            fieldbackground=colors["tree_bg"],
+            foreground="",
+            rowheight=UI_CONSTANTS.TREE_ROW_HEIGHT,
+        )
+        style.configure("TFrame", background=colors["bg"])
+        style.configure("TCheckbutton", background=colors["bg"], foreground=colors["fg"])
 
+    def _apply_treeview_selection_color(self, style: ttk.Style, colors: Dict[str, str]) -> None:
+        """Apply treeview selection highlight color.
+
+        Args:
+            style: The ttk.Style instance to configure
+            colors: Dictionary of theme colors
+        """
         try:
-            if bg:
-                self.root.configure(bg=bg)
-        except Exception:
+            style.map("Treeview", background=[("selected", colors["sel_color"])])
+        except (AttributeError, tk.TclError):
+            log_exception(logger, "Failed to map Treeview selection color")
+
+    def _configure_widget_backgrounds(self, bg_color: str) -> None:
+        """Configure root and child widget backgrounds.
+
+        Args:
+            bg_color: Background color to apply
+        """
+        try:
+            self.root.configure(bg=bg_color)
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to set root background color")
 
-        # Update some known frames/widgets that are not styled by ttk
         try:
             for child in self.root.winfo_children():
                 try:
-                    child.configure(background=bg)
+                    child.configure(background=bg_color)
                 except tk.TclError:
                     # Many ttk/native widgets do not expose a `background` option.
-                    # This is expected and should not be logged as an error.
                     continue
-                except Exception:
+                except (AttributeError, TypeError):
                     log_exception(logger, "Failed to configure child widget background")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to apply theme to child widgets")
+
+    def apply_theme(self):
+        """Apply light/dark theme to ttk widgets and some native widgets."""
+        # Persist dark mode preference
+        try:
+            self.on_persist_prefs()
+        except (AttributeError, TypeError, RuntimeError):
+            log_exception(logger, "Failed to persist preferences during theme apply")
+
+        # Initialize ttk style
+        style = None
+        try:
+            style = ttk.Style()
+            style.theme_use("clam")
+        except (AttributeError, tk.TclError, TypeError):
+            log_exception(logger, "Failed to initialize ttk style")
+
+        # Get theme colors
+        colors = self._get_theme_colors()
+
+        # Configure ttk widget styles
+        if style is not None:
+            try:
+                self._configure_ttk_styles(style, colors)
+                self._apply_treeview_selection_color(style, colors)
+            except (AttributeError, tk.TclError, TypeError):
+                log_exception(logger, "Failed to apply ttk theme configuration")
+
+        # Configure results tree styling
+        try:
+            tree = self.get_results_tree()
+            if tree is not None:
+                tree.configure(style="Treeview")
+            self.configure_results_tree_styling()
+        except (AttributeError, tk.TclError, TypeError):
+            log_exception(logger, "Failed to configure results tree")
+
+        # Apply background colors to root and child widgets
+        self._configure_widget_backgrounds(colors["bg"])

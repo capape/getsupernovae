@@ -1,26 +1,37 @@
-from typing import List, Protocol, Iterable
+"""Provider module for fetching supernova data from various sources."""
+
+import ssl
 import urllib.request
+from typing import List, Protocol
+
 from bs4 import BeautifulSoup
 
 from app.models.dto import SupernovaDTO
 from app.utils.snparser import _parse_row_safe
 
 
-class ISupernovaProvider(Protocol):
-    def fetch(self) -> List[SupernovaDTO]:
-        """Fetch supernovae from the provider's configured source and return list of SupernovaDTO."""
+class ISupernovaProvider(Protocol):  # pylint: disable=too-few-public-methods
+    """Protocol defining the interface for supernova data providers."""
 
-class RochesterProvider:
+    def fetch(self) -> List[SupernovaDTO]:
+        """Fetch supernovae from provider and return list of SupernovaDTO."""
+
+
+class RochesterProvider:  # pylint: disable=too-few-public-methods
     """Abstract base class for Rochester providers."""
 
     def parse_html(self, html: bytes | str) -> List[SupernovaDTO]:
+        """Parse HTML content and return list of SupernovaDTO objects."""
+        html_str: str
         if isinstance(html, bytes):
             try:
-                html = html.decode("utf-8")
-            except Exception:
-                html = html.decode(errors="replace")
+                html_str = html.decode("utf-8")
+            except UnicodeDecodeError:
+                html_str = html.decode(errors="replace")
+        else:
+            html_str = html
 
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(html_str, "html.parser")
         rows = soup.find_all("tr")
         result: List[SupernovaDTO] = []
         for row in rows:
@@ -30,21 +41,21 @@ class RochesterProvider:
 
             sn = SupernovaDTO(
                 parsed.get("name", ""),
-                parsed.get("date"),
-                parsed.get("date_obj"),
+                parsed.get("last_observed_date"),
+                parsed.get("last_observed_date_obj"),
                 parsed.get("mag"),
                 parsed.get("host"),
                 parsed.get("ra"),
                 parsed.get("decl"),
                 parsed.get("link", "") or "",
                 parsed.get("coord"),
-                parsed.get("firstObserved"),
-                parsed.get("maxMagnitude"),
-                parsed.get("maxMagnitudeDate"),
+                parsed.get("first_observed"),
+                parsed.get("max_magnitude"),
+                parsed.get("max_magnitude_date"),
                 parsed.get("type"),
-                parsed.get("maxMagnitudeDate_obj"),
-                parsed.get("firstObserved_obj"),
-            )            
+                parsed.get("max_magnitude_date_obj"),
+                parsed.get("first_observed_obj"),
+            )
             result.append(sn)
 
         return result
@@ -58,21 +69,17 @@ class FileRochesterProvider(RochesterProvider):
     - parse_html(html): parse and return list of Supernova
     """
 
-    def __init__(self, source: str, timeout: int = 20):
+    def __init__(self, source: str, timeout: int = 20) -> None:
         self.timeout = timeout
         self.source = source
 
     def fetch(self) -> List[SupernovaDTO]:
+        """Fetch supernova data from the source file."""
         # support local file paths and URLs
-        try:
-            with open(self.source, "rb") as fh:
-                html = fh.read()
-        except Exception:
-            # propagate error to caller
-            raise
+        with open(self.source, "rb") as fh:
+            html = fh.read()
 
         return self.parse_html(html)
-
 
 
 class NetworkRochesterProvider(RochesterProvider):
@@ -80,30 +87,21 @@ class NetworkRochesterProvider(RochesterProvider):
     and raw HTML rows. It uses `RochesterProvider.parse_html` to parse content.
     """
 
-    def __init__(self, timeout: int = 20):
+    def __init__(self, timeout: int = 20) -> None:
         self.timeout = timeout
         self.source = "https://www.rochesterastronomy.org/snimages/snactive.html"
-    
 
-    def fetch(self):
+    def fetch(self) -> List[SupernovaDTO]:
         """Fetch from `Rochester source` Returns (parsed_list, rows).
 
         parsed_list: List[Supernova]
         rows: ResultSet of <tr> elements (BeautifulSoup list)
         """
-        import ssl
         source = self.source
-        try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
-                html = resp.read()
-            
-        except Exception:
-            raise
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(source, context=ctx, timeout=self.timeout) as resp:
+            html = resp.read()
 
-        # parse using RochesterProvider
         return self.parse_html(html)
-        
-

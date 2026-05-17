@@ -1,13 +1,18 @@
 """Unit tests for app_state module."""
 
+import os
+import sys
 import unittest
-from datetime import datetime, date
+
+# Make the package root importable when running tests
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.state.app_state import (
-    SearchState,
-    ResultsState,
-    UIState,
     AppState,
     AppStateManager,
+    ResultsState,
+    SearchState,
+    UIState,
 )
 
 
@@ -36,7 +41,7 @@ class TestSearchState(unittest.TestCase):
             observation_duration="8",
             site="My Observatory",
             visibility_window="Evening",
-            min_latitude="20"
+            min_latitude="20",
         )
         self.assertEqual(state.magnitude, "16.0")
         self.assertEqual(state.days_to_search, "60")
@@ -49,28 +54,22 @@ class TestSearchState(unittest.TestCase):
 
     def test_to_dict(self):
         """Test serialization to dictionary."""
-    def test_to_dict(self):
-        """Test serialization to dictionary."""
-        state = SearchState(
-            magnitude="16.0",
-            site="Test Site",
-            visibility_window="Evening"
-        )
+        state = SearchState(magnitude="16.0", site="Test Site", visibility_window="Evening")
         result = state.to_dict()
 
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['magnitude'], "16.0")
-        self.assertEqual(result['site'], "Test Site")
-        self.assertEqual(result['visibility_window'], "Evening")
+        self.assertEqual(result["magnitude"], "16.0")
+        self.assertEqual(result["site"], "Test Site")
+        self.assertEqual(result["visibility_window"], "Evening")
 
     def test_from_dict(self):
         """Test deserialization from dictionary."""
         data = {
-            'magnitude': "15.5",
-            'days_to_search': "45",
-            'site': "Observatory",
-            'visibility_window': "Default",
-            'observation_date': "2024-02-01"
+            "magnitude": "15.5",
+            "days_to_search": "45",
+            "site": "Observatory",
+            "visibility_window": "Default",
+            "observation_date": "2024-02-01",
         }
         state = SearchState.from_dict(data)
 
@@ -82,7 +81,7 @@ class TestSearchState(unittest.TestCase):
 
     def test_from_dict_handles_missing_keys(self):
         """Test from_dict uses defaults for missing keys."""
-        data = {'magnitude': "18.0"}
+        data = {"magnitude": "18.0"}
         state = SearchState.from_dict(data)
 
         self.assertEqual(state.magnitude, "18.0")
@@ -110,7 +109,7 @@ class TestResultsState(unittest.TestCase):
             supernovas_found=10,
             cached_dto_list=[{"name": "SN2024a"}],
             last_error="Some error",
-            selected_items=["item1"]
+            selected_items=["item1"],
         )
 
         state.clear_results()
@@ -158,7 +157,7 @@ class TestUIState(unittest.TestCase):
             window_width=1024,
             window_height=768,
             window_x=100,
-            window_y=50
+            window_y=50,
         )
         self.assertEqual(state.language, "es")
         self.assertTrue(state.dark_mode)
@@ -173,17 +172,17 @@ class TestUIState(unittest.TestCase):
         result = state.to_dict()
 
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['language'], "ca")
-        self.assertTrue(result['dark_mode'])
-        self.assertEqual(result['window_width'], 800)
+        self.assertEqual(result["language"], "ca")
+        self.assertTrue(result["dark_mode"])
+        self.assertEqual(result["window_width"], 800)
 
     def test_from_dict(self):
         """Test deserialization from dictionary."""
         data = {
-            'language': "es",
-            'dark_mode': True,
-            'window_width': 1280,
-            'window_height': 720
+            "language": "es",
+            "dark_mode": True,
+            "window_width": 1280,
+            "window_height": 720,
         }
         state = UIState.from_dict(data)
 
@@ -212,23 +211,17 @@ class TestAppState(unittest.TestCase):
 
         result = state.to_dict()
 
-        self.assertIn('search', result)
-        self.assertIn('ui', result)
-        self.assertNotIn('results', result)
-        self.assertEqual(result['search']['magnitude'], "16.0")
-        self.assertEqual(result['ui']['language'], "es")
+        self.assertIn("search", result)
+        self.assertIn("ui", result)
+        self.assertNotIn("results", result)
+        self.assertEqual(result["search"]["magnitude"], "16.0")
+        self.assertEqual(result["ui"]["language"], "es")
 
     def test_from_dict(self):
         """Test deserialization from dictionary."""
         data = {
-            'search': {
-                'magnitude': "15.0",
-                'site': "Test"
-            },
-            'ui': {
-                'language': "ca",
-                'dark_mode': True
-            }
+            "search": {"magnitude": "15.0", "site": "Test"},
+            "ui": {"language": "ca", "dark_mode": True},
         }
         state = AppState.from_dict(data)
 
@@ -253,10 +246,7 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_initial_custom_state(self):
         """Test manager can start with custom state."""
-        custom_state = AppState(
-            search=SearchState(magnitude="16.0"),
-            ui=UIState(language="es")
-        )
+        custom_state = AppState(search=SearchState(magnitude="16.0"), ui=UIState(language="es"))
         manager = AppStateManager(initial_state=custom_state)
 
         self.assertEqual(manager.state.search.magnitude, "16.0")
@@ -269,7 +259,7 @@ class TestAppStateManager(unittest.TestCase):
         def callback(state):
             callback_called.append(state)
 
-        self.manager.add_listener('search', callback)
+        self.manager.add_listener("search", callback)
         self.manager.update_search_state(magnitude="16.0")
 
         self.assertEqual(len(callback_called), 1)
@@ -277,20 +267,20 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_multiple_listeners(self):
         """Test multiple listeners are notified."""
-        calls = {'listener1': 0, 'listener2': 0}
+        calls = {"listener1": 0, "listener2": 0}
 
         def listener1(state):
-            calls['listener1'] += 1
+            calls["listener1"] += 1
 
         def listener2(state):
-            calls['listener2'] += 1
+            calls["listener2"] += 1
 
-        self.manager.add_listener('search', listener1)
-        self.manager.add_listener('search', listener2)
+        self.manager.add_listener("search", listener1)
+        self.manager.add_listener("search", listener2)
         self.manager.update_search_state(magnitude="16.0")
 
-        self.assertEqual(calls['listener1'], 1)
-        self.assertEqual(calls['listener2'], 1)
+        self.assertEqual(calls["listener1"], 1)
+        self.assertEqual(calls["listener2"], 1)
 
     def test_remove_listener(self):
         """Test removing listeners."""
@@ -299,45 +289,45 @@ class TestAppStateManager(unittest.TestCase):
         def callback(state):
             callback_called.append(state)
 
-        self.manager.add_listener('search', callback)
+        self.manager.add_listener("search", callback)
         self.manager.update_search_state(magnitude="16.0")
         self.assertEqual(len(callback_called), 1)
 
-        self.manager.remove_listener('search', callback)
+        self.manager.remove_listener("search", callback)
         self.manager.update_search_state(magnitude="15.0")
         self.assertEqual(len(callback_called), 1)  # Not called again
 
     def test_listener_categories(self):
         """Test listeners only called for their category."""
-        calls = {'search': 0, 'results': 0, 'ui': 0}
+        calls = {"search": 0, "results": 0, "ui": 0}
 
         def search_listener(state):
-            calls['search'] += 1
+            calls["search"] += 1
 
         def results_listener(state):
-            calls['results'] += 1
+            calls["results"] += 1
 
         def ui_listener(state):
-            calls['ui'] += 1
+            calls["ui"] += 1
 
-        self.manager.add_listener('search', search_listener)
-        self.manager.add_listener('results', results_listener)
-        self.manager.add_listener('ui', ui_listener)
+        self.manager.add_listener("search", search_listener)
+        self.manager.add_listener("results", results_listener)
+        self.manager.add_listener("ui", ui_listener)
 
         self.manager.update_search_state(magnitude="16.0")
-        self.assertEqual(calls['search'], 1)
-        self.assertEqual(calls['results'], 0)
-        self.assertEqual(calls['ui'], 0)
+        self.assertEqual(calls["search"], 1)
+        self.assertEqual(calls["results"], 0)
+        self.assertEqual(calls["ui"], 0)
 
         self.manager.update_results_state(supernovas_found=10)
-        self.assertEqual(calls['search'], 1)
-        self.assertEqual(calls['results'], 1)
-        self.assertEqual(calls['ui'], 0)
+        self.assertEqual(calls["search"], 1)
+        self.assertEqual(calls["results"], 1)
+        self.assertEqual(calls["ui"], 0)
 
         self.manager.update_ui_state(language="es")
-        self.assertEqual(calls['search'], 1)
-        self.assertEqual(calls['results'], 1)
-        self.assertEqual(calls['ui'], 1)
+        self.assertEqual(calls["search"], 1)
+        self.assertEqual(calls["results"], 1)
+        self.assertEqual(calls["ui"], 1)
 
     def test_all_category_listener(self):
         """Test 'all' category listener is notified for any change."""
@@ -347,7 +337,7 @@ class TestAppStateManager(unittest.TestCase):
             nonlocal call_count
             call_count += 1
 
-        self.manager.add_listener('all', all_listener)
+        self.manager.add_listener("all", all_listener)
 
         self.manager.update_search_state(magnitude="16.0")
         self.assertEqual(call_count, 1)
@@ -360,11 +350,7 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_update_search_state(self):
         """Test updating search state."""
-        self.manager.update_search_state(
-            magnitude="16.0",
-            days_to_search="45",
-            site="Observatory"
-        )
+        self.manager.update_search_state(magnitude="16.0", days_to_search="45", site="Observatory")
 
         self.assertEqual(self.manager.state.search.magnitude, "16.0")
         self.assertEqual(self.manager.state.search.days_to_search, "45")
@@ -373,9 +359,7 @@ class TestAppStateManager(unittest.TestCase):
     def test_update_results_state(self):
         """Test updating results state."""
         self.manager.update_results_state(
-            supernovas_found=15,
-            refreshing=True,
-            last_error="Test error"
+            supernovas_found=15, refreshing=True, last_error="Test error"
         )
 
         self.assertEqual(self.manager.state.results.supernovas_found, 15)
@@ -384,11 +368,7 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_update_ui_state(self):
         """Test updating UI state."""
-        self.manager.update_ui_state(
-            language="es",
-            dark_mode=True,
-            window_width=1024
-        )
+        self.manager.update_ui_state(language="es", dark_mode=True, window_width=1024)
 
         self.assertEqual(self.manager.state.ui.language, "es")
         self.assertTrue(self.manager.state.ui.dark_mode)
@@ -397,9 +377,7 @@ class TestAppStateManager(unittest.TestCase):
     def test_clear_results(self):
         """Test clearing results through manager."""
         self.manager.update_results_state(
-            supernovas_found=10,
-            cached_dto_list=[{"name": "SN"}],
-            last_error="Error"
+            supernovas_found=10, cached_dto_list=[{"name": "SN"}], last_error="Error"
         )
 
         self.manager.clear_results()
@@ -427,12 +405,13 @@ class TestAppStateManager(unittest.TestCase):
 
     def test_invalid_listener_category(self):
         """Test adding listener with invalid category raises error."""
+
         def callback(state):
             pass
 
         with self.assertRaises(ValueError):
-            self.manager.add_listener('invalid_category', callback)
+            self.manager.add_listener("invalid_category", callback)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

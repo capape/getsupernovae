@@ -5,18 +5,18 @@ with legacy compatibility for existing preference format.
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional
-from app.state.app_state import AppState, SearchState, UIState
+
 from app.config.snconfig import get_user_config_dir
+from app.state.app_state import AppState
 
 
 class PreferencesManager:
     """Manages application preferences persistence."""
 
     DEFAULT_PREFS_DIR = Path(get_user_config_dir())
-    DEFAULT_PREFS_FILE = 'preferences.json'
+    DEFAULT_PREFS_FILE = "preferences.json"
 
     def __init__(self, prefs_dir: Optional[Path] = None, prefs_file: str = DEFAULT_PREFS_FILE):
         """Initialize preferences manager.
@@ -57,10 +57,10 @@ class PreferencesManager:
 
         try:
             prefs_data = state.to_dict()
-            with open(self.prefs_path, 'w', encoding='utf-8') as f:
+            with open(self.prefs_path, "w", encoding="utf-8") as f:
                 json.dump(prefs_data, f, indent=2, ensure_ascii=False)
             return True
-        except Exception as e:
+        except (OSError, IOError, TypeError) as e:
             print(f"Error saving preferences: {e}")
             return False
 
@@ -74,10 +74,18 @@ class PreferencesManager:
             return None
 
         try:
-            with open(self.prefs_path, 'r', encoding='utf-8') as f:
+            with open(self.prefs_path, "r", encoding="utf-8") as f:
                 prefs_data = json.load(f)
             return AppState.from_dict(prefs_data)
-        except Exception as e:
+        except (
+            OSError,
+            IOError,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+            KeyError,
+            AttributeError,
+            TypeError,
+        ) as e:
             print(f"Error loading preferences: {e}")
             return None
 
@@ -96,7 +104,7 @@ class PreferencesManager:
             return default
 
         try:
-            keys = key.split('.')
+            keys = key.split(".")
             obj = state
             for k in keys:
                 if hasattr(obj, k):
@@ -104,7 +112,7 @@ class PreferencesManager:
                 else:
                     return default
             return obj
-        except Exception:
+        except (KeyError, AttributeError, TypeError, IndexError):
             return default
 
     def set_preference(self, key: str, value: Any) -> bool:
@@ -120,22 +128,22 @@ class PreferencesManager:
         state = self.load_preferences() or AppState()
 
         try:
-            keys = key.split('.')
+            keys = key.split(".")
             if len(keys) != 2:
                 return False
 
             category, attr = keys
-            if category == 'search' and hasattr(state.search, attr):
+            if category == "search" and hasattr(state.search, attr):
                 setattr(state.search, attr, value)
-            elif category == 'ui' and hasattr(state.ui, attr):
+            elif category == "ui" and hasattr(state.ui, attr):
                 setattr(state.ui, attr, value)
-            elif category == 'results' and hasattr(state.results, attr):
+            elif category == "results" and hasattr(state.results, attr):
                 setattr(state.results, attr, value)
             else:
                 return False
 
             return self.save_preferences(state)
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError, OSError, IOError) as e:
             print(f"Error setting preference: {e}")
             return False
 
@@ -149,7 +157,7 @@ class PreferencesManager:
             if self.prefs_path.exists():
                 self.prefs_path.unlink()
             return True
-        except Exception as e:
+        except (OSError, IOError, PermissionError) as e:
             print(f"Error clearing preferences: {e}")
             return False
 
@@ -164,22 +172,23 @@ class PreferencesManager:
 
 # Legacy compatibility functions for existing code
 
+
 def save_user_prefs(
     site: Optional[str],
-    latitude: Optional[float],
-    longitude: Optional[float],
+    _latitude: Optional[float],
+    _longitude: Optional[float],
     magnitude: str,
     days: str,
     duration: str,
     language: str,
-    min_latitude: str = ""
+    min_latitude: str = "",
 ) -> bool:
     """Save user preferences (legacy compatibility function).
 
     Args:
         site: Observatory site name
-        latitude: Site latitude (ignored - kept for backward compatibility)
-        longitude: Site longitude (ignored - kept for backward compatibility)
+        _latitude: Site latitude (ignored - kept for backward compatibility)
+        _longitude: Site longitude (ignored - kept for backward compatibility)
         magnitude: Magnitude limit
         days: Days to search
         duration: Observation duration
@@ -221,14 +230,14 @@ def load_user_prefs() -> Optional[Dict[str, Any]]:
 
     # Convert to legacy format (latitude/longitude always None now)
     return {
-        'site': state.search.site,
-        'latitude': None,
-        'longitude': None,
-        'magnitude': state.search.magnitude,
-        'days': state.search.days_to_search,
-        'duration': state.search.observation_duration,
-        'language': state.ui.language,
-        'min_latitude': state.search.min_latitude,
+        "site": state.search.site,
+        "latitude": None,
+        "longitude": None,
+        "magnitude": state.search.magnitude,
+        "days": state.search.days_to_search,
+        "duration": state.search.observation_duration,
+        "language": state.ui.language,
+        "min_latitude": state.search.min_latitude,
     }
 
 
@@ -242,37 +251,46 @@ def migrate_legacy_prefs(legacy_path: Optional[Path] = None) -> bool:
         True if migration successful or not needed, False on error
     """
     if legacy_path is None:
-        legacy_path = PreferencesManager.DEFAULT_PREFS_DIR / 'config.json'
+        legacy_path = PreferencesManager.DEFAULT_PREFS_DIR / "config.json"
 
     if not legacy_path.exists():
         return True  # No legacy file to migrate
 
     try:
-        with open(legacy_path, 'r', encoding='utf-8') as f:
+        with open(legacy_path, "r", encoding="utf-8") as f:
             legacy_data = json.load(f)
 
         # Create new state from legacy data
         state = AppState()
 
         # Map legacy fields to new state
-        if 'site' in legacy_data:
-            state.search.site = legacy_data['site']
+        if "site" in legacy_data:
+            state.search.site = legacy_data["site"]
         # latitude/longitude ignored - site name is sufficient
-        if 'magnitude' in legacy_data:
-            state.search.magnitude = legacy_data['magnitude']
-        if 'days' in legacy_data:
-            state.search.days_to_search = legacy_data['days']
-        if 'duration' in legacy_data:
-            state.search.observation_duration = legacy_data['duration']
-        if 'min_latitude' in legacy_data:
-            state.search.min_latitude = legacy_data['min_latitude']
-        if 'language' in legacy_data:
-            state.ui.language = legacy_data['language']
+        if "magnitude" in legacy_data:
+            state.search.magnitude = legacy_data["magnitude"]
+        if "days" in legacy_data:
+            state.search.days_to_search = legacy_data["days"]
+        if "duration" in legacy_data:
+            state.search.observation_duration = legacy_data["duration"]
+        if "min_latitude" in legacy_data:
+            state.search.min_latitude = legacy_data["min_latitude"]
+        if "language" in legacy_data:
+            state.ui.language = legacy_data["language"]
 
         # Save to new format
         manager = PreferencesManager()
         return manager.save_preferences(state)
 
-    except Exception as e:
+    except (
+        OSError,
+        IOError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        KeyError,
+        AttributeError,
+        TypeError,
+        ValueError,
+    ) as e:
         print(f"Error migrating legacy preferences: {e}")
         return False

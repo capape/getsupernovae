@@ -7,15 +7,18 @@ supernova data without any UI dependencies.
 """
 
 from __future__ import annotations
-from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Callable, List, Optional, Set, Tuple
+
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
 
+from app.config.ui_constants import DEFAULT_VALUES
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
+from app.utils.logger import get_logger, log_exception
 from app.utils.snparser import parse_date
-from app.config.ui_constants import DEFAULT_VALUES
 
 if TYPE_CHECKING:
     from app.ui.snvisibility import Visibility
@@ -23,95 +26,100 @@ if TYPE_CHECKING:
 
 class SupernovaFilterService:
     """Pure business logic for filtering supernovae.
-    
+
     This service provides methods to filter supernovae based on various criteria
     without any coupling to UI components. All methods are stateless and can be
     tested independently.
     """
-    
-    def __init__(self, visibility_factory=None):
+
+    def __init__(self, visibility_factory: Optional[Callable] = None) -> None:
         """Initialize the filter service.
-        
+
         Args:
             visibility_factory: Optional factory for creating visibility calculators.
                                If None, must be provided to filter_by_visibility.
         """
         self.visibility_factory = visibility_factory
-    
+        self.logger = get_logger(__name__)
+
     def filter_by_magnitude(
-        self, 
-        supernovae: List[SupernovaDTO], 
-        max_magnitude: float
+        self, supernovae: List[SupernovaDTO], max_magnitude: float
     ) -> List[SupernovaDTO]:
         """Filter supernovae by maximum magnitude.
-        
+
         Args:
             supernovae: List of supernova DTOs to filter
             max_magnitude: Maximum magnitude threshold (lower is brighter)
-            
+
         Returns:
             List of supernovae with magnitude <= max_magnitude
         """
-        filtered = []
+        filtered: List[SupernovaDTO] = []
         for sn in supernovae:
             try:
-                if sn.mag <= max_magnitude:
+                if sn.mag is not None and sn.mag <= max_magnitude:
                     filtered.append(sn)
             except (TypeError, ValueError):
-                # Skip entries with invalid magnitude
+                # Skip entries with invalid magnitude but log the reason
+                try:
+                    sn_name = getattr(sn, "name", "unknown")
+                    log_exception(self.logger, f"Invalid magnitude for supernova {sn_name}")
+                except (AttributeError, OSError, IOError):
+                    # Ensure filtering doesn't raise due to logging
+                    pass
                 continue
         return filtered
-    
+
     def filter_by_date_range(
-        self,
-        supernovae: List[SupernovaDTO],
-        from_date: str
+        self, supernovae: List[SupernovaDTO], from_date: str
     ) -> List[SupernovaDTO]:
         """Filter supernovae discovered after a specific date.
-        
+
         Args:
             supernovae: List of supernova DTOs to filter
             from_date: ISO format date string (YYYY-MM-DD)
-            
+
         Returns:
             List of supernovae discovered after from_date
         """
         try:
             from_date_obj = parse_date(from_date)[0]
-        except Exception:
-            # If date parsing fails, return all supernovae
+        except (ValueError, TypeError, AttributeError):
+            # If date parsing fails, log and return all supernovae
+            try:
+                log_exception(self.logger, f"Failed to parse from_date '{from_date}'")
+            except (AttributeError, OSError, IOError):
+                pass
             return supernovae
-        
+
         if from_date_obj is None:
             return supernovae
-        
-        filtered = []
+
+        filtered: List[SupernovaDTO] = []
         for sn in supernovae:
-            if sn.date is None:
+            if sn.last_observed_date is None:
                 # Skip entries without a valid date
                 continue
-            
-            if sn.date_obj is not None and sn.date_obj > from_date_obj:
+
+            if sn.last_observed_date_obj is not None and sn.last_observed_date_obj > from_date_obj:
                 filtered.append(sn)
-        
+
         return filtered
-    
+
     def filter_by_exclusion_list(
-        self,
-        supernovae: List[SupernovaDTO],
-        exclusion_list: Set[str]
+        self, supernovae: List[SupernovaDTO], exclusion_list: Set[str]
     ) -> List[SupernovaDTO]:
         """Filter out supernovae that are in the exclusion list.
-        
+
         Args:
             supernovae: List of supernova DTOs to filter
             exclusion_list: Set of supernova names to exclude
-            
+
         Returns:
             List of supernovae not in the exclusion list
         """
         return [sn for sn in supernovae if sn.name not in exclusion_list]
-    
+
     def filter_by_visibility(
         self,
         supernovae: List[SupernovaDTO],
@@ -122,10 +130,10 @@ class SupernovaFilterService:
         max_altitude: float = 90.0,
         min_azimuth: float = 0.0,
         max_azimuth: float = 360.0,
-        visibility_factory=None
+        visibility_factory=None,
     ) -> List[Tuple[SupernovaDTO, Visibility]]:
         """Filter supernovae by visibility at observation site and time.
-        
+
         Args:
             supernovae: List of supernova DTOs to filter
             site: Observer's location on Earth
@@ -136,34 +144,41 @@ class SupernovaFilterService:
             min_azimuth: Minimum azimuth in degrees
             max_azimuth: Maximum azimuth in degrees
             visibility_factory: Optional visibility calculator factory
-            
+
         Returns:
             List of tuples (supernova, visibility) for visible supernovae
         """
         factory = visibility_factory or self.visibility_factory
         if factory is None:
-            raise ValueError("visibility_factory must be provided either in __init__ or as parameter")
-        
+            raise ValueError(
+                "visibility_factory must be provided either in __init__ or as parameter"
+            )
+
         visibility_calculator = factory(min_altitude, max_altitude, min_azimuth, max_azimuth)
-        
+
         visible = []
         for sn in supernovae:
             try:
-                visibility = visibility_calculator.getVisibility(
-                    site, 
-                    sn.coordinates, 
-                    observation_start, 
-                    observation_end
+                visibility = visibility_calculator.get_visibility(
+                    site, sn.coordinates, observation_start, observation_end
                 )
-                
+
                 if visibility.visible:
                     visible.append((sn, visibility))
-            except Exception:
+            except (AttributeError, TypeError, ValueError) as ex:
                 # Skip supernovae with invalid coordinates or visibility calculation errors
+                try:
+                    sn_name = getattr(sn, "name", "unknown")
+                    log_exception(
+                        self.logger,
+                        f"Visibility calculation failed for supernova {sn_name}: {ex}",
+                    )
+                except (AttributeError, OSError, IOError):
+                    pass
                 continue
-        
+
         return visible
-    
+
     def apply_all_filters(
         self,
         supernovae: List[SupernovaDTO],
@@ -177,13 +192,13 @@ class SupernovaFilterService:
         max_altitude: float = 90.0,
         min_azimuth: float = 0.0,
         max_azimuth: float = 360.0,
-        visibility_factory=None
+        visibility_factory=None,
     ) -> List[Tuple[SupernovaDTO, Visibility]]:
         """Apply all filters in sequence to get final visible supernovae list.
-        
+
         This is a convenience method that chains all filtering operations in the
         correct order for optimal performance.
-        
+
         Args:
             supernovae: List of supernova DTOs to filter
             max_magnitude: Maximum magnitude threshold
@@ -197,7 +212,7 @@ class SupernovaFilterService:
             min_azimuth: Minimum azimuth constraint
             max_azimuth: Maximum azimuth constraint
             visibility_factory: Optional visibility calculator factory
-            
+
         Returns:
             List of tuples (supernova, visibility) that pass all filters
         """
@@ -205,7 +220,7 @@ class SupernovaFilterService:
         filtered = self.filter_by_magnitude(supernovae, max_magnitude)
         filtered = self.filter_by_date_range(filtered, from_date)
         filtered = self.filter_by_exclusion_list(filtered, exclusion_list)
-        
+
         # Visibility check is most expensive, do it last
         visible = self.filter_by_visibility(
             filtered,
@@ -216,20 +231,19 @@ class SupernovaFilterService:
             max_altitude,
             min_azimuth,
             max_azimuth,
-            visibility_factory
+            visibility_factory,
         )
-        
+
         return visible
-    
+
     def convert_to_domain_models(
-        self,
-        filtered_results: List[Tuple[SupernovaDTO, Visibility]]
+        self, filtered_results: List[Tuple[SupernovaDTO, Visibility]]
     ) -> List[Supernova]:
         """Convert filtered DTO/Visibility pairs to domain model Supernova objects.
-        
+
         Args:
             filtered_results: List of (SupernovaDTO, Visibility) tuples
-            
+
         Returns:
             List of Supernova domain model objects
         """
@@ -238,88 +252,92 @@ class SupernovaFilterService:
             try:
                 supernova = Supernova(
                     name=sn_dto.name,
-                    date=sn_dto.date,
-                    mag=str(sn_dto.mag),
+                    last_observed_date=sn_dto.last_observed_date,
+                    mag=sn_dto.mag,
                     host=sn_dto.host,
                     ra=sn_dto.ra,
                     decl=sn_dto.decl,
                     link=sn_dto.link or "",
-                    constellation=sn_dto.coordinates.get_constellation(),
+                    constellation=(
+                        sn_dto.coordinates.get_constellation() if sn_dto.coordinates else "Unknown"
+                    ),
                     coordinates=sn_dto.coordinates,
-                    firstObserved=sn_dto.firstObserved,
-                    maxMagnitude=sn_dto.maxMagnitude,
-                    maxMagnitudeDate=sn_dto.maxMagnitudeDate,
+                    first_observed=sn_dto.first_observed,
+                    max_magnitude=sn_dto.max_magnitude,
+                    max_magnitude_date=sn_dto.max_magnitude_date,
                     type=sn_dto.type,
                     visibility=visibility,
-                    maxMagnitudeDate_obj=sn_dto.maxMagnitudeDate_obj,
-                    firstObserved_obj=sn_dto.firstObserved_obj,
+                    max_magnitude_date_obj=sn_dto.max_magnitude_date_obj,
+                    first_observed_obj=sn_dto.first_observed_obj,
                 )
                 supernovas.append(supernova)
-            except Exception:
-                # Skip entries that can't be converted
+            except (AttributeError, TypeError, ValueError):
+                # Skip entries that can't be converted and log the issue
+                try:
+                    sn_name = getattr(sn_dto, "name", "unknown")
+                    msg = f"Failed to convert SupernovaDTO {sn_name} to domain model"
+                    log_exception(self.logger, msg)
+                except (AttributeError, OSError, IOError):
+                    pass
                 continue
-        
+
         return supernovas
-    
+
     def is_bright_supernova(self, magnitude: Optional[float]) -> bool:
         """Check if a supernova is considered bright based on magnitude.
-        
+
         Args:
             magnitude: Magnitude value (None if unknown)
-            
+
         Returns:
             True if magnitude is below the brightness threshold
         """
         if magnitude is None:
             return False
-        
+
         try:
             return float(magnitude) < DEFAULT_VALUES.BRIGHT_MAGNITUDE_THRESHOLD
         except (ValueError, TypeError):
             return False
-    
+
     def sort_by_magnitude(
-        self,
-        supernovae: List[Supernova],
-        reverse: bool = False
+        self, supernovae: List[Supernova], reverse: bool = False
     ) -> List[Supernova]:
         """Sort supernovae by magnitude.
-        
+
         Args:
             supernovae: List of Supernova objects to sort
             reverse: If True, sort from dimmest to brightest
-            
+
         Returns:
             Sorted list of supernovae
         """
+
         def magnitude_key(sn: Supernova) -> float:
             try:
-                return float(sn.mag) if sn.mag else float('inf')
+                return float(sn.mag) if sn.mag else float("inf")
             except (ValueError, TypeError):
-                return float('inf')
-        
+                return float("inf")
+
         return sorted(supernovae, key=magnitude_key, reverse=reverse)
-    
-    def sort_by_date(
-        self,
-        supernovae: List[Supernova],
-        reverse: bool = True
-    ) -> List[Supernova]:
+
+    def sort_by_date(self, supernovae: List[Supernova], reverse: bool = True) -> List[Supernova]:
         """Sort supernovae by discovery date.
-        
+
         Args:
             supernovae: List of Supernova objects to sort
             reverse: If True, sort from newest to oldest (default)
-            
+
         Returns:
             Sorted list of supernovae
         """
+
         def date_key(sn: Supernova) -> datetime:
             try:
-                if sn.date:
-                    return parse_date(sn.date)[0] or datetime.min
-            except Exception:
+                if sn.last_observed_date:
+                    return parse_date(sn.last_observed_date)[0] or datetime.min
+            except (ValueError, TypeError, AttributeError, IndexError):
                 pass
             return datetime.min
-        
+
         return sorted(supernovae, key=date_key, reverse=reverse)

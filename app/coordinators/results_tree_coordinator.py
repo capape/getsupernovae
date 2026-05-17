@@ -7,17 +7,19 @@ This coordinator manages:
 - Tooltip display on hover
 - SIMBAD star search
 """
+
 import tkinter as tk
 import urllib.parse
 import webbrowser
-from typing import Dict, Callable, Optional, Any
+from typing import Any, Callable, Dict
 
-from app.utils.logger import log_exception, get_logger
 from app.config.ui_constants import (
-    UI_CONSTANTS,
-    THEME_COLORS,
     NETWORK_CONSTANTS,
+    THEME_COLORS,
+    UI_CONSTANTS,
 )
+from app.utils.logger import get_logger, log_exception
+from app.utils.ui_helpers import get_tree_row_tag
 
 logger = get_logger(__name__)
 
@@ -75,54 +77,48 @@ class ResultsTreeCoordinator:
                 self._sort_reverse = False
 
             # Get column index
-            col_idx = self.tree['columns'].index(col)
+            self.tree["columns"].index(col)
 
             # Get all items with their values
-            items = [(self.tree.set(item, col), item) for item in self.tree.get_children('')]
+            items = [(self.tree.set(item, col), item) for item in self.tree.get_children("")]
 
             # Sort items
             if is_numeric:
                 # Numeric sort - handle empty values
                 def sort_key(x):
                     try:
-                        return float(x[0]) if x[0] else float('inf')
+                        return float(x[0]) if x[0] else float("inf")
                     except (ValueError, TypeError):
-                        return float('inf')
+                        return float("inf")
+
                 items.sort(key=sort_key, reverse=self._sort_reverse)
             else:
                 # Alphabetic sort
-                items.sort(key=lambda x: x[0].lower() if x[0] else '', reverse=self._sort_reverse)
+                items.sort(
+                    key=lambda x: x[0].lower() if x[0] else "",
+                    reverse=self._sort_reverse,
+                )
 
             # Rearrange items in sorted order
-            for index, (val, item) in enumerate(items):
-                self.tree.move(item, '', index)
+            for index, (_val, item) in enumerate(items):
+                self.tree.move(item, "", index)
 
                 # Reapply alternating row colors and brightness after sorting
                 try:
                     if item in self.supernova_data:
                         sn = self.supernova_data[item]
-                        mag = getattr(sn, 'mag', None)
-                        try:
-                            is_bright = mag is not None and float(mag) < 15
-                        except (ValueError, TypeError):
-                            is_bright = False
-
-                        if is_bright:
-                            tag = 'evenrow_bright' if index % 2 == 0 else 'oddrow_bright'
-                        else:
-                            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
-
+                        tag = get_tree_row_tag(sn, index)
                         self.tree.item(item, tags=(tag,))
-                except Exception:
+                except (AttributeError, tk.TclError, TypeError, KeyError):
                     log_exception(logger, "Failed to re-tag sorted tree row")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to sort results tree column")
 
-    def on_selection_change(self, event=None):
+    def on_selection_change(self, _event=None):
         """Enable or disable Find stars button based on tree selection.
 
         Args:
-            event: Tkinter event (unused)
+            _event: Tkinter event (unused)
         """
         try:
             selection = self.tree.selection()
@@ -130,14 +126,14 @@ class ResultsTreeCoordinator:
                 self.on_enable_button("find_stars")
             else:
                 self.on_disable_button("find_stars")
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to update Find Stars button state on selection change")
 
     def find_stars_in_simbad(self):
         """Query SIMBAD for objects near the selected supernova."""
-        # Import here to avoid circular dependency
+        # pylint: disable=import-outside-toplevel  # Avoid circular dependency
         from app.i18n import _
-        
+
         try:
             selection = self.tree.selection()
             if not selection or len(selection) == 0:
@@ -150,10 +146,10 @@ class ResultsTreeCoordinator:
             sn = self.supernova_data[item]
 
             # Build SIMBAD query URL for the region around the supernova
-            coord = getattr(sn, 'coordinates', None)
+            coord = getattr(sn, "coordinates", None)
             if coord is not None:
-                ra_str = coord.ra.to_string(unit='hour', sep=':', precision=1)
-                dec_str = coord.dec.to_string(unit='degree', sep=':', precision=1, alwayssign=True)
+                ra_str = coord.ra.to_string(unit="hour", sep=":", precision=1)
+                dec_str = coord.dec.to_string(unit="degree", sep=":", precision=1, alwayssign=True)
             else:
                 ra_str = dec_str = ""
 
@@ -165,7 +161,7 @@ class ResultsTreeCoordinator:
                     f"maintype='{NETWORK_CONSTANTS.SIMBAD_MAIN_TYPE}'"
                 )
                 criteria_enc = urllib.parse.quote(criteria_str)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 log_exception(logger, "Failed to build SIMBAD criteria query")
                 criteria_enc = ""
 
@@ -180,13 +176,10 @@ class ResultsTreeCoordinator:
             # Open in browser
             webbrowser.open(simbad_url)
 
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError, OSError) as e:
             try:
-                self.on_show_error(
-                    _("Error"),
-                    _("Failed to query SIMBAD: ") + str(e)
-                )
-            except Exception:
+                self.on_show_error(_("Error"), _("Failed to query SIMBAD: ") + str(e))
+            except (AttributeError, TypeError):
                 log_exception(logger, "Failed to show SIMBAD error message")
 
     def on_double_click(self, event):
@@ -210,12 +203,15 @@ class ResultsTreeCoordinator:
 
             # Column #10 is rochester, #11 is tns (1-indexed)
             if column == "#10":  # Rochester
-                url = getattr(sn, 'rochesterUrl', None) or f"{getattr(sn, 'link', '')}"
+                url = getattr(sn, "rochesterUrl", None) or f"{getattr(sn, 'link', '')}"
                 self._open_url(url)
             elif column == "#11":  # TNS
-                url = getattr(sn, 'tnsUrl', None) or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
+                url = (
+                    getattr(sn, "tnsUrl", None)
+                    or f"{NETWORK_CONSTANTS.TNS_OBJECT_URL}{getattr(sn, 'name', '')}"
+                )
                 self._open_url(url)
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to process results table double click")
 
     def _open_url(self, url: str):
@@ -226,7 +222,7 @@ class ResultsTreeCoordinator:
         """
         try:
             webbrowser.open(url)
-        except Exception:
+        except (OSError, TypeError, ValueError):
             log_exception(logger, "Failed to open URL")
 
     def on_motion(self, event):
@@ -250,12 +246,12 @@ class ResultsTreeCoordinator:
                     tooltip_lines = []
 
                     # Discovery information
-                    first_obs = getattr(sn, 'firstObserved', None)
+                    first_obs = getattr(sn, "first_observed", None)
                     if first_obs:
                         tooltip_lines.append(f"First observed: {first_obs}")
 
-                    max_mag = getattr(sn, 'maxMagnitude', None)
-                    max_mag_date = getattr(sn, 'maxMagnitudeDate', None)
+                    max_mag = getattr(sn, "max_magnitude", None)
+                    max_mag_date = getattr(sn, "max_magnitude_date", None)
                     if max_mag:
                         mag_line = f"Max magnitude: {max_mag}"
                         if max_mag_date:
@@ -263,48 +259,56 @@ class ResultsTreeCoordinator:
                         tooltip_lines.append(mag_line)
 
                     # Visibility information
-                    visibility = getattr(sn, 'visibility', None)
+                    visibility = getattr(sn, "visibility", None)
                     if visibility:
-                        is_visible = getattr(visibility, 'visible', False)
+                        is_visible = getattr(visibility, "visible", False)
                         tooltip_lines.append(f"Visible: {'Yes' if is_visible else 'No'}")
 
                         # Get altitude/azimuth coordinates if available
-                        az_coords = getattr(visibility, 'azCords', None)
+                        az_coords = getattr(visibility, "az_coords", None)
                         if az_coords and len(az_coords) > 0:
                             # Show first and last altitudes
                             try:
                                 first_coord = az_coords[0]
                                 last_coord = az_coords[-1]
 
-                                first_alt = getattr(first_coord, 'coord', None)
-                                last_alt = getattr(last_coord, 'coord', None)
+                                first_alt = getattr(first_coord, "coord", None)
+                                last_alt = getattr(last_coord, "coord", None)
 
-                                if first_alt is not None and hasattr(first_alt, 'alt'):
-                                    tooltip_lines.append(f"Start altitude: {first_alt.alt.degree:.1f}°")
-                                if last_alt is not None and hasattr(last_alt, 'alt'):
-                                    tooltip_lines.append(f"End altitude: {last_alt.alt.degree:.1f}°")
+                                if first_alt is not None and hasattr(first_alt, "alt"):
+                                    tooltip_lines.append(
+                                        f"Start altitude: {first_alt.alt.degree:.1f}°"
+                                    )
+                                if last_alt is not None and hasattr(last_alt, "alt"):
+                                    tooltip_lines.append(
+                                        f"End altitude: {last_alt.alt.degree:.1f}°"
+                                    )
 
                                 # Find max altitude
                                 max_alt = max(
-                                    (getattr(c.coord, 'alt', None) for c in az_coords if hasattr(c.coord, 'alt')),
+                                    (
+                                        getattr(c.coord, "alt", None)
+                                        for c in az_coords
+                                        if hasattr(c.coord, "alt")
+                                    ),
                                     default=None,
-                                    key=lambda a: a.degree if a is not None else -999
+                                    key=lambda a: a.degree if a is not None else -999,
                                 )
                                 if max_alt is not None:
                                     tooltip_lines.append(f"Max altitude: {max_alt.degree:.1f}°")
-                            except Exception:
+                            except (AttributeError, TypeError, ValueError):
                                 log_exception(logger, "Failed to compute tooltip altitude values")
 
                     if tooltip_lines:
                         self.show_tooltip(event.x_root, event.y_root, "\n".join(tooltip_lines))
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError, KeyError):
             log_exception(logger, "Failed to process results hover tooltip")
 
-    def on_leave(self, event=None):
+    def on_leave(self, _event=None):
         """Hide tooltip when mouse leaves the tree.
 
         Args:
-            event: Tkinter event (unused)
+            _event: Tkinter event (unused)
         """
         self.hide_tooltip()
 
@@ -324,7 +328,9 @@ class ResultsTreeCoordinator:
 
             self.tooltip_window = tk.Toplevel(parent)
             self.tooltip_window.wm_overrideredirect(True)
-            self.tooltip_window.wm_geometry(f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}")
+            self.tooltip_window.wm_geometry(
+                f"+{x+UI_CONSTANTS.TOOLTIP_OFFSET_X}+{y+UI_CONSTANTS.TOOLTIP_OFFSET_Y}"
+            )
 
             # Style tooltip based on dark mode
             dark = self.get_dark_mode()
@@ -341,10 +347,10 @@ class ResultsTreeCoordinator:
                 borderwidth=1,
                 padx=UI_CONSTANTS.TOOLTIP_PADX,
                 pady=UI_CONSTANTS.TOOLTIP_PADY,
-                font=("TkDefaultFont", 9)
+                font=("TkDefaultFont", 9),
             )
             label.pack()
-        except Exception:
+        except (AttributeError, tk.TclError, TypeError):
             log_exception(logger, "Failed to show tooltip")
 
     def hide_tooltip(self):
@@ -354,5 +360,5 @@ class ResultsTreeCoordinator:
                 self.tooltip_window.destroy()
                 self.tooltip_window = None
             self.tooltip_item = None
-        except Exception:
+        except (AttributeError, tk.TclError):
             log_exception(logger, "Failed to hide tooltip")

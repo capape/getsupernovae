@@ -1,15 +1,21 @@
 """Unit tests for preferences_manager module."""
 
-import unittest
 import json
+import os
+import sys
 import tempfile
+import unittest
 from pathlib import Path
+
+# Make the package root importable when running tests
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.state.app_state import AppState, SearchState, UIState
 from app.state.preferences_manager import (
     PreferencesManager,
-    save_user_prefs,
     load_user_prefs,
     migrate_legacy_prefs,
+    save_user_prefs,
 )
 
 
@@ -25,23 +31,23 @@ class TestPreferencesManager(unittest.TestCase):
     def tearDown(self):
         """Clean up temporary files."""
         if self.temp_path.exists():
-            for file in self.temp_path.glob('*'):
+            for file in self.temp_path.glob("*"):
                 file.unlink()
             self.temp_path.rmdir()
 
     def test_init_does_not_create_directory(self):
         """Test that initialization does not create preferences directory."""
-        new_dir = self.temp_path / 'new_prefs'
+        new_dir = self.temp_path / "new_prefs"
         manager = PreferencesManager(prefs_dir=new_dir)
         # Directory should not exist yet
         self.assertFalse(new_dir.exists())
-        
+
         # But saving should create it
         state = AppState()
         result = manager.save_preferences(state)
         self.assertTrue(result)
         self.assertTrue(new_dir.exists())
-        
+
         # Clean up
         manager.prefs_path.unlink()
         new_dir.rmdir()
@@ -49,8 +55,7 @@ class TestPreferencesManager(unittest.TestCase):
     def test_save_preferences(self):
         """Test saving preferences to file."""
         state = AppState(
-            search=SearchState(magnitude="16.0", site="Test"),
-            ui=UIState(language="es")
+            search=SearchState(magnitude="16.0", site="Test"), ui=UIState(language="es")
         )
 
         result = self.manager.save_preferences(state)
@@ -61,25 +66,21 @@ class TestPreferencesManager(unittest.TestCase):
     def test_save_preserves_data(self):
         """Test saved data can be read back."""
         state = AppState(
-            search=SearchState(
-                magnitude="15.5",
-                site="Observatory",
-                visibility_window="Evening"
-            ),
-            ui=UIState(language="ca", dark_mode=True)
+            search=SearchState(magnitude="15.5", site="Observatory", visibility_window="Evening"),
+            ui=UIState(language="ca", dark_mode=True),
         )
 
         self.manager.save_preferences(state)
 
         # Read file directly
-        with open(self.manager.prefs_path, 'r', encoding='utf-8') as f:
+        with open(self.manager.prefs_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.assertEqual(data['search']['magnitude'], "15.5")
-        self.assertEqual(data['search']['site'], "Observatory")
-        self.assertEqual(data['search']['visibility_window'], "Evening")
-        self.assertEqual(data['ui']['language'], "ca")
-        self.assertTrue(data['ui']['dark_mode'])
+        self.assertEqual(data["search"]["magnitude"], "15.5")
+        self.assertEqual(data["search"]["site"], "Observatory")
+        self.assertEqual(data["search"]["visibility_window"], "Evening")
+        self.assertEqual(data["ui"]["language"], "ca")
+        self.assertTrue(data["ui"]["dark_mode"])
 
     def test_load_preferences_nonexistent(self):
         """Test loading when file doesn't exist returns None."""
@@ -91,7 +92,7 @@ class TestPreferencesManager(unittest.TestCase):
         # Save first
         state = AppState(
             search=SearchState(magnitude="16.0", days_to_search="45"),
-            ui=UIState(language="es")
+            ui=UIState(language="es"),
         )
         self.manager.save_preferences(state)
 
@@ -108,7 +109,7 @@ class TestPreferencesManager(unittest.TestCase):
         state = AppState(search=SearchState(magnitude="17.0"))
         self.manager.save_preferences(state)
 
-        value = self.manager.get_preference('search.magnitude')
+        value = self.manager.get_preference("search.magnitude")
         self.assertEqual(value, "17.0")
 
     def test_get_preference_nested(self):
@@ -116,28 +117,28 @@ class TestPreferencesManager(unittest.TestCase):
         state = AppState(ui=UIState(window_width=1024))
         self.manager.save_preferences(state)
 
-        value = self.manager.get_preference('ui.window_width')
+        value = self.manager.get_preference("ui.window_width")
         self.assertEqual(value, 1024)
 
     def test_get_preference_not_found(self):
         """Test getting non-existent preference returns default."""
-        value = self.manager.get_preference('search.nonexistent', default='default_value')
-        self.assertEqual(value, 'default_value')
+        value = self.manager.get_preference("search.nonexistent", default="default_value")
+        self.assertEqual(value, "default_value")
 
     def test_get_preference_no_file(self):
         """Test getting preference when no file exists returns default."""
-        value = self.manager.get_preference('search.magnitude', default='18.0')
-        self.assertEqual(value, '18.0')
+        value = self.manager.get_preference("search.magnitude", default="18.0")
+        self.assertEqual(value, "18.0")
 
     def test_set_preference_new_file(self):
         """Test setting preference creates new file if needed."""
-        result = self.manager.set_preference('search.magnitude', '16.5')
+        result = self.manager.set_preference("search.magnitude", "16.5")
 
         self.assertTrue(result)
         self.assertTrue(self.manager.prefs_path.exists())
 
         loaded = self.manager.load_preferences()
-        self.assertEqual(loaded.search.magnitude, '16.5')
+        self.assertEqual(loaded.search.magnitude, "16.5")
 
     def test_set_preference_existing_file(self):
         """Test setting preference updates existing file."""
@@ -146,7 +147,7 @@ class TestPreferencesManager(unittest.TestCase):
         self.manager.save_preferences(state)
 
         # Update one preference
-        self.manager.set_preference('search.site', 'New')
+        self.manager.set_preference("search.site", "New")
 
         # Verify
         loaded = self.manager.load_preferences()
@@ -155,7 +156,7 @@ class TestPreferencesManager(unittest.TestCase):
 
     def test_set_preference_invalid_key(self):
         """Test setting preference with invalid key returns False."""
-        result = self.manager.set_preference('invalid', 'value')
+        result = self.manager.set_preference("invalid", "value")
         self.assertFalse(result)
 
     def test_clear_preferences(self):
@@ -189,23 +190,23 @@ class TestPreferencesManager(unittest.TestCase):
         """Test that save handles directory creation errors gracefully."""
         import os
         import stat
-        
+
         # Create a read-only directory
-        readonly_dir = self.temp_path / 'readonly'
+        readonly_dir = self.temp_path / "readonly"
         readonly_dir.mkdir()
-        readonly_subdir = readonly_dir / 'prefs'
-        
+        readonly_subdir = readonly_dir / "prefs"
+
         # Make parent directory read-only to prevent subdirectory creation
         os.chmod(readonly_dir, stat.S_IRUSR | stat.S_IXUSR)
-        
+
         try:
             manager = PreferencesManager(prefs_dir=readonly_subdir)
             state = AppState()
-            
+
             # Save should return False instead of crashing
             result = manager.save_preferences(state)
             self.assertFalse(result)
-            
+
         finally:
             # Restore permissions for cleanup
             os.chmod(readonly_dir, stat.S_IRWXU)
@@ -227,7 +228,7 @@ class TestLegacyFunctions(unittest.TestCase):
     def tearDown(self):
         """Clean up temporary files."""
         if self.temp_path.exists():
-            for file in self.temp_path.glob('*'):
+            for file in self.temp_path.glob("*"):
                 file.unlink()
             self.temp_path.rmdir()
 
@@ -235,13 +236,13 @@ class TestLegacyFunctions(unittest.TestCase):
         """Test legacy save function."""
         result = save_user_prefs(
             site="Test Site",
-            latitude=40.0,
-            longitude=-3.0,
+            _latitude=40.0,
+            _longitude=-3.0,
             magnitude="16.0",
             days="30",
             duration="6",
             language="es",
-            min_latitude="20"
+            min_latitude="20",
         )
 
         self.assertTrue(result)
@@ -262,12 +263,12 @@ class TestLegacyFunctions(unittest.TestCase):
         """Test legacy save without location."""
         result = save_user_prefs(
             site="Test",
-            latitude=None,
-            longitude=None,
+            _latitude=None,
+            _longitude=None,
             magnitude="17.0",
             days="30",
             duration="6",
-            language="en"
+            language="en",
         )
 
         self.assertTrue(result)
@@ -286,9 +287,9 @@ class TestLegacyFunctions(unittest.TestCase):
                 magnitude="15.5",
                 days_to_search="45",
                 observation_duration="8",
-                min_latitude="25"
+                min_latitude="25",
             ),
-            ui=UIState(language="ca")
+            ui=UIState(language="ca"),
         )
         manager.save_preferences(state)
 
@@ -296,14 +297,14 @@ class TestLegacyFunctions(unittest.TestCase):
         prefs = load_user_prefs()
 
         self.assertIsNotNone(prefs)
-        self.assertEqual(prefs['site'], "Observatory")
-        self.assertIsNone(prefs['latitude'])  # No longer stored
-        self.assertIsNone(prefs['longitude'])  # No longer stored
-        self.assertEqual(prefs['magnitude'], "15.5")
-        self.assertEqual(prefs['days'], "45")
-        self.assertEqual(prefs['duration'], "8")
-        self.assertEqual(prefs['min_latitude'], "25")
-        self.assertEqual(prefs['language'], "ca")
+        self.assertEqual(prefs["site"], "Observatory")
+        self.assertIsNone(prefs["latitude"])  # No longer stored
+        self.assertIsNone(prefs["longitude"])  # No longer stored
+        self.assertEqual(prefs["magnitude"], "15.5")
+        self.assertEqual(prefs["days"], "45")
+        self.assertEqual(prefs["duration"], "8")
+        self.assertEqual(prefs["min_latitude"], "25")
+        self.assertEqual(prefs["language"], "ca")
 
     def test_load_user_prefs_no_file(self):
         """Test legacy load when no file exists."""
@@ -318,8 +319,8 @@ class TestLegacyFunctions(unittest.TestCase):
 
         prefs = load_user_prefs()
 
-        self.assertIsNone(prefs['latitude'])
-        self.assertIsNone(prefs['longitude'])
+        self.assertIsNone(prefs["latitude"])
+        self.assertIsNone(prefs["longitude"])
 
 
 class TestLegacyMigration(unittest.TestCase):
@@ -336,7 +337,7 @@ class TestLegacyMigration(unittest.TestCase):
     def tearDown(self):
         """Clean up temporary files and restore global defaults."""
         if self.temp_path.exists():
-            for file in self.temp_path.glob('*'):
+            for file in self.temp_path.glob("*"):
                 file.unlink()
             self.temp_path.rmdir()
         # Restore original default preferences directory to avoid test leakage
@@ -345,18 +346,18 @@ class TestLegacyMigration(unittest.TestCase):
     def test_migrate_legacy_prefs(self):
         """Test migrating from legacy format."""
         # Create legacy config file
-        legacy_path = self.temp_path / 'config.json'
+        legacy_path = self.temp_path / "config.json"
         legacy_data = {
-            'site': 'Old Site',
-            'latitude': 40.5,
-            'longitude': -3.5,
-            'magnitude': '16.5',
-            'days': '60',
-            'duration': '7',
-            'min_latitude': '15',
-            'language': 'es'
+            "site": "Old Site",
+            "latitude": 40.5,
+            "longitude": -3.5,
+            "magnitude": "16.5",
+            "days": "60",
+            "duration": "7",
+            "min_latitude": "15",
+            "language": "es",
         }
-        with open(legacy_path, 'w', encoding='utf-8') as f:
+        with open(legacy_path, "w", encoding="utf-8") as f:
             json.dump(legacy_data, f)
 
         # Migrate
@@ -367,28 +368,25 @@ class TestLegacyMigration(unittest.TestCase):
         manager = PreferencesManager(prefs_dir=self.temp_path)
         state = manager.load_preferences()
 
-        self.assertEqual(state.search.site, 'Old Site')
+        self.assertEqual(state.search.site, "Old Site")
         # latitude/longitude no longer migrated
-        self.assertEqual(state.search.magnitude, '16.5')
-        self.assertEqual(state.search.days_to_search, '60')
-        self.assertEqual(state.search.observation_duration, '7')
-        self.assertEqual(state.search.min_latitude, '15')
-        self.assertEqual(state.ui.language, 'es')
+        self.assertEqual(state.search.magnitude, "16.5")
+        self.assertEqual(state.search.days_to_search, "60")
+        self.assertEqual(state.search.observation_duration, "7")
+        self.assertEqual(state.search.min_latitude, "15")
+        self.assertEqual(state.ui.language, "es")
 
     def test_migrate_no_legacy_file(self):
         """Test migration when no legacy file exists."""
-        legacy_path = self.temp_path / 'config.json'
+        legacy_path = self.temp_path / "config.json"
         result = migrate_legacy_prefs(legacy_path)
         self.assertTrue(result)  # Should succeed (nothing to migrate)
 
     def test_migrate_partial_data(self):
         """Test migration with partial legacy data."""
-        legacy_path = self.temp_path / 'config.json'
-        legacy_data = {
-            'site': 'Partial Site',
-            'magnitude': '17.5'
-        }
-        with open(legacy_path, 'w', encoding='utf-8') as f:
+        legacy_path = self.temp_path / "config.json"
+        legacy_data = {"site": "Partial Site", "magnitude": "17.5"}
+        with open(legacy_path, "w", encoding="utf-8") as f:
             json.dump(legacy_data, f)
 
         result = migrate_legacy_prefs(legacy_path)
@@ -397,12 +395,12 @@ class TestLegacyMigration(unittest.TestCase):
         manager = PreferencesManager(prefs_dir=self.temp_path)
         state = manager.load_preferences()
 
-        self.assertEqual(state.search.site, 'Partial Site')
-        self.assertEqual(state.search.magnitude, '17.5')
+        self.assertEqual(state.search.site, "Partial Site")
+        self.assertEqual(state.search.magnitude, "17.5")
         # Other fields should have defaults
-        self.assertEqual(state.search.days_to_search, '30')
-        self.assertEqual(state.ui.language, 'en')
+        self.assertEqual(state.search.days_to_search, "30")
+        self.assertEqual(state.ui.language, "en")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -9,11 +9,11 @@ This module coordinates report generation including:
 
 import os
 import subprocess
-from typing import List, Callable, Optional
+from typing import Callable, List, Optional
 
 from app.models.snmodels import Supernova
-from app.reports.report_pdf import createPdf
-from app.reports.report_text import createText, createTextAsString
+from app.reports.report_pdf import create_pdf
+from app.reports.report_text import create_text, create_text_as_string
 from app.utils.logger import get_logger, log_exception
 
 logger = get_logger(__name__)
@@ -65,7 +65,7 @@ class ReportCoordinator:
         if not self.has_results():
             try:
                 self.on_search_async(search_criteria, "PDF")
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to trigger search for PDF generation")
             return
 
@@ -77,32 +77,31 @@ class ReportCoordinator:
                 return
 
             # Generate text representation for display
-            datatxt = createTextAsString(
+            datatxt = create_text_as_string(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None)
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
             self.on_results_text_update(datatxt)
 
             # Generate PDF
-            pdf_path = createPdf(
+            pdf_path = create_pdf(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None),
+                getattr(search_criteria, "visibility_window_name", None),
             )
 
             # Show success message and offer to open file
             self._handle_pdf_success(pdf_path)
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError, OSError, IOError):
             log_exception(logger, "Failed to generate PDF report")
 
     def generate_txt_report(self, search_criteria):
@@ -118,7 +117,7 @@ class ReportCoordinator:
         if not self.has_results():
             try:
                 self.on_search_async(search_criteria, "TXT")
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to trigger search for TXT generation")
             return
 
@@ -130,29 +129,29 @@ class ReportCoordinator:
                 return
 
             # Generate text representation
-            datatxt = createTextAsString(
+            datatxt = create_text_as_string(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None)
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
             self.on_results_text_update(datatxt)
 
             # Save to file
-            createText(
+            create_text(
                 results,
-                search_criteria.fromDate,
-                search_criteria.observationDate,
+                search_criteria.from_date,
+                search_criteria.observation_date,
                 search_criteria.magnitude,
                 search_criteria.site,
-                float(search_criteria.minLatitude),
-                getattr(search_criteria, 'visibilityWindowName', None),
+                float(search_criteria.min_latitude),
+                getattr(search_criteria, "visibility_window_name", None),
             )
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError, ValueError, OSError, IOError):
             log_exception(logger, "Failed to generate TXT report")
 
     def _handle_pdf_success(self, pdf_path: str):
@@ -167,20 +166,20 @@ class ReportCoordinator:
             return
 
         try:
-            # Import here to avoid circular dependency with i18n
+            # pylint: disable=import-outside-toplevel  # Avoid circular dependency
             from app.i18n import _
 
             msg = _("PDF report saved to:\n{path}").format(path=pdf_path)
             should_open = self.on_show_message(
                 _("PDF Created"),
                 msg + "\n\n" + _("Do you want to open it?"),
-                "question"
+                "question",
             )
 
             if should_open:
                 self._open_file(pdf_path)
 
-        except Exception:
+        except (AttributeError, TypeError, ImportError):
             log_exception(logger, "Failed to handle PDF success dialog")
 
     def _open_file(self, file_path: str):
@@ -190,19 +189,22 @@ class ReportCoordinator:
             file_path: Path to the file to open
         """
         try:
-            if os.name == 'nt':  # Windows
+            if os.name == "nt":  # Windows
                 os.startfile(file_path)
-            elif os.name == 'posix':  # Linux/Mac
-                if 'linux' in os.sys.platform:
-                    subprocess.run(['xdg-open', file_path])
+            elif os.name == "posix":  # Linux/Mac
+                if "linux" in os.sys.platform:
+                    subprocess.run(["xdg-open", file_path], check=False)
                 else:
-                    subprocess.run(['open', file_path])
-        except Exception as ex:
+                    subprocess.run(["open", file_path], check=False)
+        except (OSError, subprocess.CalledProcessError, FileNotFoundError) as ex:
             if self.on_show_warning:
                 from app.i18n import _
+
                 self.on_show_warning(
                     _("Cannot open file"),
-                    _("File saved but could not be opened automatically: {error}").format(error=str(ex))
+                    _("File saved but could not be opened automatically: {error}").format(
+                        error=str(ex)
+                    ),
                 )
             else:
                 log_exception(logger, f"Failed to open file {file_path}")

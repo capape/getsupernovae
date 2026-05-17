@@ -1,8 +1,11 @@
-from dataclasses import dataclass, field
-from typing import Optional, Any
-from datetime import date
+"""Data Transfer Objects for supernova data.
 
-from app.models.snmodels import Visibility
+Defines lightweight DTOs used for data transfer between providers and domain models.
+"""
+
+from dataclasses import dataclass
+from datetime import date
+from typing import Any, Optional
 
 
 @dataclass
@@ -12,18 +15,19 @@ class SupernovaDTO:
     This mirrors the fields used by `Supernova` but is intended as a
     lightweight, provider-facing representation.
     """
+
     name: str
-    date: Optional[str] = None
-    date_obj: Optional[date] = None
+    last_observed_date: Optional[str] = None
+    last_observed_date_obj: Optional[date] = None
     mag: Optional[float] = None
     host: Optional[str] = None
     ra: Optional[str] = None
     decl: Optional[str] = None
     link: Optional[str] = None
     coordinates: Optional[Any] = None
-    firstObserved: Optional[str] = None
-    maxMagnitude: Optional[str] = None
-    maxMagnitudeDate: Optional[str] = None
+    first_observed: Optional[str] = None
+    max_magnitude: Optional[str] = None
+    max_magnitude_date: Optional[str] = None
     type: Optional[str] = None
-    maxMagnitudeDate_obj: Optional[date] = None
-    firstObserved_obj: Optional[date] = None
+    max_magnitude_date_obj: Optional[date] = None
+    first_observed_obj: Optional[date] = None

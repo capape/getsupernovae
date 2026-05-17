@@ -8,14 +8,12 @@ This module coordinates the search process including:
 """
 
 from threading import Thread
-from typing import List, Callable, Optional, Any
+from typing import Any, Callable, List, Optional
 
 from app.models.dto import SupernovaDTO
 from app.models.snmodels import Supernova
-from app.services.provider import NetworkRochesterProvider
-from app.ui.snvisibility import VisibilityWindow
+from app.utils.di_helpers import initialize_rochester_factories
 from app.utils.logger import get_logger, log_exception
-
 
 logger = get_logger(__name__)
 
@@ -49,9 +47,11 @@ class AsyncRochesterDownload(Thread):
         self.error = None
         self.config = search_criteria
         self.rochester_supernova = rochester_supernova
-        self.visibility_factory = visibility_factory
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
-        self.reporter = reporter
+        (
+            self.visibility_factory,
+            self.provider_factory,
+            self.reporter,
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
         self.dto_list = None
 
     def run(self):
@@ -67,17 +67,17 @@ class AsyncRochesterDownload(Thread):
             supernovae_list = provider.fetch()
 
             # Apply selection/filtering logic
-            self.result = self.rochester_supernova.selectAndSortSupernovas(
+            self.result = self.rochester_supernova.select_and_sort_supernovae(
                 self.config, supernovae_list
             )
             # Keep raw rows so the app can re-filter without re-downloading
             self.dto_list = supernovae_list
 
-        except Exception as ex:
+        except (AttributeError, TypeError, ValueError, OSError, IOError) as ex:
             # Record the error for the main thread to show
             try:
                 self.error = str(ex)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 self.error = "unknown error"
             self.result = None
 
@@ -119,9 +119,11 @@ class SearchCoordinator:
             after_callback: Callback for scheduling delayed execution (delay_ms, callback)
         """
         self.rochester_supernova = rochester_supernova
-        self.visibility_factory = visibility_factory if visibility_factory is not None else VisibilityWindow
-        self.provider_factory = provider_factory if provider_factory is not None else NetworkRochesterProvider
-        self.reporter = reporter
+        (
+            self.visibility_factory,
+            self.provider_factory,
+            self.reporter,
+        ) = initialize_rochester_factories(visibility_factory, provider_factory, reporter)
 
         # UI callbacks
         self.on_results_updated = on_results_updated
@@ -137,9 +139,7 @@ class SearchCoordinator:
         self.last_rows: Optional[List[SupernovaDTO]] = None
         self.current_results: Optional[List[Supernova]] = None
 
-    def search_async(
-        self, search_criteria: Any, source: str = "SEARCH"
-    ):
+    def search_async(self, search_criteria: Any, source: str = "SEARCH"):
         """Start an async search operation.
 
         Args:
@@ -169,7 +169,7 @@ class SearchCoordinator:
             # Monitor thread completion
             self._monitor_thread(download_thread, source)
 
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError):
             log_exception(logger, f"Failed to start async search for source={source}")
             self._cleanup_after_search(source)
 
@@ -184,9 +184,7 @@ class SearchCoordinator:
             self._set_button_state("refresh", "disabled")
             self.search_async(search_criteria, "REFRESH")
 
-    def refilter_from_cache(
-        self, search_criteria: Any, source: str = "REFRESH"
-    ):
+    def refilter_from_cache(self, search_criteria: Any, source: str = "REFRESH"):
         """Re-run selection/filtering on cached data without downloading.
 
         Args:
@@ -198,13 +196,13 @@ class SearchCoordinator:
             try:
                 self.refreshing = True
                 self.search_async(search_criteria, source)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to fallback to full search")
             return
 
         try:
             # Apply filtering to cached data
-            new_results = self.rochester_supernova.selectAndSortSupernovas(
+            new_results = self.rochester_supernova.select_and_sort_supernovae(
                 search_criteria, self.last_rows
             )
             self.current_results = new_results
@@ -228,13 +226,13 @@ class SearchCoordinator:
                 self._set_button_state("pdf", "normal")
                 self._set_button_state("refresh", "normal")
 
-        except Exception:
+        except (AttributeError, TypeError, ValueError, KeyError):
             log_exception(logger, "Failed to refilter from cache")
             # Fallback to network refresh
             try:
                 self.refreshing = True
                 self.search_async(search_criteria, source)
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 log_exception(logger, "Failed to fallback to network refresh")
 
     def _monitor_thread(self, thread: AsyncRochesterDownload, source: str):
@@ -297,14 +295,14 @@ class SearchCoordinator:
                 # Cache raw rows for later refiltering
                 try:
                     self.last_rows = getattr(thread, "dto_list", None)
-                except Exception:
+                except (AttributeError, TypeError):
                     log_exception(logger, "Failed to cache downloaded rows")
                     self.last_rows = None
             else:
                 # Default case
                 self._cleanup_after_search(source)
 
-        except Exception:
+        except (AttributeError, TypeError, KeyError):
             log_exception(logger, f"Failed to handle thread completion for source={source}")
             self._cleanup_after_search(source)
         finally:
@@ -322,7 +320,7 @@ class SearchCoordinator:
         if self.on_button_state_change:
             try:
                 self.on_button_state_change(button, state)
-            except Exception:
+            except (AttributeError, TypeError):
                 log_exception(logger, f"Failed to set {button} button to {state}")
 
     def _cleanup_after_search(self, source: str):
@@ -337,7 +335,7 @@ class SearchCoordinator:
             self._set_button_state("refresh", "normal")
             if source == "REFRESH":
                 self.refreshing = False
-        except Exception:
+        except (AttributeError, TypeError):
             log_exception(logger, "Failed to cleanup after search")
 
     def get_current_results(self) -> Optional[List[Supernova]]:

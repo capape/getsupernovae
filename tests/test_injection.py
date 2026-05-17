@@ -2,10 +2,12 @@ import os
 import sys
 
 # Ensure package imports work when running this test standalone
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from getsupernovae import RochesterSupernova, SupernovaCallBackData, sites
 from app.coordinators.search_coordinator import AsyncRochesterDownload
+from app.services.rochester_supernova import RochesterSupernova
+from getsupernovae import SupernovaCallBackData, sites
+
 
 class DummyProvider:
     last_instance = None
@@ -26,19 +28,21 @@ def test_async_uses_injected_provider():
     # minimal valid callback data
     e = SupernovaCallBackData(
         magnitude="20",
-        observationDate="2025-01-01",
-        observationTime="00:00",
-        observationHours="1",
-        daysToSearch="1",
+        observation_date="2025-01-01",
+        observation_time="00:00",
+        observation_hours="1",
+        days_to_search="1",
         site=sites[list(sites.keys())[0]],
-        minLatitude="0",
+        min_latitude="0",
     )
 
     # Create RochesterSupernova for the async downloader
     rochester = RochesterSupernova(
+        old_supernovae=set(),
+        visibility_windows={},
         visibility_factory=None,
         provider_factory=DummyProvider,
-        reporter=None
+        reporter=None,
     )
 
     # run downloader with dummy provider factory
@@ -47,7 +51,7 @@ def test_async_uses_injected_provider():
         rochester_supernova=rochester,
         visibility_factory=None,
         provider_factory=DummyProvider,
-        reporter=None
+        reporter=None,
     )
     # call run directly to avoid threading in tests
     downloader.run()
@@ -60,5 +64,11 @@ def test_async_uses_injected_provider():
 
 def test_reporter_propagation_to_rochester():
     dr = DummyReporter()
-    rs = RochesterSupernova(visibility_factory=None, provider_factory=None, reporter=dr)
+    rs = RochesterSupernova(
+        old_supernovae=set(),
+        visibility_windows={},
+        visibility_factory=None,
+        provider_factory=None,
+        reporter=dr,
+    )
     assert getattr(rs, "reporter", None) is dr

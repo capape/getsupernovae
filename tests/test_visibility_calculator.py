@@ -1,5 +1,7 @@
 import math
-import sys, os
+import os
+import sys
+
 # Ensure project root is on sys.path so `app` package is importable in tests
 ROOT = os.path.dirname(os.path.dirname(__file__))
 if ROOT not in sys.path:
@@ -20,6 +22,7 @@ class Dummy:
 
         self.coord = C()
         if az is not None:
+
             class Az:
                 def __init__(self, v):
                     self.degree = v
@@ -28,6 +31,7 @@ class Dummy:
         else:
             self.coord.az = None
         if alt is not None:
+
             class Alt:
                 def __init__(self, v):
                     self.degree = v
@@ -80,6 +84,6 @@ def test_visibility_summary_values():
     pts = [Dummy(az=350, alt=10), Dummy(az=5, alt=15), Dummy(az=20, alt=8)]
     s = visibility_summary(pts)
     assert s is not None
-    assert s["minAlt"] == 8
-    assert s["maxAlt"] == 15
-    assert "minAz" in s and "maxAz" in s
+    assert s["min_alt"] == 8
+    assert s["max_alt"] == 15
+    assert "min_az" in s and "max_az" in s

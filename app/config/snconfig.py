@@ -1,17 +1,36 @@
-import os
-import sys
+"""Configuration loading utilities for the Get Supernovae application.
+
+This module provides functions to load configuration from various sources:
+- Old supernova names from text files
+- Observing sites from JSON files
+- Visibility windows for observations
+- Bootstrap configuration and directory management
+"""
+
 import json
+import os
 import shutil
+import sys
 from collections import OrderedDict
-from astropy.coordinates import EarthLocation
+
 import astropy.units as u
+from astropy.coordinates import EarthLocation
+
+# System font candidates for PDF generation (cross-platform)
+SYSTEM_FONT_CANDIDATES = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+]
 
 
-def load_old_supernovae(path=None):
+def load_old_supernovae(path: str | None = None):
     """Load old supernova names from a file (one per line). If the file
     is missing, returns an empty list."""
 
-    candidates =get_config_candidates(path, "old_supernovae.txt")
+    candidates = get_config_candidates(path, "old_supernovae.txt")
 
     for p in candidates:
         try:
@@ -20,13 +39,13 @@ def load_old_supernovae(path=None):
             with open(p, "r", encoding="utf-8") as fh:
                 lines = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
             return lines
-        except Exception:
+        except (OSError, IOError, UnicodeDecodeError):
             continue
 
     return []
 
 
-def load_sites(path=None):
+def load_sites(path: str | None = None):
     """Load observing sites from a JSON file and return an OrderedDict of
     name -> EarthLocation. If missing, return reasonable defaults."""
     defaults = OrderedDict(
@@ -47,7 +66,7 @@ def load_sites(path=None):
             with open(p, "r", encoding="utf-8") as fh:
                 sites_conf = json.load(fh)
             break
-        except Exception:
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
             sites_conf = None
             continue
 
@@ -62,8 +81,8 @@ def load_sites(path=None):
                 lat = float(v.get("lat", 0.0))
                 lon = float(v.get("lon", 0.0))
                 h = float(v.get("height", 0.0))
-                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)
-            except Exception:
+                result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator]
+            except (ValueError, TypeError, KeyError, AttributeError):
                 continue
 
         if isinstance(sites_conf, dict):
@@ -77,28 +96,32 @@ def load_sites(path=None):
                         lat = float(v.lat.value)
                         lon = float(v.lon.value)
                         h = float(v.height.value)
-                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)
-                except Exception:
+                    result[name] = EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m)  # type: ignore[operator]
+                except (ValueError, TypeError, KeyError, AttributeError):
                     continue
-    except Exception:
+    except (ValueError, TypeError, KeyError, AttributeError):
         # On any unexpected error, fall back to defaults already populated.
         pass
 
     return result
 
-def get_config_candidates(path:str, config_file:str):
+
+def get_config_candidates(path: str | None, config_file: str):
+    """Get list of candidate paths for config file."""
     candidates = []
     if path:
         candidates.append(path)
     config_path = get_user_config_dir()
     candidates.append(os.path.join(config_path, config_file))
-    xdg = os.environ.get("XDG_CONFIG_HOME")
+    # Note: XDG_CONFIG_HOME support could be added here if needed
     return candidates
 
-def load_visibility_windows(path=None):
-    defaults = {"Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}}
 
-    candidates = get_config_candidates(None,"visibility_windows.json")
+def load_visibility_windows(path: str | None = None):
+    """Load visibility windows from config file."""
+    defaults = {"Default": {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}}
+
+    candidates = get_config_candidates(path, "visibility_windows.json")
 
     for p in candidates:
         try:
@@ -108,7 +131,7 @@ def load_visibility_windows(path=None):
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-        except Exception:
+        except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
             continue
 
     return defaults
@@ -145,16 +168,14 @@ def bootstrap_config():
     cfg = get_user_config_dir()
     try:
         os.makedirs(cfg, exist_ok=True)
-    except Exception:
+    except OSError:
         return
 
     sites_path = os.path.join(cfg, "sites.json")
     old_path = os.path.join(cfg, "old_supernovae.txt")
 
     # default sites
-    default_sites = {
-        "Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}
-    }
+    default_sites = {"Sabadell": {"lat": 41.55, "lon": 2.09, "height": 224}}
 
     # default old list
     default_old = []
@@ -163,7 +184,7 @@ def bootstrap_config():
         if not os.path.exists(sites_path):
             with open(sites_path, "w", encoding="utf-8") as fh:
                 json.dump(default_sites, fh, indent=2)
-    except Exception:
+    except (OSError, IOError):
         pass
 
     try:
@@ -171,7 +192,7 @@ def bootstrap_config():
             with open(old_path, "w", encoding="utf-8") as fh:
                 for name in default_old:
                     fh.write(name + "\n")
-    except Exception:
+    except (OSError, IOError):
         pass
 
 
@@ -186,7 +207,7 @@ def load_user_prefs():
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-    except Exception:
+    except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     # fallback: try package-local prefs file
     try:
@@ -196,7 +217,7 @@ def load_user_prefs():
                 data = json.load(fh)
                 if isinstance(data, dict):
                     return data
-    except Exception:
+    except (OSError, IOError, json.JSONDecodeError, UnicodeDecodeError):
         pass
     return {}
 
@@ -210,26 +231,26 @@ def save_user_prefs(prefs: dict):
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(prefs, fh, indent=2)
         return
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
     # last resort: write next to module
     try:
         p = os.path.join(os.path.dirname(__file__), "prefs.json")
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(prefs, fh, indent=2)
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
 
     # default visibility windows
     default_visibility = {
-        "Default": {"minAlt": 0.0, "maxAlt": 90.0, "minAz": 0.0, "maxAz": 360.0}
+        "Default": {"min_alt": 0.0, "max_alt": 90.0, "min_az": 0.0, "max_az": 360.0}
     }
     vis_path = os.path.join(cfg, "visibility_windows.json")
     try:
         if not os.path.exists(vis_path):
             with open(vis_path, "w", encoding="utf-8") as fh:
                 json.dump(default_visibility, fh, indent=2)
-    except Exception:
+    except (OSError, IOError, TypeError):
         pass
 
     # Ensure a bundled font exists in package fonts/ for deterministic embedding on export
@@ -238,19 +259,12 @@ def save_user_prefs(prefs: dict):
         os.makedirs(package_fonts, exist_ok=True)
         bundled = os.path.join(package_fonts, "DejaVuSans.ttf")
         if not os.path.exists(bundled):
-            sys_candidates = [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-                "/Library/Fonts/Arial Unicode.ttf",
-                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            ]
-            for sc in sys_candidates:
+            for sc in SYSTEM_FONT_CANDIDATES:
                 try:
                     if sc and os.path.exists(sc):
                         shutil.copyfile(sc, bundled)
                         break
-                except Exception:
+                except (OSError, IOError, shutil.Error):
                     continue
-    except Exception:
+    except (OSError, IOError):
         pass

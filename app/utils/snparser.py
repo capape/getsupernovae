@@ -1,10 +1,13 @@
+"""Parser utilities for supernova data from Rochester astronomy website."""
+
 import re
 import urllib.parse
-from typing import Optional, Tuple
 from datetime import datetime
-from bs4 import Tag
-from astropy.coordinates import SkyCoord
+from typing import Optional, Tuple
+
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+from bs4 import Tag
 
 
 def parse_magnitude(text: str) -> Tuple[Optional[float], Optional[str]]:
@@ -25,7 +28,7 @@ def parse_magnitude(text: str) -> Tuple[Optional[float], Optional[str]]:
     limit = m.group(1) or None
     try:
         val = float(m.group(2))
-    except Exception:
+    except (ValueError, TypeError):
         return None, limit
     return val, limit
 
@@ -47,14 +50,14 @@ def parse_date(text: str):
         try:
             dt = datetime.strptime(s, fmt).date()
             return dt, dt.strftime("%Y-%m-%d")
-        except Exception:
+        except (ValueError, TypeError):
             continue
 
-    s2 = s.replace('/', '-').replace('.', '-')
+    s2 = s.replace("/", "-").replace(".", "-")
     try:
         dt = datetime.strptime(s2, "%Y-%m-%d").date()
         return dt, dt.strftime("%Y-%m-%d")
-    except Exception:
+    except (ValueError, TypeError):
         return None, None
 
 
@@ -66,7 +69,7 @@ def format_iso_datetime(obj):
         if hasattr(obj, "to_datetime"):
             dt = obj.to_datetime()
             return dt.strftime("%Y-%m-%d %H:%M")
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
         pass
 
     try:
@@ -74,7 +77,7 @@ def format_iso_datetime(obj):
             return obj.strftime("%Y-%m-%d %H:%M")
         # fallback: return string as-is
         return str(obj)
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return ""
 
 
@@ -102,7 +105,7 @@ def _parse_row_safe(row: Tag):
         mag_val, mag_limit = parse_magnitude(mag_text)
 
         raw_date_text = cols[6].get_text(strip=True)
-        date_obj, date_text = parse_date(raw_date_text)
+        last_observed_date_obj, last_observed_date_text = parse_date(raw_date_text)
 
         type_text = cols[7].get_text(strip=True)
         max_mag_text = cols[9].get_text(strip=True)
@@ -116,7 +119,7 @@ def _parse_row_safe(row: Tag):
 
         try:
             coord = SkyCoord(ra_text, dec_text, frame="icrs", unit=(u.hourangle, u.deg))
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return None
 
         return {
@@ -127,16 +130,16 @@ def _parse_row_safe(row: Tag):
             "decl": dec_text,
             "mag": mag_val,
             "mag_limit": mag_limit,
-            "date": date_text,
-            "date_obj": date_obj,
+            "last_observed_date": last_observed_date_text,
+            "last_observed_date_obj": last_observed_date_obj,
             "type": type_text,
-            "maxMagnitude": max_mag,
-            "maxMagnitudeDate": max_mag_date,
-            "maxMagnitudeDate_obj": max_mag_date_obj,
-            "firstObserved": first_observed,
-            "firstObserved_obj": first_observed_obj,
+            "max_magnitude": max_mag,
+            "max_magnitude_date": max_mag_date,
+            "max_magnitude_date_obj": max_mag_date_obj,
+            "first_observed": first_observed,
+            "first_observed_obj": first_observed_obj,
             "coord": coord,
         }
 
-    except Exception:
+    except (ValueError, TypeError, AttributeError, IndexError, KeyError):
         return None
