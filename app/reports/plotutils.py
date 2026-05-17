@@ -6,6 +6,11 @@ Provides VisibilityPlotter class for generating matplotlib-based visibility char
 import io
 
 from reportlab.lib.utils import ImageReader
+from typing import Optional
+import numpy as np
+import astropy.units as u
+from astropy.time import Time
+from astropy.coordinates import AltAz, get_sun, EarthLocation
 
 # matplotlib is optional; use Agg backend for non-GUI plotting
 try:
@@ -170,3 +175,61 @@ class VisibilityPlotter:  # pylint: disable=too-few-public-methods
             return save_matplotlib_figure(fig, fmt=fmt, dpi=self.dpi)
         except (OSError, ValueError, TypeError, AttributeError):
             return None
+
+
+def astronomical_dawn(location: EarthLocation, date: Time) -> Optional[Time]:
+    """
+    Return astronomical dawn (Time) for the given location and date.
+    Returns None if no dawn found in +/-12h window (polar day/night).
+    """
+    # search window: ±12 hours around date
+    steps = 288  # 5-minute sampling over 24 h (288 * 5 min = 1440 min)
+    jd_start = (date - 12 * u.hour).jd
+    jd_end = (date + 12 * u.hour).jd
+    jds = np.linspace(jd_start, jd_end, steps)
+    times = Time(jds, format="jd")
+    altaz = AltAz(obstime=times, location=location)
+    sun_alt = get_sun(times).transform_to(altaz).alt.to(u.deg).value
+
+    target = -18.0
+    idx = np.where((sun_alt[:-1] < target) & (sun_alt[1:] >= target))[0]
+    if len(idx) == 0:
+        return None
+
+    i = idx[0]
+    # linear interpolation between times[i] and times[i+1]
+    a1, a2 = sun_alt[i], sun_alt[i + 1]
+    t1, t2 = times[i], times[i + 1]
+    if a2 == a1:
+        return t1
+    frac = (target - a1) / (a2 - a1)
+    return Time(t1.jd + frac * (t2.jd - t1.jd), format="jd")
+
+
+def astronomical_set(location: EarthLocation, date: Time) -> Optional[Time]:
+    """
+    Return astronomical sunset (Time) for the given location and date.
+    Returns None if no set is found in ±12h window (polar day/night).
+    """
+    # search window: ±12 hours around date
+    steps = 288  # 5-min sampling over 24h
+    jd_start = (date - 12 * u.hour).jd
+    jd_end = (date + 12 * u.hour).jd
+    jds = np.linspace(jd_start, jd_end, steps)
+    times = Time(jds, format="jd")
+    aa = AltAz(obstime=times, location=location)
+    sun_alt = get_sun(times).transform_to(aa).alt.to(u.deg).value
+
+    target = -18.0
+    # find descending crossing: above (>=) then below (<)
+    idx = np.where((sun_alt[:-1] >= target) & (sun_alt[1:] < target))[0]
+    if len(idx) == 0:
+        return None
+
+    i = idx[0]
+    a1, a2 = sun_alt[i], sun_alt[i + 1]
+    t1, t2 = times[i], times[i + 1]
+    if a2 == a1:
+        return t1
+    frac = (target - a1) / (a2 - a1)
+    return Time(t1.jd + frac * (t2.jd - t1.jd), format="jd")
